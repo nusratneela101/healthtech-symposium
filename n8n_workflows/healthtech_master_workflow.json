@@ -1,0 +1,295 @@
+{
+  "name": "HealthTech Master Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 2"
+            }
+          ]
+        }
+      },
+      "id": "schedule-tuesday",
+      "name": "Schedule Tuesday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 4"
+            }
+          ]
+        }
+      },
+      "id": "schedule-thursday",
+      "name": "Schedule Thursday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 500]
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/v1/mixed_people/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "person_locations",
+              "value": "[\"Canada\"]"
+            },
+            {
+              "name": "person_titles",
+              "value": "[\"CTO\",\"VP\",\"Director\",\"CEO\",\"Founder\",\"Head of\"]"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "per_page",
+              "value": "100"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "apollo-search",
+      "name": "Apollo Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const people = $input.all()[0].json.people || [];\nreturn people\n  .filter(p => p.email && p.email.includes('@'))\n  .map(p => ({\n    json: {\n      first_name: p.first_name || '',\n      last_name:  p.last_name  || '',\n      email:      p.email,\n      company:    p.organization?.name || '',\n      job_title:  p.title || '',\n      role:       p.title || '',\n      segment:    'Other',\n      province:   p.state || '',\n      city:       p.city  || '',\n      country:    'Canada',\n      source:     'Apollo'\n    }\n  }));"
+      },
+      "id": "filter-leads",
+      "name": "Filter & Map Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/save_lead.php",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            },
+            {
+              "name": "leads",
+              "value": "={{ $json }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-leads",
+      "name": "Save Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "amount": 20,
+        "unit": "seconds"
+      },
+      "id": "wait-20s",
+      "name": "Wait 20 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/get_template.php",
+        "options": {}
+      },
+      "id": "get-template",
+      "name": "Get Default Template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/get_leads_for_campaign.php",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            },
+            {
+              "name": "limit",
+              "value": "2500"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-leads",
+      "name": "Get 2500 Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "leads",
+        "options": {}
+      },
+      "id": "split-out",
+      "name": "Split Out Leads",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const lead    = $input.item.json;\nconst tpl     = $('Get Default Template').first().json;\nconst appUrl  = 'https://YOURSITE.com/healthtech';\nconst unsub   = `${appUrl}/unsubscribe.php?email=${encodeURIComponent(lead.email)}`;\n\nconst body = (tpl.html_body || '')\n  .replace(/\\{\\{first_name\\}\\}/g,     lead.first_name  || '')\n  .replace(/\\{\\{last_name\\}\\}/g,      lead.last_name   || '')\n  .replace(/\\{\\{full_name\\}\\}/g,      lead.full_name   || '')\n  .replace(/\\{\\{role\\}\\}/g,           lead.role        || '')\n  .replace(/\\{\\{company\\}\\}/g,        lead.company     || '')\n  .replace(/\\{\\{city\\}\\}/g,           lead.city        || '')\n  .replace(/\\{\\{province\\}\\}/g,       lead.province    || '')\n  .replace(/\\{\\{email\\}\\}/g,          lead.email       || '')\n  .replace(/\\{\\{unsubscribe_link\\}\\}/g, unsub);\n\nconst subject = (tpl.subject || 'Invitation')\n  .replace(/\\{\\{first_name\\}\\}/g, lead.first_name || '')\n  .replace(/\\{\\{company\\}\\}/g,    lead.company    || '');\n\nreturn [{ json: { ...lead, email_body: body, email_subject: subject, template_id: tpl.id } }];"
+      },
+      "id": "personalize",
+      "name": "Personalize Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sm@101bdtech.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.email_subject }}",
+        "emailType": "html",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2220, 300]
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "wait-4s",
+      "name": "Wait 4 Seconds",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [2440, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/log_email.php",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            },
+            {
+              "name": "lead_id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "name": "recipient_email",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "recipient_name",
+              "value": "={{ $json.full_name }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.email_subject }}"
+            },
+            {
+              "name": "status",
+              "value": "sent"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-sent",
+      "name": "Log Sent Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2660, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Tuesday 9AM": {
+      "main": [[{"node":"Apollo Search","type":"main","index":0}]]
+    },
+    "Schedule Thursday 9AM": {
+      "main": [[{"node":"Apollo Search","type":"main","index":0}]]
+    },
+    "Apollo Search": {
+      "main": [[{"node":"Filter & Map Leads","type":"main","index":0}]]
+    },
+    "Filter & Map Leads": {
+      "main": [[{"node":"Save Leads","type":"main","index":0}]]
+    },
+    "Save Leads": {
+      "main": [[{"node":"Wait 20 Seconds","type":"main","index":0}]]
+    },
+    "Wait 20 Seconds": {
+      "main": [[{"node":"Get Default Template","type":"main","index":0}]]
+    },
+    "Get Default Template": {
+      "main": [[{"node":"Get 2500 Leads","type":"main","index":0}]]
+    },
+    "Get 2500 Leads": {
+      "main": [[{"node":"Split Out Leads","type":"main","index":0}]]
+    },
+    "Split Out Leads": {
+      "main": [[{"node":"Personalize Email","type":"main","index":0}]]
+    },
+    "Personalize Email": {
+      "main": [[{"node":"Send Email","type":"main","index":0}]]
+    },
+    "Send Email": {
+      "main": [[{"node":"Wait 4 Seconds","type":"main","index":0}]]
+    },
+    "Wait 4 Seconds": {
+      "main": [[{"node":"Log Sent Email","type":"main","index":0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["healthtech","email","automation"],
+  "pinData": {}
+}

@@ -1,0 +1,147 @@
+{
+  "name": "HealthTech Response Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/10 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-10min",
+      "name": "Every 10 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/poll_inbox.php",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "poll-inbox",
+      "name": "Poll IMAP Inbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst saved = result.saved || 0;\nconst items = [];\nfor (let i = 0; i < saved; i++) {\n  items.push({ json: { index: i, saved, skipped: result.skipped || 0 } });\n}\nif (items.length === 0) items.push({ json: { saved: 0, skipped: result.skipped || 0, skip: true } });\nreturn items;"
+      },
+      "id": "classify",
+      "name": "Classify Responses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/save_response.php",
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            },
+            {
+              "name": "saved",
+              "value": "={{ $json.saved }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "save-response",
+      "name": "Save Response Stats",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "priority-check",
+              "leftValue": "={{ $json.saved }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-priority",
+      "name": "New Responses?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sm@101bdtech.com",
+        "toEmail": "sm@101bdtech.com",
+        "subject": "HealthTech: {{ $json.saved }} New Response(s) Received",
+        "emailType": "html",
+        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View Responses →</a></p>",
+        "options": {}
+      },
+      "id": "alert-email",
+      "name": "Send Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Every 10 Minutes": {
+      "main": [[{"node":"Poll IMAP Inbox","type":"main","index":0}]]
+    },
+    "Poll IMAP Inbox": {
+      "main": [[{"node":"Classify Responses","type":"main","index":0}]]
+    },
+    "Classify Responses": {
+      "main": [[{"node":"Save Response Stats","type":"main","index":0}]]
+    },
+    "Save Response Stats": {
+      "main": [[{"node":"New Responses?","type":"main","index":0}]]
+    },
+    "New Responses?": {
+      "main": [
+        [{"node":"Send Alert Email","type":"main","index":0}],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": ["healthtech","imap","responses"],
+  "pinData": {}
+}

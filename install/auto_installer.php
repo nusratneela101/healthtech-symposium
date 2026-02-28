@@ -152,14 +152,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Default template
-            $tplBody = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#0a1628,#0d6efd);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>Canada HealthTech Innovation Symposium</h1></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise makes you an ideal participant.</p><div class="cta"><a href="' . $appUrl . '/register">Register Now</a></div><p>Best regards,<br>Canada HealthTech Team</p></div><div class="footer"><a href="{{unsubscribe_link}}">Unsubscribe</a></div></div></body></html>';
+            $tplBody = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#CC0000,#0a1628);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.header p{color:rgba(255,255,255,.7);font-style:italic;margin:8px 0 0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>Canada FinTech Symposium</h1><p>Igniting the Future of Finance</p></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise makes you an ideal participant.</p><div class="cta"><a href="' . $appUrl . '/register">Register Now</a></div><p>Best regards,<br>Canada FinTech Symposium Team</p></div><div class="footer"><a href="{{unsubscribe_link}}">Unsubscribe</a></div></div></body></html>';
             $pdo->prepare("INSERT IGNORE INTO email_templates (name,subject,html_body,is_default) VALUES(?,?,?,1)")
-                ->execute(['HealthTech Symposium 2026 Invitation','Exclusive Invitation: Canada HealthTech Innovation Symposium 2026', $tplBody]);
+                ->execute(['FinTech Symposium 2026 Invitation','Exclusive Invitation: Canada FinTech Symposium 2026', $tplBody]);
 
             // Write config files
             $dbConfig = "<?php\nclass Database {\n    private static ?PDO \$instance = null;\n    private static array \$config = [\n        'host'    => '$dbHost',\n        'dbname'  => '$dbName',\n        'user'    => '$dbUser',\n        'pass'    => '$dbPass',\n        'charset' => 'utf8mb4',\n    ];\n    public static function getConnection(): PDO {\n        if (self::\$instance === null) {\n            \$c = self::\$config;\n            \$dsn = \"mysql:host={\$c['host']};dbname={\$c['dbname']};charset={\$c['charset']}\";\n            self::\$instance = new PDO(\$dsn, \$c['user'], \$c['pass'], [\n                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,\n                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,\n                PDO::ATTR_EMULATE_PREPARES   => false,\n            ]);\n        }\n        return self::\$instance;\n    }\n    public static function query(string \$sql, array \$p = []): PDOStatement {\n        \$s = self::getConnection()->prepare(\$sql);\n        \$s->execute(\$p);\n        return \$s;\n    }\n    public static function fetchAll(string \$sql, array \$p = []): array { return self::query(\$sql, \$p)->fetchAll(); }\n    public static function fetchOne(string \$sql, array \$p = []): ?array { \$r = self::query(\$sql, \$p)->fetch(); return \$r ?: null; }\n    public static function lastInsertId(): string { return self::getConnection()->lastInsertId(); }\n}\n";
 
-            $appConfig = "<?php\ndefine('APP_NAME',        'Canada HealthTech Innovation Symposium');\ndefine('APP_URL',         '$appUrl');\ndefine('APP_VERSION',     '2.0.0');\ndefine('SMTP_HOST',       'mail.101bdtech.com');\ndefine('SMTP_PORT',       465);\ndefine('SMTP_SECURE',     'ssl');\ndefine('SMTP_USER',       'sm@101bdtech.com');\ndefine('SMTP_PASS',       'Nurnobi131221');\ndefine('SMTP_FROM_EMAIL', 'sm@101bdtech.com');\ndefine('SMTP_FROM_NAME',  'Canada HealthTech Innovation Symposium');\ndefine('IMAP_HOST',       '{mail.101bdtech.com:993/imap/ssl/novalidate-cert}INBOX');\ndefine('IMAP_USER',       'sm@101bdtech.com');\ndefine('IMAP_PASS',       'Nurnobi131221');\ndefine('N8N_API_KEY',     'HTS2026Key');\ndefine('SESSION_NAME',    'hts_session');\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
+            $appConfig = "<?php\ndefine('APP_NAME',        'Canada FinTech Symposium');\ndefine('APP_URL',         '$appUrl');\ndefine('APP_VERSION',     '2.0.0');\ndefine('SMTP_HOST',       'mail.101bdtech.com');\ndefine('SMTP_PORT',       465);\ndefine('SMTP_SECURE',     'ssl');\ndefine('SMTP_USER',       'sm@101bdtech.com');\ndefine('SMTP_PASS',       'Nurnobi131221');\ndefine('SMTP_FROM_EMAIL', 'sm@101bdtech.com');\ndefine('SMTP_FROM_NAME',  'Canada FinTech Symposium');\ndefine('IMAP_HOST',       '{mail.101bdtech.com:993/imap/ssl/novalidate-cert}INBOX');\ndefine('IMAP_USER',       'sm@101bdtech.com');\ndefine('IMAP_PASS',       'Nurnobi131221');\ndefine('N8N_API_KEY',     'HTS2026Key');\ndefine('SESSION_NAME',    'hts_session');\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
 
             file_put_contents(__DIR__ . '/../config/database.php', $dbConfig);
             file_put_contents(__DIR__ . '/../config/config.php',   $appConfig);
@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auto Installer — Canada HealthTech Symposium</title>
+<title>Auto Installer — Canada FinTech Symposium</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0f1a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -204,8 +204,13 @@ a.go-btn{display:block;width:100%;background:#10b981;color:#fff;text-decoration:
 </head>
 <body>
 <div class="card">
-    <div style="font-size:40px;text-align:center;margin-bottom:16px">🏥</div>
-    <h1 style="text-align:center">Canada HealthTech Symposium</h1>
+    <div style="text-align:center;margin-bottom:16px">
+      <svg viewBox="0 0 100 100" width="52" height="52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 8px rgba(204,0,0,.4))">
+        <path d="M50 5 L58 30 L75 20 L65 38 L85 35 L70 50 L80 70 L60 60 L55 85 L50 75 L45 85 L40 60 L20 70 L30 50 L15 35 L35 38 L25 20 L42 30 Z" fill="#CC0000"/>
+        <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CFTS</text>
+      </svg>
+    </div>
+    <h1 style="text-align:center">Canada FinTech Symposium</h1>
     <p class="sub" style="text-align:center">Auto Installer v2.0</p>
 
     <?php if ($error): ?>

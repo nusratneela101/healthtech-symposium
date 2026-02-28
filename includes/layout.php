@@ -21,7 +21,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?php echo APP_NAME; ?></title>
+<title>Canada FinTech Symposium — <?php echo $pageTitle ?? APP_NAME; ?></title>
 <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css">
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 </head>
@@ -33,11 +33,21 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <div class="sb">
     <div class="sb-brand">
-        <span class="sb-icon">🏥</span>
-        <div>
-            <div style="font-weight:700;font-size:13px;line-height:1.2">Canada HealthTech</div>
-            <div style="font-size:11px;color:var(--text-muted)">Innovation Symposium 2026</div>
+        <div class="cfts-logo">
+          <div class="cfts-leaf">
+            <svg viewBox="0 0 100 100" width="52" height="52" xmlns="http://www.w3.org/2000/svg">
+              <path d="M50 5 L58 30 L75 20 L65 38 L85 35 L70 50 L80 70 L60 60 L55 85 L50 75 L45 85 L40 60 L20 70 L30 50 L15 35 L35 38 L25 20 L42 30 Z" fill="#CC0000"/>
+              <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CFTS</text>
+            </svg>
+          </div>
+          <div class="cfts-divider"></div>
+          <div class="cfts-text">
+            <div class="cfts-canada">CANADA</div>
+            <div class="cfts-fintech">FINTECH</div>
+            <div class="cfts-symposium">SYMPOSIUM</div>
+          </div>
         </div>
+        <div class="cfts-tagline">Igniting the Future of Finance</div>
     </div>
     <nav class="sb-nav">
         <a href="<?php echo APP_URL; ?>/admin/dashboard.php"

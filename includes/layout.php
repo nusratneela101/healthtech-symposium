@@ -33,11 +33,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <div class="sb">
     <div class="sb-brand">
-        <span class="sb-icon">🏥</span>
-        <div>
-            <div style="font-weight:700;font-size:13px;line-height:1.2">Canada HealthTech</div>
-            <div style="font-size:11px;color:var(--text-muted)">Innovation Symposium 2026</div>
-        </div>
+        <img src="<?php echo APP_URL; ?>/assets/images/cfts-logo-small.svg"
+             alt="Canada FinTech Symposium"
+             class="sb-logo-img">
+        <div class="sb-tagline">Igniting the Future of Finance</div>
     </div>
     <nav class="sb-nav">
         <a href="<?php echo APP_URL; ?>/admin/dashboard.php"

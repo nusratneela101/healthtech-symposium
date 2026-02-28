@@ -48,7 +48,7 @@ $recentCampaigns = Database::fetchAll(
         <form id="campaignForm">
             <div style="margin-bottom:14px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">Campaign Name</label>
-                <input class="fi" name="campaign_name" placeholder="e.g. Toronto Finance Outreach" style="width:100%" value="HealthTech Symposium — <?php echo date('M Y'); ?>">
+                <input class="fi" name="campaign_name" placeholder="e.g. Toronto Finance Outreach" style="width:100%" value="FinTech Symposium — <?php echo date('M Y'); ?>">
             </div>
             <div style="margin-bottom:14px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">Email Template</label>

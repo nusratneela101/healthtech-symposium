@@ -1,5 +1,5 @@
 /* ============================================================
-   Canada HealthTech Innovation Symposium — Style.css
+   Canada FinTech Symposium — Style.css
    ============================================================ */
 
 /* CSS Variables */
@@ -19,6 +19,35 @@
   --border:     #1e3355;
   --sb-width:   260px;
   --topbar-h:   64px;
+}
+
+/* ===== CFTS LOGO ===== */
+.sb-logo-box {
+  padding: 16px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.sb-logo {
+  width: 200px;
+  max-width: 100%;
+  background: white;
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(204,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+.sb-logo:hover { transform: scale(1.03); }
+.login-brand { display: flex; justify-content: center; margin-bottom: 24px; }
+.login-logo {
+  width: 340px;
+  max-width: 90%;
+  background: white;
+  padding: 18px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(204,0,0,0.25), 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Reset */
@@ -73,11 +102,7 @@ body {
 }
 
 .sb-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 0;
 }
 
 .sb-icon {

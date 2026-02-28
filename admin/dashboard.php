@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
 
+$pageSubtitle = 'Canada FinTech Symposium 2026 · Igniting the Future of Finance';
+
 // KPI stats
 $stats = [
     'total_leads'      => Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0,

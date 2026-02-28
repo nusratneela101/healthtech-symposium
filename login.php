@@ -42,10 +42,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
 .particle{position:fixed;width:4px;height:4px;background:rgba(13,110,253,.6);border-radius:50%;pointer-events:none;z-index:0;animation:floatParticle var(--dur,8s) ease-in-out infinite var(--delay,0s)}
 @keyframes floatParticle{0%,100%{transform:translate(0,0);opacity:.3}50%{transform:translate(var(--tx,20px),var(--ty,-40px));opacity:.8}}
 .left{flex:1;background:linear-gradient(135deg,var(--navy) 0%,#0d2347 50%,#102d5a 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px 40px;position:relative;z-index:1}
-.logo{font-size:64px;margin-bottom:24px;animation:pulse 2s ease-in-out infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-.left h1{font-size:28px;font-weight:800;text-align:center;line-height:1.3;margin-bottom:12px;background:linear-gradient(135deg,#fff,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.left h1{font-size:28px;font-weight:800;text-align:center;line-height:1.3;margin-bottom:12px}
 .left p{color:var(--muted);text-align:center;font-size:14px;margin-bottom:40px}
+.login-brand{display:flex;justify-content:center;margin-bottom:24px}
+.login-logo{width:340px;max-width:90%;background:white;padding:18px 24px;border-radius:12px;box-shadow:0 8px 32px rgba(204,0,0,0.25),0 2px 8px rgba(0,0,0,0.3);margin-bottom:8px}
 .stats{display:flex;gap:32px;margin-bottom:40px}
 .stat{text-align:center}.stat-val{font-size:28px;font-weight:800;color:var(--blue)}.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .event-badge{background:rgba(13,110,253,.15);border:1px solid rgba(13,110,253,.3);border-radius:20px;padding:10px 24px;font-size:13px;color:#93c5fd;margin-bottom:24px}
@@ -83,9 +83,17 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
 <?php endfor;?>
 
 <div class="left">
-    <div class="logo">🏥</div>
-    <h1>Welcome to the Future of HealthTech</h1>
-    <p>Canada HealthTech Innovation Symposium 2026</p>
+    <div class="login-brand">
+      <img src="<?= APP_URL ?>/assets/images/cfts-logo.png"
+           alt="Canada FinTech Symposium"
+           class="login-logo">
+    </div>
+    <h1 class="login-hero">
+      Welcome to the Future of <span style="color:#CC0000">FinTech</span>
+    </h1>
+    <p class="login-sub">
+      Join 500+ Canadian financial leaders, investors &amp; innovators
+    </p>
     <div class="event-badge">📅 April 21–22, 2026 — Toronto, Canada</div>
     <div class="stats">
         <div class="stat"><div class="stat-val" id="c-leads">—</div><div class="stat-lbl">Total Leads</div></div>

@@ -1,6 +1,11 @@
-# 🏥 Canada HealthTech Innovation Symposium 2026
+# 🍁 Canada FinTech Symposium 2026
+### *Igniting the Future of Finance*
 
-A complete, production-ready PHP web application for managing the **Canada HealthTech Innovation Symposium 2026** — including lead management, automated email campaigns, IMAP inbox polling, response tracking, and n8n workflow automation.
+> Complete PHP campaign management system for Canada FinTech Symposium (CFTS) 2026
+
+Logo: `assets/images/cfts-logo.png`
+
+A complete, production-ready PHP web application for managing the **Canada FinTech Symposium 2026** — including lead management, automated email campaigns, IMAP inbox polling, response tracking, and n8n workflow automation.
 
 ---
 

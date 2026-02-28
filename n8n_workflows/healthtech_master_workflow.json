@@ -1,5 +1,5 @@
 {
-  "name": "HealthTech Master Workflow",
+  "name": "CFTS Master Workflow",
   "nodes": [
     {
       "parameters": {
@@ -183,6 +183,7 @@
     {
       "parameters": {
         "fromEmail": "sm@101bdtech.com",
+        "fromName": "Canada FinTech Symposium",
         "toEmail": "={{ $json.email }}",
         "subject": "={{ $json.email_subject }}",
         "emailType": "html",

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 90" width="300" height="90">
+  <!-- Maple Leaf -->
+  <g transform="translate(5, 5) scale(0.75)">
+    <path d="M70,10 L76,28 L85,22 L80,35 L95,33 L85,48 L92,65 L74,57 L71,78 L65,68 L59,78 L56,57 L38,65 L45,48 L35,33 L50,35 L45,22 L54,28 Z" fill="#CC0000"/>
+    <rect x="62" y="78" width="6" height="16" fill="#CC0000"/>
+    <text x="65" y="52" text-anchor="middle" fill="white" font-size="14" font-weight="900" font-family="Arial">CFTS</text>
+  </g>
+  <!-- Divider -->
+  <line x1="78" y1="8" x2="78" y2="82" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+  <!-- Text -->
+  <text x="88" y="28" fill="#ff4444" font-size="16" font-weight="900" font-family="Arial" letter-spacing="4">CANADA</text>
+  <text x="86" y="56" fill="#ffffff" font-size="28" font-weight="900" font-family="Arial" letter-spacing="1">FINTECH</text>
+  <text x="86" y="76" fill="rgba(255,255,255,0.8)" font-size="14" font-weight="700" font-family="Arial" letter-spacing="4">SYMPOSIUM</text>
+</svg>

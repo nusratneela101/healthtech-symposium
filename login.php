@@ -44,6 +44,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
 .left{flex:1;background:linear-gradient(135deg,var(--navy) 0%,#0d2347 50%,#102d5a 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px 40px;position:relative;z-index:1}
 .logo{font-size:64px;margin-bottom:24px;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.login-logo-wrap{margin-bottom:28px;display:flex;justify-content:center}
+.login-logo-img{width:320px;max-width:90%;filter:drop-shadow(0 4px 20px rgba(204,0,0,0.3));border-radius:8px;background:white;padding:16px 20px}
 .left h1{font-size:28px;font-weight:800;text-align:center;line-height:1.3;margin-bottom:12px;background:linear-gradient(135deg,#fff,#93c5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .left p{color:var(--muted);text-align:center;font-size:14px;margin-bottom:40px}
 .stats{display:flex;gap:32px;margin-bottom:40px}
@@ -83,9 +85,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
 <?php endfor;?>
 
 <div class="left">
-    <div class="logo">🏥</div>
-    <h1>Welcome to the Future of HealthTech</h1>
-    <p>Canada HealthTech Innovation Symposium 2026</p>
+    <div class="login-logo-wrap">
+        <img src="<?= APP_URL ?>/assets/images/cfts-logo.svg" alt="Canada FinTech Symposium" class="login-logo-img">
+    </div>
+    <h1>Welcome to the Future of <span style="color:#CC0000">FinTech</span></h1>
+    <p>Igniting the Future of Finance</p>
     <div class="event-badge">📅 April 21–22, 2026 — Toronto, Canada</div>
     <div class="stats">
         <div class="stat"><div class="stat-val" id="c-leads">—</div><div class="stat-lbl">Total Leads</div></div>

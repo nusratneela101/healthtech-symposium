@@ -1,5 +1,5 @@
 {
-  "name": "HealthTech Response Tracker",
+  "name": "FinTech Response Tracker",
   "nodes": [
     {
       "parameters": {
@@ -106,7 +106,7 @@
       "parameters": {
         "fromEmail": "sm@101bdtech.com",
         "toEmail": "sm@101bdtech.com",
-        "subject": "HealthTech: {{ $json.saved }} New Response(s) Received",
+        "subject": "FinTech: {{ $json.saved }} New Response(s) Received",
         "emailType": "html",
         "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View Responses →</a></p>",
         "options": {}

@@ -60,7 +60,7 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key", "value": "YOUR_API_KEY" },
+            { "name": "api_key", "value": "YOUR_N8N_API_KEY" },
             { "name": "leads",   "value": "={{ JSON.stringify($input.all().map(i => i.json)) }}" }
           ]
         },

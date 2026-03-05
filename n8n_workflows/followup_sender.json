@@ -18,7 +18,7 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "api_key", "value": "YOUR_API_KEY" },
+            { "name": "api_key", "value": "YOUR_N8N_API_KEY" },
             { "name": "limit",   "value": "500" }
           ]
         },
@@ -45,7 +45,7 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key",            "value": "YOUR_API_KEY" },
+            { "name": "api_key",            "value": "YOUR_N8N_API_KEY" },
             { "name": "campaign_id",        "value": "={{ $json.campaign_id }}" },
             { "name": "follow_up_sequence", "value": "2" }
           ]

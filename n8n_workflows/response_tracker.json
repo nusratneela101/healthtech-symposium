@@ -20,13 +20,13 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/poll_inbox.php",
+        "url": "https://fintech.softandpix.com/api/poll_inbox.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "api_key",
-              "value": "HTS2026Key"
+              "value": "YOUR_N8N_API_KEY"
             }
           ]
         },
@@ -50,14 +50,14 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/save_response.php",
+        "url": "https://fintech.softandpix.com/api/save_response.php",
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
               "name": "api_key",
-              "value": "HTS2026Key"
+              "value": "YOUR_N8N_API_KEY"
             },
             {
               "name": "saved",
@@ -104,11 +104,11 @@
     },
     {
       "parameters": {
-        "fromEmail": "sm@101bdtech.com",
-        "toEmail": "sm@101bdtech.com",
+        "fromEmail": "info@canadafintechsymposium.com",
+        "toEmail": "info@canadafintechsymposium.com",
         "subject": "FinTech: {{ $json.saved }} New Response(s) Received",
         "emailType": "html",
-        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View Responses →</a></p>",
+        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://fintech.softandpix.com/admin/responses.php\">View Responses →</a></p>",
         "options": {}
       },
       "id": "alert-email",
@@ -138,10 +138,11 @@
       ]
     }
   },
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
   "staticData": null,
-  "tags": ["healthtech","imap","responses"],
+  "tags": ["fintech","imap","responses"],
   "pinData": {}
 }

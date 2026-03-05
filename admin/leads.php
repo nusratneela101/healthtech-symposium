@@ -51,7 +51,9 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <h2 style="font-size:20px">👥 Lead Database <span style="font-size:14px;color:#8a9ab5;font-weight:400">(<?php echo number_format($total); ?> total)</span></h2>
+    <?php if (Auth::isSuperAdmin()): ?>
     <a href="<?php echo APP_URL; ?>/admin/import_leads.php" class="btn-launch" style="text-decoration:none;font-size:13px">+ Import Leads</a>
+    <?php endif; ?>
 </div>
 
 <div class="gc" style="margin-bottom:20px">

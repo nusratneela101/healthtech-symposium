@@ -58,10 +58,16 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='leads.php'?' active':''; ?>">
             👥 Lead Database
         </a>
+        <?php if (Auth::isSuperAdmin()): ?>
         <a href="<?php echo APP_URL; ?>/admin/import_leads.php"
            class="nav-item<?php echo $currentPage==='import_leads.php'?' active':''; ?>">
             📥 Import Leads
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/lead_collections.php"
+           class="nav-item<?php echo $currentPage==='lead_collections.php'?' active':''; ?>">
+            📥 Lead Collections
+        </a>
+        <?php endif; ?>
         <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php"
            class="nav-item<?php echo $currentPage==='auto_campaign.php'?' active':''; ?>">
             🚀 Auto Campaign

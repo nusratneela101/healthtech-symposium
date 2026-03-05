@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
+Auth::requireSuperAdmin();
 
 $message = '';
 $errors  = [];

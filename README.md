@@ -24,17 +24,16 @@ A complete, production-ready PHP web application for managing the **Canada FinTe
 
 ---
 
-## 🤖 n8n Setup (৯ ধাপ বাংলায়)
+## 🤖 n8n Setup
 
-1. n8n ইন্সটল করুন: `npm install -g n8n` বা Docker দিয়ে চালান।
-2. n8n খুলুন: `http://localhost:5678`
-3. **New Workflow** ক্লিক করুন।
-4. `n8n_workflows/healthtech_master_workflow.json` ফাইলটি Import করুন।
-5. সব `YOURSITE.com` URL গুলো আপনার ডোমেইন দিয়ে রিপ্লেস করুন।
-6. Apollo.io credential সেট করুন (HTTP Header Auth)।
-7. SMTP credential সেট করুন (Email Send নোডে)।
-8. Workflow সেভ করুন এবং **Activate** করুন।
-9. একইভাবে `response_tracker.json` ইম্পোর্ট করুন এবং অ্যাক্টিভেট করুন।
+Five n8n workflow files are included in `n8n_workflows/`. See **[docs/N8N_SETUP.md](docs/N8N_SETUP.md)** for the complete setup guide, including:
+
+- How to import each workflow
+- Which credentials to create (Apollo API key, SMTP)
+- Replacing `YOUR_N8N_API_KEY` with your actual key
+- Workflow schedule summary
+- How to activate workflows
+- Troubleshooting tips
 
 ---
 
@@ -100,7 +99,12 @@ healthtech-symposium/
 │   └── auto_installer.php
 ├── n8n_workflows/
 │   ├── healthtech_master_workflow.json
-│   └── response_tracker.json
+│   ├── response_tracker.json
+│   ├── lead_collector.json
+│   ├── followup_sender.json
+│   └── thursday_campaign.json
+├── docs/
+│   └── N8N_SETUP.md
 ├── assets/
 │   ├── css/style.css
 │   └── js/app.js

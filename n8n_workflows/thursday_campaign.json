@@ -18,7 +18,7 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key",     "value": "YOUR_API_KEY" },
+            { "name": "api_key",     "value": "YOUR_N8N_API_KEY" },
             { "name": "campaign_id", "value": "1" }
           ]
         },
@@ -55,7 +55,7 @@
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key",     "value": "YOUR_API_KEY" },
+            { "name": "api_key",     "value": "YOUR_N8N_API_KEY" },
             { "name": "campaign_id", "value": "1" },
             { "name": "sent",        "value": "={{ $json.sent }}" },
             { "name": "failed",      "value": "={{ $json.failed }}" }

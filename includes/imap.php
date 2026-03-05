@@ -1,4 +1,9 @@
 <?php
+// Microsoft 365 IMAP polling using basic auth.
+// Note: If basic authentication is disabled by your M365 admin, IMAP_USER/IMAP_PASS
+// credentials will not work. In that case, connect via the OAuth2 flow:
+//   Admin Panel → Microsoft 365 → Connect
+// Then configure n8n to call /api/msgraph/poll_inbox.php instead of /api/poll_inbox.php.
 class ImapService {
     public static function pollInbox(): array {
         if (!function_exists('imap_open')) {

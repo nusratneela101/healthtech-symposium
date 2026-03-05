@@ -1,4 +1,4 @@
-# n8n Setup Guide — Canada FinTech Symposium 2026
+# n8n Setup Guide — Canada HealthTech Symposium 2026
 
 This guide explains how to import and configure the n8n workflow files located in `n8n_workflows/`.
 
@@ -8,7 +8,7 @@ This guide explains how to import and configure the n8n workflow files located i
 
 - n8n running locally (`npm install -g n8n` then `n8n start`) or via Docker
 - n8n UI accessible at `http://localhost:5678`
-- The PHP backend deployed at `https://fintech.softandpix.com` with a valid `.env` file (SMTP configured via Outlook)
+- The PHP backend deployed at `https://YOURSITE.com` with a valid `.env` file (SMTP configured via Outlook)
 - An Apollo.io account with an API key
 
 ---
@@ -90,10 +90,10 @@ The `response_tracker.json` uses n8n's built-in `emailSend` node for **admin not
 
 | Field | Value |
 |-------|-------|
-| **Name** | `FinTech SMTP` |
+| **Name** | `HealthTech SMTP` |
 | **Host** | `smtp.office365.com` |
 | **Port** | `587` |
-| **User** | `info@canadafintechsymposium.com` |
+| **User** | `info@canadahealthtechsymposium.com` |
 | **Password** | `<Outlook app password>` |
 | **SSL/TLS** | STARTTLS |
 

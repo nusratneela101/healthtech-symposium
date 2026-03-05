@@ -1,5 +1,6 @@
 {
   "name": "HealthTech Master Campaign Runner",
+  "description": "Canada HealthTech Symposium — Master Campaign Runner. Before activating, replace all occurrences of YOURSITE.com with your actual domain in the HTTP Request node URLs.",
   "nodes": [
     {
       "parameters": {

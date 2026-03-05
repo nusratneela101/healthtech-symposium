@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
             $lastName  = trim($data['last_name']  ?? '');
             $fullName  = trim($data['full_name']  ?? "$firstName $lastName");
             $segment   = trim($data['segment'] ?? 'Other');
-            $validSegs = ['Financial Institutions','Technology & Solution Providers','Venture Capital / Investors','FinTech Startups','Other'];
+            $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
             if (!in_array($segment, $validSegs)) $segment = 'Other';
             try {
                 Database::query(
@@ -124,10 +124,12 @@ $totalLeads = Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0;
             <input class="fi" name="role"      placeholder="Role"      style="width:100%;margin-bottom:12px">
             <select class="fi" name="segment" style="width:100%;margin-bottom:12px">
                 <option value="Other">Other</option>
-                <option value="Financial Institutions">Financial Institutions</option>
-                <option value="Technology & Solution Providers">Technology &amp; Solution Providers</option>
+                <option value="Healthcare Providers">Healthcare Providers</option>
+                <option value="Health IT &amp; Digital Health">Health IT &amp; Digital Health</option>
+                <option value="Pharmaceutical &amp; Biotech">Pharmaceutical &amp; Biotech</option>
+                <option value="Medical Devices">Medical Devices</option>
                 <option value="Venture Capital / Investors">Venture Capital / Investors</option>
-                <option value="FinTech Startups">FinTech Startups</option>
+                <option value="HealthTech Startups">HealthTech Startups</option>
             </select>
             <div class="grid-2eq" style="gap:12px;margin-bottom:12px">
                 <input class="fi" name="province" placeholder="Province">

@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/send_one_email.php",
+        "url": "https://YOURSITE.com/healthtech/api/send_one_email.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -51,7 +51,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/update_campaign.php",
+        "url": "https://YOURSITE.com/healthtech/api/update_campaign.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -70,9 +70,9 @@
     },
     {
       "parameters": {
-        "fromEmail": "info@canadafintechsymposium.com",
-        "toEmail":   "admin@canadafintechsymposium.com",
-        "subject":   "✅ Thursday Campaign Complete",
+        "fromEmail": "sm@101bdtech.com",
+        "toEmail":   "sm@101bdtech.com",
+        "subject":   "✅ HealthTech Thursday Campaign Complete",
         "text":      "={{ 'Campaign finished. Sent: ' + $json.sent + ', Failed: ' + $json.failed }}"
       },
       "name": "Email — Notify Admin",

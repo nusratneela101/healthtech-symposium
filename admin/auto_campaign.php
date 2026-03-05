@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/layout.php';
 
 $templates = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-$segments  = ['','Financial Institutions','Technology & Solution Providers','Venture Capital / Investors','FinTech Startups','Other'];
+$segments  = ['','Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
 
 // Create campaign
@@ -48,7 +48,7 @@ $recentCampaigns = Database::fetchAll(
         <form id="campaignForm">
             <div style="margin-bottom:14px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">Campaign Name</label>
-                <input class="fi" name="campaign_name" placeholder="e.g. Toronto Finance Outreach" style="width:100%" value="FinTech Symposium — <?php echo date('M Y'); ?>">
+                <input class="fi" name="campaign_name" placeholder="e.g. Toronto HealthTech Outreach" style="width:100%" value="HealthTech Symposium — <?php echo date('M Y'); ?>">
             </div>
             <div style="margin-bottom:14px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">Email Template</label>

@@ -1,4 +1,4 @@
--- Canada FinTech Symposium 2026
+-- Canada HealthTech Symposium 2026
 -- Database Setup SQL
 
 CREATE TABLE IF NOT EXISTS `users` (
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `leads` (
   `company` varchar(200) DEFAULT '',
   `job_title` varchar(200) DEFAULT '',
   `role` varchar(100) DEFAULT '',
-  `segment` enum('Financial Institutions','Technology & Solution Providers','Venture Capital / Investors','FinTech Startups','Other') DEFAULT 'Other',
+  `segment` enum('Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other') DEFAULT 'Other',
   `country` varchar(100) DEFAULT 'Canada',
   `province` varchar(100) DEFAULT '',
   `city` varchar(100) DEFAULT '',
@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS `responses` (
   `response_type` enum('interested','not_interested','more_info','wrong_person','auto_reply','bounce','other') DEFAULT 'other',
   `is_read` tinyint(1) DEFAULT 0,
   `is_replied` tinyint(1) DEFAULT 0,
+  `hot_alert_sent` tinyint(1) NOT NULL DEFAULT 0,
   `received_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `message_id` (`message_id`)
@@ -165,26 +166,26 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
 
 -- 20 Sample Canadian Leads
 INSERT IGNORE INTO `leads` (`first_name`,`last_name`,`full_name`,`email`,`company`,`job_title`,`role`,`segment`,`country`,`province`,`city`,`source`,`status`) VALUES
-('James','Clarke','James Clarke','j.clarke@td.com','TD Bank','Chief Innovation Officer','Chief Innovation Officer','Financial Institutions','Canada','Ontario','Toronto','Apollo','new'),
+('James','Clarke','James Clarke','j.clarke@td.com','TD Bank','Chief Innovation Officer','Chief Innovation Officer','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new'),
 ('Sarah','Chen','Sarah Chen','s.chen@rbcvc.com','RBC Ventures','Managing Partner','Managing Partner','Venture Capital / Investors','Canada','Ontario','Toronto','Apollo','new'),
-('Liam','Murphy','Liam Murphy','l.murphy@waveapp.com','Wave Financial','Founder','Founder','FinTech Startups','Canada','Ontario','Toronto','Apollo','new'),
-('Aisha','Patel','Aisha Patel','a.patel@bmo.com','BMO Financial','VP Digital Banking','VP Digital Banking','Financial Institutions','Canada','Quebec','Montreal','Apollo','new'),
-('Noah','Tremblay','Noah Tremblay','n.tremblay@desjardins.ca','Desjardins','Director FinTech Strategy','Director FinTech Strategy','Financial Institutions','Canada','Quebec','Montreal','Apollo','new'),
+('Liam','Murphy','Liam Murphy','l.murphy@waveapp.com','Wave Health','Founder','Founder','HealthTech Startups','Canada','Ontario','Toronto','Apollo','new'),
+('Aisha','Patel','Aisha Patel','a.patel@bmo.com','BMO Financial','VP Digital Health','VP Digital Health','Health IT & Digital Health','Canada','Quebec','Montreal','Apollo','new'),
+('Noah','Tremblay','Noah Tremblay','n.tremblay@desjardins.ca','Desjardins','Director HealthTech Strategy','Director HealthTech Strategy','Health IT & Digital Health','Canada','Quebec','Montreal','Apollo','new'),
 ('Emily','Watson','Emily Watson','e.watson@bdc.ca','BDC Capital','Head of Corporate Venture','Head of Corporate Venture','Venture Capital / Investors','Canada','Ontario','Ottawa','Apollo','new'),
-('Marcus','Lee','Marcus Lee','m.lee@shopify.com','Shopify','Head of Product','Head of Product','FinTech Startups','Canada','Ontario','Ottawa','Apollo','new'),
+('Marcus','Lee','Marcus Lee','m.lee@shopify.com','Shopify Health','Head of Product','Head of Product','HealthTech Startups','Canada','Ontario','Ottawa','Apollo','new'),
 ('Tom','Bedard','Tom Bedard','t.bedard@vanedge.ca','Vanedge Capital','General Partner','General Partner','Venture Capital / Investors','Canada','British Columbia','Vancouver','Apollo','new'),
-('Julia','Kim','Julia Kim','j.kim@coinsquare.com','Coinsquare','COO','COO','FinTech Startups','Canada','Ontario','Toronto','Apollo','new'),
-('Chris','Walter','Chris Walter','c.walter@ibm.com','IBM Canada','Head of Financial Services','Head of Financial Services','Technology & Solution Providers','Canada','Ontario','Toronto','Apollo','new'),
-('Jessica','Brown','Jessica Brown','j.brown@accenture.com','Accenture Canada','VP Strategic Partnerships','VP Strategic Partnerships','Technology & Solution Providers','Canada','Ontario','Toronto','Apollo','new'),
+('Julia','Kim','Julia Kim','j.kim@medtech.com','MedTech Inc.','COO','COO','Medical Devices','Canada','Ontario','Toronto','Apollo','new'),
+('Chris','Walter','Chris Walter','c.walter@ibm.com','IBM Canada','Head of Healthcare Services','Head of Healthcare Services','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new'),
+('Jessica','Brown','Jessica Brown','j.brown@accenture.com','Accenture Canada','VP Strategic Partnerships','VP Strategic Partnerships','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new'),
 ('Grace','Park','Grace Park','g.park@omers.com','OMERS Ventures','Investment Partner','Investment Partner','Venture Capital / Investors','Canada','Ontario','Toronto','Apollo','new'),
-('Daniel','Roy','Daniel Roy','d.roy@nuvei.com','Nuvei','Growth Lead','Growth Lead','FinTech Startups','Canada','Quebec','Montreal','Apollo','new'),
-('Sofia','Moreau','Sofia Moreau','s.moreau@rbc.com','RBC Royal Bank','Chief Digital Officer','Chief Digital Officer','Financial Institutions','Canada','Ontario','Toronto','Apollo','new'),
-('Ryan','OBrien','Ryan OBrien','r.obrien@cibc.com','CIBC','Head of Emerging Technology','Head of Emerging Technology','Financial Institutions','Canada','Ontario','Toronto','Apollo','new'),
-('Lisa','Okafor','Lisa Okafor','l.okafor@salesforce.ca','Salesforce Canada','Director Demand Generation','Director Demand Generation','Technology & Solution Providers','Canada','Alberta','Calgary','Apollo','new'),
-('Mark','Fischer','Mark Fischer','m.fischer@oracle.ca','Oracle Canada','VP Enterprise Sales','VP Enterprise Sales','Technology & Solution Providers','Canada','Ontario','Mississauga','Apollo','new'),
-('Ben','Sharma','Ben Sharma','b.sharma@koho.ca','KOHO Financial','Product Manager','Product Manager','FinTech Startups','Canada','British Columbia','Vancouver','Apollo','new'),
-('Ella','Morrison','Ella Morrison','e.morrison@clearco.com','Clearco','Business Development Manager','Business Development Manager','FinTech Startups','Canada','Ontario','Toronto','Apollo','new'),
-('Kevin','Nguyen','Kevin Nguyen','k.nguyen@mastercard.ca','Mastercard Canada','VP Channel Sales','VP Channel Sales','Technology & Solution Providers','Canada','Ontario','Toronto','Apollo','new');
+('Daniel','Roy','Daniel Roy','d.roy@pharmatech.com','PharmaTech','Growth Lead','Growth Lead','Pharmaceutical & Biotech','Canada','Quebec','Montreal','Apollo','new'),
+('Sofia','Moreau','Sofia Moreau','s.moreau@rbc.com','RBC Royal Bank','Chief Digital Officer','Chief Digital Officer','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new'),
+('Ryan','OBrien','Ryan OBrien','r.obrien@cibc.com','CIBC','Head of Emerging Technology','Head of Emerging Technology','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new'),
+('Lisa','Okafor','Lisa Okafor','l.okafor@salesforce.ca','Salesforce Canada','Director Demand Generation','Director Demand Generation','Health IT & Digital Health','Canada','Alberta','Calgary','Apollo','new'),
+('Mark','Fischer','Mark Fischer','m.fischer@oracle.ca','Oracle Canada','VP Enterprise Sales','VP Enterprise Sales','Health IT & Digital Health','Canada','Ontario','Mississauga','Apollo','new'),
+('Ben','Sharma','Ben Sharma','b.sharma@koho.ca','KOHO Health','Product Manager','Product Manager','HealthTech Startups','Canada','British Columbia','Vancouver','Apollo','new'),
+('Ella','Morrison','Ella Morrison','e.morrison@clearco.com','ClearHealth','Business Development Manager','Business Development Manager','Healthcare Providers','Canada','Ontario','Toronto','Apollo','new'),
+('Kevin','Nguyen','Kevin Nguyen','k.nguyen@mastercard.ca','Mastercard Canada','VP Channel Sales','VP Channel Sales','Health IT & Digital Health','Canada','Ontario','Toronto','Apollo','new');
 
 -- Lead collection history tables (included here for fresh installs; also added as migration below for existing installs)
 CREATE TABLE IF NOT EXISTS `lead_collections` (
@@ -251,8 +252,11 @@ CREATE TABLE IF NOT EXISTS `lead_collection_items` (
 
 -- Default Email Template
 INSERT INTO `email_templates` (`name`,`subject`,`html_body`,`is_default`) VALUES (
-'FinTech Symposium 2026 Invitation',
-'Exclusive Invitation: Canada FinTech Symposium 2026',
-'<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#CC0000,#0a1628);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.header p{color:rgba(255,255,255,.7);font-style:italic;margin:8px 0 0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>💹 Canada FinTech Symposium</h1><p>Igniting the Future of Finance</p><p style="color:rgba(255,255,255,.8);font-size:13px;font-style:normal;margin:4px 0 0">April 21-22, 2026 - Toronto, Canada</p></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise in driving financial innovation in {{city}} makes you an ideal participant for Canada''s premier FinTech gathering.</p><p>Join <strong>500+ C-Suite executives, investors, and technology leaders</strong> for two days of keynotes, workshops, and networking opportunities that will shape the future of finance in Canada.</p><div class="cta"><a href="https://yourdomain.com/healthtech/register">Register Your Seat Now</a></div><p>Spaces are extremely limited. Secure your spot today.</p><p>Best regards,<br><strong>Canada FinTech Symposium Team</strong><br>sm@101bdtech.com</p></div><div class="footer"><p>You received this email because your profile matches our event criteria.<br><a href="{{unsubscribe_link}}">Unsubscribe</a></p></div></div></body></html>',
+'HealthTech Symposium 2026 Invitation',
+'Exclusive Invitation: Canada HealthTech Symposium 2026',
+'<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#CC0000,#0a1628);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.header p{color:rgba(255,255,255,.7);font-style:italic;margin:8px 0 0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>🏥 Canada HealthTech Symposium</h1><p>Igniting the Future of Health</p><p style="color:rgba(255,255,255,.8);font-size:13px;font-style:normal;margin:4px 0 0">April 21-22, 2026 - Toronto, Canada</p></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise in driving health innovation in {{city}} makes you an ideal participant for Canada''s premier HealthTech gathering.</p><p>Join <strong>500+ C-Suite executives, investors, and technology leaders</strong> for two days of keynotes, workshops, and networking opportunities that will shape the future of healthcare in Canada.</p><div class="cta"><a href="https://yourdomain.com/healthtech/register">Register Your Seat Now</a></div><p>Spaces are extremely limited. Secure your spot today.</p><p>Best regards,<br><strong>Canada HealthTech Symposium Team</strong><br>sm@101bdtech.com</p></div><div class="footer"><p>You received this email because your profile matches our event criteria.<br><a href="{{unsubscribe_link}}">Unsubscribe</a></p></div></div></body></html>',
 1
 );
+
+-- Migration: Add hot_alert_sent column to responses table
+ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `hot_alert_sent` tinyint(1) NOT NULL DEFAULT 0 AFTER `is_replied`;

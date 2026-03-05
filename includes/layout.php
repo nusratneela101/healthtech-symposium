@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/csrf.php';
 
 Auth::check();
 
@@ -84,6 +85,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <a href="<?php echo APP_URL; ?>/admin/campaign.php"
            class="nav-item<?php echo $currentPage==='campaign.php'?' active':''; ?>">
             📧 Campaign
+        </a>
+        <a href="<?php echo APP_URL; ?>/admin/followup_settings.php"
+           class="nav-item<?php echo $currentPage==='followup_settings.php'?' active':''; ?>">
+            🔁 Follow-up Settings
         </a>
         <?php if (Auth::isSuperAdmin()): ?>
         <a href="<?php echo APP_URL; ?>/admin/schedule_campaign.php"

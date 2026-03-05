@@ -4,6 +4,11 @@ Auth::requireSuperAdmin();
 
 // Handle actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/users.php');
+        exit;
+    }
     $action = $_POST['action'] ?? '';
 
     if ($action === 'add') {
@@ -59,6 +64,7 @@ $users = Database::fetchAll("SELECT * FROM users ORDER BY created_at DESC");
     <div class="gc">
         <div class="gc-title">➕ Add New User</div>
         <form method="POST">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="add">
             <div style="margin-bottom:12px">
                 <input class="fi" name="name" placeholder="Full Name" style="width:100%" required>
@@ -82,6 +88,7 @@ $users = Database::fetchAll("SELECT * FROM users ORDER BY created_at DESC");
     <div class="gc">
         <div class="gc-title">🔑 Change Password</div>
         <form method="POST">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="change_pass">
             <div style="margin-bottom:12px">
                 <select class="fi" name="user_id" style="width:100%">
@@ -118,6 +125,7 @@ $users = Database::fetchAll("SELECT * FROM users ORDER BY created_at DESC");
                 <td>
                     <?php if ($u['id'] != Auth::user()['id']): ?>
                     <form method="POST" style="display:inline">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="action" value="toggle">
                         <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
                         <button type="submit" style="background:<?php echo $u['is_active'] ? '#ef4444' : '#10b981'; ?>;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">

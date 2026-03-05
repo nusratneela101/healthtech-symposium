@@ -89,4 +89,13 @@ class EmailService {
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
+
+    public static function injectTrackingPixel(string $html, int $logId): string {
+        $pixel = '<img src="' . APP_URL . '/api/track_open.php?id=' . $logId
+               . '" width="1" height="1" alt="" style="display:none" />';
+        if (stripos($html, '</body>') !== false) {
+            return str_ireplace('</body>', $pixel . '</body>', $html);
+        }
+        return $html . $pixel;
+    }
 }

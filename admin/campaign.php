@@ -31,6 +31,7 @@ $campaigns = Database::fetchAll(
                     <th>Failed</th>
                     <th>Status</th>
                     <th>Mode</th>
+                    <th>Follow-up</th>
                     <th>Created By</th>
                     <th>Created</th>
                     <th>Completed</th>
@@ -49,13 +50,20 @@ $campaigns = Database::fetchAll(
                 <td style="color:#ef4444"><?php echo $c['failed_count']; ?></td>
                 <td><?php echo pill($c['status']); ?></td>
                 <td><span class="pill <?php echo $c['test_mode'] ? 'p-queued' : 'p-sent'; ?>"><?php echo $c['test_mode'] ? 'Test' : 'Live'; ?></span></td>
+                <td style="font-size:12px">
+                    <?php if (!empty($c['followup_enabled'])): ?>
+                        <span class="pill p-responded" title="Max <?php echo (int)$c['max_followups']; ?> follow-up(s) after <?php echo (int)$c['followup_days']; ?> days">✅ On / <?php echo (int)$c['followup_days']; ?>d</span>
+                    <?php else: ?>
+                        <span style="color:#8a9ab5">—</span>
+                    <?php endif; ?>
+                </td>
                 <td style="font-size:12px"><?php echo htmlspecialchars($c['created_by_name'] ?? '—'); ?></td>
                 <td style="font-size:12px"><?php echo timeAgo($c['created_at']); ?></td>
                 <td style="font-size:12px"><?php echo $c['completed_at'] ? timeAgo($c['completed_at']) : '—'; ?></td>
             </tr>
             <?php endforeach; ?>
             <?php if (empty($campaigns)): ?>
-            <tr><td colspan="13" style="text-align:center;color:#8a9ab5;padding:32px">No campaigns yet. <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php" style="color:#0d6efd">Create one →</a></td></tr>
+            <tr><td colspan="14" style="text-align:center;color:#8a9ab5;padding:32px">No campaigns yet. <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php" style="color:#0d6efd">Create one →</a></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

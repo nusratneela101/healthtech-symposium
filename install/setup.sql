@@ -319,3 +319,10 @@ CREATE TABLE IF NOT EXISTS `rate_limits` (
 
 -- Migration: Add score column to leads table (Feature D17)
 ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `score` int DEFAULT 0 AFTER `notes`;
+
+
+-- Migration: Add follow-up configuration columns to campaigns table
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `followup_enabled` tinyint(1) DEFAULT 0 AFTER `test_mode`;
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `followup_days` int DEFAULT 7 AFTER `followup_enabled`;
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `followup_template_id` int DEFAULT NULL AFTER `followup_days`;
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `max_followups` int DEFAULT 2 AFTER `followup_template_id`;

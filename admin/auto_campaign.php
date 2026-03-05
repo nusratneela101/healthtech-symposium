@@ -13,7 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     $role    = trim($_POST['filter_role']    ?? '');
     $prov    = trim($_POST['filter_province'] ?? '');
     $key     = 'camp_' . time() . '_' . rand(1000,9999);
-    $testMode = isset($_POST['test_mode']) ? 1 : 0;
+    $testMode        = isset($_POST['test_mode']) ? 1 : 0;
+    $followupEnabled = isset($_POST['followup_enabled']) ? 1 : 0;
+    $followupDays    = max(1, (int)($_POST['followup_days'] ?? 7));
+    $followupTplId   = (int)($_POST['followup_template_id'] ?? 0) ?: null;
+    $maxFollowups    = max(1, min(5, (int)($_POST['max_followups'] ?? 2)));
 
     $where  = '1=1';
     $params = [];
@@ -24,9 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 
     Database::query(
-        "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,created_by)
-         VALUES(?,?,?,?,?,?,?,'draft',?,?)",
-        [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, Auth::user()['id']]
+        "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,followup_enabled,followup_days,followup_template_id,max_followups,created_by)
+         VALUES(?,?,?,?,?,?,?,'draft',?,?,?,?,?,?)",
+        [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, $followupEnabled, $followupDays, $followupTplId, $maxFollowups, Auth::user()['id']]
     );
     $campId = Database::lastInsertId();
     echo json_encode(['success' => true, 'campaign_id' => $campId, 'campaign_key' => $key, 'total' => $total]);
@@ -84,6 +88,33 @@ $recentCampaigns = Database::fetchAll(
                 <input type="checkbox" id="test_mode" name="test_mode" style="width:16px;height:16px">
                 <label for="test_mode" style="font-size:13px;color:#8a9ab5">Test Mode (log only, don't send real emails)</label>
             </div>
+            <div style="margin-bottom:14px;padding:14px;background:#0d1f38;border-radius:8px;border:1px solid #1e3355">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <input type="checkbox" id="followup_enabled" name="followup_enabled" style="width:16px;height:16px" onchange="toggleFollowup(this.checked)">
+                    <label for="followup_enabled" style="font-size:13px;color:#e2e8f0;font-weight:600">🔁 Enable Automatic Follow-ups</label>
+                </div>
+                <div id="followup_fields" style="display:none">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                        <div>
+                            <label style="font-size:12px;color:#8a9ab5;display:block;margin-bottom:4px">Follow-up after (days)</label>
+                            <input class="fi" type="number" name="followup_days" value="7" min="1" max="90" style="width:100%">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;color:#8a9ab5;display:block;margin-bottom:4px">Max follow-ups</label>
+                            <input class="fi" type="number" name="max_followups" value="2" min="1" max="5" style="width:100%">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;color:#8a9ab5;display:block;margin-bottom:4px">Follow-up Template</label>
+                        <select class="fi" name="followup_template_id" style="width:100%">
+                            <option value="">— Same as main template —</option>
+                            <?php foreach ($templates as $t): ?>
+                            <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+            </div>
             <button type="button" class="btn-launch" id="launchBtn" onclick="launchCampaign()">🚀 Launch Campaign</button>
         </form>
     </div>
@@ -131,6 +162,10 @@ let campaignId = null;
 let campaignKey = null;
 let sentCount = 0;
 let totalCount = 0;
+
+function toggleFollowup(checked) {
+    document.getElementById('followup_fields').style.display = checked ? 'block' : 'none';
+}
 
 function log(msg, cls='') {
     const t = document.getElementById('logTerminal');

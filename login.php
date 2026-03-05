@@ -1,26 +1,51 @@
 <?php
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/csrf.php';
 
 $error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email    = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-    if ($email && $password) {
-        $user = Database::fetchOne("SELECT * FROM users WHERE email = ? AND is_active = 1", [$email]);
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id']    = $user['id'];
-            $_SESSION['user_name']  = $user['name'];
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_role']  = $user['role'];
-            Database::query("UPDATE users SET last_login = NOW() WHERE id = ?", [$user['id']]);
-            header('Location: ' . APP_URL . '/admin/dashboard.php');
-            exit;
-        } else {
-            $error = 'Invalid email or password.';
-        }
+$lockoutSeconds = 0;
+
+// Rate limiting: max 5 failed attempts, 15-minute lockout
+if (!isset($_SESSION['login_attempts'])) {
+    $_SESSION['login_attempts'] = 0;
+    $_SESSION['login_locked_until'] = 0;
+}
+
+if ($_SESSION['login_locked_until'] > time()) {
+    $lockoutSeconds = $_SESSION['login_locked_until'] - time();
+    $error = 'Too many failed attempts. Please try again in ' . ceil($lockoutSeconds / 60) . ' minute(s).';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) {
+        $error = 'Invalid request. Please refresh and try again.';
     } else {
-        $error = 'Please fill in all fields.';
+        $email    = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+        if ($email && $password) {
+            $user = Database::fetchOne("SELECT * FROM users WHERE email = ? AND is_active = 1", [$email]);
+            if ($user && password_verify($password, $user['password'])) {
+                $_SESSION['login_attempts']    = 0;
+                $_SESSION['login_locked_until'] = 0;
+                $_SESSION['user_id']    = $user['id'];
+                $_SESSION['user_name']  = $user['name'];
+                $_SESSION['user_email'] = $user['email'];
+                $_SESSION['user_role']  = $user['role'];
+                Database::query("UPDATE users SET last_login = NOW() WHERE id = ?", [$user['id']]);
+                header('Location: ' . APP_URL . '/admin/dashboard.php');
+                exit;
+            } else {
+                $_SESSION['login_attempts']++;
+                if ($_SESSION['login_attempts'] >= 5) {
+                    $_SESSION['login_locked_until'] = time() + 900; // 15 minutes
+                    $error = 'Too many failed attempts. Account locked for 15 minutes.';
+                } else {
+                    $remaining = 5 - $_SESSION['login_attempts'];
+                    $error = 'Invalid email or password. ' . $remaining . ' attempt(s) remaining.';
+                }
+            }
+        } else {
+            $error = 'Please fill in all fields.';
+        }
     }
 }
 ?>
@@ -121,6 +146,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
         <div class="error-box"><?php echo htmlspecialchars($error); ?></div>
         <?php endif; ?>
         <form method="POST" id="loginForm">
+            <?php echo csrf_field(); ?>
             <div class="form-group">
                 <label>Email Address</label>
                 <input type="email" name="email" id="email" placeholder="admin@example.com"
@@ -134,8 +160,8 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
                 </div>
             </div>
             <button type="button" class="quick-fill" onclick="quickFill()">⚡ Quick Fill (Demo)</button>
-            <button type="submit" class="btn-login" id="loginBtn">
-                <span id="btnText">Sign In →</span>
+            <button type="submit" class="btn-login" id="loginBtn"<?php echo $lockoutSeconds > 0 ? ' disabled' : ''; ?>>
+                <span id="btnText"><?php echo $lockoutSeconds > 0 ? '🔒 Locked' : 'Sign In →'; ?></span>
                 <div class="spin" id="spinner"></div>
             </button>
         </form>

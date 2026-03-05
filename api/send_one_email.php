@@ -105,13 +105,24 @@ $msgId     = '';
 $errorMsg  = '';
 $sentVia   = 'smtp';
 
+// Pre-insert log entry to obtain the ID for the tracking pixel
+Database::query(
+    "INSERT INTO email_logs (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,follow_up_sequence,sent_at)
+     VALUES(?,?,?,?,?,'queued','','',?,NOW())",
+    [$campaignId, $lead['id'], $lead['email'], $lead['full_name'], $subject, $followUpSeq]
+);
+$logId = Database::lastInsertId();
+
+// Inject tracking pixel
+$bodyWithPixel = EmailService::injectTrackingPixel($body, $logId);
+
 if ($campaign['test_mode']) {
     $status  = 'sent';
     $msgId   = 'test-' . uniqid();
     $sentVia = 'test';
 } else {
     $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
-    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags);
+    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $bodyWithPixel, '', $tags);
     if ($result['success']) {
         $status  = 'sent';
         $msgId   = $result['message_id'] ?? '';
@@ -122,11 +133,10 @@ if ($campaign['test_mode']) {
     }
 }
 
-// Log
+// Update the log entry with final status
 Database::query(
-    "INSERT INTO email_logs (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,follow_up_sequence,sent_at)
-     VALUES(?,?,?,?,?,?,?,?,?,NOW())",
-    [$campaignId, $lead['id'], $lead['email'], $lead['full_name'], $subject, $status, $msgId, $errorMsg, $followUpSeq]
+    "UPDATE email_logs SET status=?, message_id=?, error_message=? WHERE id=?",
+    [$status, $msgId, $errorMsg, $logId]
 );
 
 if ($status === 'sent') {

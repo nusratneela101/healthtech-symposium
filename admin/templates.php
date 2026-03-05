@@ -4,6 +4,11 @@ Auth::requireSuperAdmin();
 
 // Handle template actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/templates.php');
+        exit;
+    }
     $action = $_POST['action'] ?? '';
     if ($action === 'save') {
         $id      = (int)($_POST['tpl_id'] ?? 0);
@@ -56,6 +61,7 @@ if (isset($_GET['edit'])) {
         <div class="gc-title"><?php echo $editing ? 'Edit Template' : (isset($_GET['new']) ? 'New Template' : 'Templates'); ?></div>
         <?php if ($editing || isset($_GET['new'])): ?>
         <form method="POST">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="action" value="save">
             <input type="hidden" name="tpl_id" value="<?php echo $editing['id'] ?? 0; ?>">
             <div style="margin-bottom:12px">
@@ -92,6 +98,7 @@ if (isset($_GET['edit'])) {
                         <a href="?edit=<?php echo $t['id']; ?>" style="background:#0d6efd;color:#fff;padding:4px 10px;border-radius:6px;text-decoration:none;font-size:12px">Edit</a>
                         <a href="?preview=<?php echo $t['id']; ?>" target="_blank" style="background:#8b5cf6;color:#fff;padding:4px 10px;border-radius:6px;text-decoration:none;font-size:12px">Preview</a>
                         <form method="POST" style="display:inline" onsubmit="return confirm('Delete template?')">
+                            <?php echo csrf_field(); ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="tpl_id" value="<?php echo $t['id']; ?>">
                             <button type="submit" style="background:#ef4444;color:#fff;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:12px">Delete</button>

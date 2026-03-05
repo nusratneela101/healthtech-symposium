@@ -7,6 +7,11 @@ $errors  = [];
 
 // Handle CSV upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/import_leads.php');
+        exit;
+    }
     $file = $_FILES['csv_file'];
     if ($file['error'] === UPLOAD_ERR_OK) {
         $handle  = fopen($file['tmp_name'], 'r');
@@ -52,6 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
 
 // Handle manual add
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['manual_email'])) {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/import_leads.php');
+        exit;
+    }
     $email = strtolower(trim($_POST['manual_email'] ?? ''));
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Invalid email address.';
@@ -97,6 +107,7 @@ $totalLeads = Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0;
         <div class="gc-title">📁 CSV Import</div>
         <div class="gc-sub">Upload a CSV file with lead data</div>
         <form method="POST" enctype="multipart/form-data">
+            <?php echo csrf_field(); ?>
             <div class="form-group" style="margin-bottom:16px">
                 <label style="display:block;font-size:13px;color:#8a9ab5;margin-bottom:6px">Select CSV File</label>
                 <input type="file" name="csv_file" accept=".csv" class="fi" style="padding:10px">
@@ -114,6 +125,7 @@ $totalLeads = Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0;
         <div class="gc-title">✏️ Add Single Lead</div>
         <div class="gc-sub">Manually add a lead to the database</div>
         <form method="POST">
+            <?php echo csrf_field(); ?>
             <div class="grid-2eq" style="gap:12px;margin-bottom:12px">
                 <input class="fi" name="first_name" placeholder="First Name" required>
                 <input class="fi" name="last_name"  placeholder="Last Name" required>

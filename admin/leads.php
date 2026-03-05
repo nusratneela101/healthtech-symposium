@@ -30,6 +30,11 @@ if (!empty($_GET['q'])) {
 
 // Delete action (superadmin only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth::isSuperAdmin()) {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/leads.php');
+        exit;
+    }
     $did = (int)$_POST['delete_id'];
     Database::query("DELETE FROM leads WHERE id = ?", [$did]);
     flash('success', 'Lead deleted.');
@@ -175,6 +180,7 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
                 <?php if (Auth::isSuperAdmin()): ?>
                 <td>
                     <form method="POST" onsubmit="return confirm('Delete this lead?')">
+                        <?php echo csrf_field(); ?>
                         <input type="hidden" name="delete_id" value="<?php echo $l['id']; ?>">
                         <button type="submit" style="background:#ef4444;border:none;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">Delete</button>
                     </form>

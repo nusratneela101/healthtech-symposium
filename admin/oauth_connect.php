@@ -6,6 +6,11 @@ $pageTitle = 'Microsoft 365 OAuth';
 
 // Handle disconnect
 if (isset($_POST['disconnect'])) {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/oauth_connect.php');
+        exit;
+    }
     Database::query("DELETE FROM oauth_accounts WHERE provider='microsoft'");
     audit_log('ms365_disconnect', 'oauth_accounts');
     flash('success', 'Microsoft 365 account disconnected.');
@@ -36,6 +41,7 @@ $authUrl  = MsGraph::getAuthUrl();
             <div><span style="color:#8a9ab5">Connected:</span> <?php echo timeAgo($account['created_at']); ?></div>
         </div>
         <form method="POST" style="margin-top:16px" onsubmit="return confirm('Disconnect Microsoft 365?')">
+            <?php echo csrf_field(); ?>
             <button type="submit" name="disconnect" value="1" class="btn-sec" style="color:#ef4444;border-color:#ef4444">🔌 Disconnect</button>
         </form>
     </div>

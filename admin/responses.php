@@ -14,6 +14,11 @@ if (isset($_GET['mark_read'])) {
 
 // Send reply
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reply_id'])) {
+    if (!csrf_verify()) {
+        flash('error', 'Invalid request. Please try again.');
+        header('Location: ' . APP_URL . '/admin/responses.php');
+        exit;
+    }
     require_once __DIR__ . '/../includes/email.php';
     $respId  = (int)$_POST['reply_id'];
     $resp    = Database::fetchOne("SELECT * FROM responses WHERE id=?", [$respId]);
@@ -198,6 +203,7 @@ $responseTypes = ['interested','not_interested','more_info','wrong_person','auto
             <button onclick="closeReply()" style="background:none;border:none;color:#8a9ab5;font-size:20px;cursor:pointer">×</button>
         </div>
         <form method="POST" id="replyForm">
+            <?php echo csrf_field(); ?>
             <input type="hidden" name="reply_id" id="reply_id">
             <div style="margin-bottom:12px">
                 <label style="font-size:13px;color:#8a9ab5">To: <span id="replyTo"></span></label>

@@ -87,18 +87,18 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
         <svg viewBox="0 0 100 100" width="64" height="64" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 12px rgba(204,0,0,.5));animation:pulse 2s ease-in-out infinite">
           <path d="M50 5 L58 30 L75 20 L65 38 L85 35 L70 50 L80 70 L60 60 L55 85 L50 75 L45 85 L40 60 L20 70 L30 50 L15 35 L35 38 L25 20 L42 30 Z" fill="#CC0000"/>
-          <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CHTS</text>
+          <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CFTS</text>
         </svg>
         <div style="line-height:1.1">
           <div style="color:#CC0000;font-size:14px;font-weight:900;letter-spacing:2px">CANADA</div>
-          <div style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:1px">HEALTHTECH</div>
+          <div style="color:#ffffff;font-size:22px;font-weight:900;letter-spacing:1px">FINTECH</div>
           <div style="color:#ffffff;font-size:13px;font-weight:700;letter-spacing:3px">SYMPOSIUM</div>
         </div>
       </div>
-      <div style="background:#CC0000;color:white;font-style:italic;font-size:12px;font-weight:600;padding:4px 12px;border-radius:3px;text-align:center;letter-spacing:0.5px;margin-top:4px">Igniting the Future of Health</div>
+      <div style="background:#CC0000;color:white;font-style:italic;font-size:12px;font-weight:600;padding:4px 12px;border-radius:3px;text-align:center;letter-spacing:0.5px;margin-top:4px">Igniting the Future of Finance</div>
     </div>
-    <h1>Welcome to the Future of <strong>HealthTech</strong></h1>
-    <p>Canada HealthTech Symposium 2026</p>
+    <h1>Welcome to the Future of <strong>Fintech</strong></h1>
+    <p>Canada Fintech Symposium 2026</p>
     <div class="event-badge">📅 April 21–22, 2026 — Toronto, Canada</div>
     <div class="stats">
         <div class="stat"><div class="stat-val" id="c-leads">—</div><div class="stat-lbl">Total Leads</div></div>

@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide — Canada HealthTech Symposium 2026
+# 🚀 Deployment Guide — Canada Fintech Symposium 2026
 
-This guide walks you through deploying the Canada HealthTech Symposium Campaign Management Platform on a cPanel shared hosting environment.
+This guide walks you through deploying the Canada Fintech Symposium Campaign Management Platform on a cPanel shared hosting environment.
 
 ---
 
@@ -44,7 +44,7 @@ Before you begin, ensure you have:
 3. Open `.env` and fill in all values:
 
 ```env
-APP_NAME="Canada HealthTech Symposium"
+APP_NAME="Canada Fintech Symposium"
 APP_URL="https://yourdomain.com"          # No trailing slash
 APP_VERSION="2.0.0"
 
@@ -59,7 +59,7 @@ SMTP_SECURE=tls
 SMTP_USER=info@yourdomain.com
 SMTP_PASS=your_smtp_password
 SMTP_FROM_EMAIL=info@yourdomain.com
-SMTP_FROM_NAME="Canada HealthTech Symposium"
+SMTP_FROM_NAME="Canada Fintech Symposium"
 
 IMAP_HOST="{outlook.office365.com:993/imap/ssl}INBOX"
 IMAP_USER=info@yourdomain.com
@@ -73,7 +73,7 @@ MS_OAUTH_TENANT_ID=common
 MS_OAUTH_REDIRECT_URI=https://yourdomain.com/api/msgraph/callback.php
 
 N8N_API_KEY=your_secure_random_api_key    # Must match what you set in n8n workflows
-SESSION_NAME=hts_session
+SESSION_NAME=fts_session
 ```
 
 > **Tip:** Generate a strong `N8N_API_KEY` with a password manager or `openssl rand -hex 32`.
@@ -148,7 +148,7 @@ install/ → _install_done/
 4. Replace `YOURSITE.com` in all HTTP Request node URLs with your actual domain.
 5. Create the required credentials in n8n:
    - **Apollo API Key** — HTTP Header Auth (`X-Api-Key: <your apollo key>`)
-   - **HealthTech SMTP** — SMTP credential for `response_tracker.json` admin alerts
+   - **Fintech SMTP** — SMTP credential for `response_tracker.json` admin alerts
 6. Activate the workflows you want to use (toggle the **Active** switch).
 
 See **[docs/N8N_SETUP.md](docs/N8N_SETUP.md)** for the full n8n guide.

@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/get_followup_leads.php",
+        "url": "https://YOURSITE.com/fintech/api/get_followup_leads.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -41,7 +41,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/send_one_email.php",
+        "url": "https://YOURSITE.com/fintech/api/send_one_email.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [

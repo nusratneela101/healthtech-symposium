@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `company` varchar(200) DEFAULT '',
               `job_title` varchar(200) DEFAULT '',
               `role` varchar(100) DEFAULT '',
-              `segment` enum('Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other') DEFAULT 'Other',
+              `segment` enum('Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','Fintech Startups','Other') DEFAULT 'Other',
               `country` varchar(100) DEFAULT 'Canada',
               `province` varchar(100) DEFAULT '',
               `city` varchar(100) DEFAULT '',
@@ -200,15 +200,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Default template
-            $tplBody = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#CC0000,#0a1628);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.header p{color:rgba(255,255,255,.7);font-style:italic;margin:8px 0 0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>Canada HealthTech Symposium</h1><p>Igniting the Future of Health</p></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise makes you an ideal participant.</p><div class="cta"><a href="' . $appUrl . '/register">Register Now</a></div><p>Best regards,<br>Canada HealthTech Symposium Team</p></div><div class="footer"><a href="{{unsubscribe_link}}">Unsubscribe</a></div></div></body></html>';
+            $tplBody = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}.wrap{max-width:600px;margin:0 auto;background:#fff}.header{background:linear-gradient(135deg,#CC0000,#0a1628);padding:40px 30px;text-align:center}.header h1{color:#fff;font-size:24px;margin:0}.header p{color:rgba(255,255,255,.7);font-style:italic;margin:8px 0 0}.body{padding:30px}.body h2{color:#0d6efd}.body p{color:#555;line-height:1.7}.cta{text-align:center;margin:30px 0}.cta a{background:#0d6efd;color:#fff;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold}.footer{background:#f9f9f9;padding:20px;text-align:center;font-size:12px;color:#999}</style></head><body><div class="wrap"><div class="header"><h1>Canada Fintech Symposium</h1><p>Igniting the Future of Finance</p></div><div class="body"><h2>Dear {{first_name}},</h2><p>As <strong>{{role}}</strong> at <strong>{{company}}</strong>, your expertise makes you an ideal participant.</p><div class="cta"><a href="' . $appUrl . '/register">Register Now</a></div><p>Best regards,<br>Canada Fintech Symposium Team</p></div><div class="footer"><a href="{{unsubscribe_link}}">Unsubscribe</a></div></div></body></html>';
             $pdo->prepare("INSERT IGNORE INTO email_templates (name,subject,html_body,is_default) VALUES(?,?,?,1)")
-                ->execute(['HealthTech Symposium 2026 Invitation','Exclusive Invitation: Canada HealthTech Symposium 2026', $tplBody]);
+                ->execute(['Fintech Symposium 2026 Invitation','Exclusive Invitation: Canada Fintech Symposium 2026', $tplBody]);
 
             // Write config files
             $dbConfig = "<?php\nrequire_once __DIR__ . '/../includes/env_loader.php';\nloadEnv(__DIR__ . '/../.env');\n\nclass Database {\n    private static ?PDO \$instance = null;\n\n    public static function getConnection(): PDO {\n        if (self::\$instance === null) {\n            \$host    = \$_ENV['DB_HOST']    ?? 'localhost';\n            \$dbname  = \$_ENV['DB_NAME']    ?? '';\n            \$user    = \$_ENV['DB_USER']    ?? '';\n            \$pass    = \$_ENV['DB_PASS']    ?? '';\n            \$charset = 'utf8mb4';\n            \$dsn = \"mysql:host={\$host};dbname={\$dbname};charset={\$charset}\";\n            self::\$instance = new PDO(\$dsn, \$user, \$pass, [\n                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,\n                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,\n                PDO::ATTR_EMULATE_PREPARES   => false,\n            ]);\n        }\n        return self::\$instance;\n    }\n    public static function query(string \$sql, array \$p = []): PDOStatement {\n        \$s = self::getConnection()->prepare(\$sql);\n        \$s->execute(\$p);\n        return \$s;\n    }\n    public static function fetchAll(string \$sql, array \$p = []): array { return self::query(\$sql, \$p)->fetchAll(); }\n    public static function fetchOne(string \$sql, array \$p = []): ?array { \$r = self::query(\$sql, \$p)->fetch(); return \$r ?: null; }\n    public static function lastInsertId(): string { return self::getConnection()->lastInsertId(); }\n}\n";
 
             // Write .env file
-            $envContent = "APP_NAME=\"Canada HealthTech Symposium\"\n";
+            $envContent = "APP_NAME=\"Canada Fintech Symposium\"\n";
             $envContent .= "APP_URL=\"$appUrl\"\n";
             $envContent .= "APP_VERSION=\"2.0.0\"\n\n";
             $envContent .= "DB_HOST=$dbHost\n";
@@ -221,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $envContent .= "SMTP_USER=\n";
             $envContent .= "SMTP_PASS=\n";
             $envContent .= "SMTP_FROM_EMAIL=\n";
-            $envContent .= "SMTP_FROM_NAME=\"Canada HealthTech Symposium\"\n\n";
+            $envContent .= "SMTP_FROM_NAME=\"Canada Fintech Symposium\"\n\n";
             $envContent .= "IMAP_HOST=\n";
             $envContent .= "IMAP_USER=\n";
             $envContent .= "IMAP_PASS=\n\n";
@@ -231,9 +231,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $envContent .= "MS_OAUTH_TENANT_ID=common\n";
             $envContent .= "MS_OAUTH_REDIRECT_URI=$appUrl/api/msgraph/callback.php\n\n";
             $envContent .= "N8N_API_KEY=change_me_secure_key\n";
-            $envContent .= "SESSION_NAME=hts_session\n";
+            $envContent .= "SESSION_NAME=fts_session\n";
 
-            $appConfig = "<?php\nrequire_once __DIR__ . '/../includes/env_loader.php';\nloadEnv(__DIR__ . '/../.env');\n\ndefine('APP_NAME',        \$_ENV['APP_NAME']        ?? 'Canada HealthTech Symposium');\ndefine('APP_URL',         \$_ENV['APP_URL']          ?? '$appUrl');\ndefine('APP_VERSION',     \$_ENV['APP_VERSION']      ?? '2.0.0');\n\ndefine('SMTP_HOST',       \$_ENV['SMTP_HOST']        ?? 'smtp-relay.brevo.com');\ndefine('SMTP_PORT',       (int)(\$_ENV['SMTP_PORT']  ?? 587));\ndefine('SMTP_SECURE',     \$_ENV['SMTP_SECURE']      ?? 'tls');\ndefine('SMTP_USER',       \$_ENV['SMTP_USER']        ?? '');\ndefine('SMTP_PASS',       \$_ENV['SMTP_PASS']        ?? '');\ndefine('SMTP_FROM_EMAIL', \$_ENV['SMTP_FROM_EMAIL']  ?? '');\ndefine('SMTP_FROM_NAME',  \$_ENV['SMTP_FROM_NAME']   ?? APP_NAME);\n\ndefine('IMAP_HOST',       \$_ENV['IMAP_HOST']        ?? '');\ndefine('IMAP_USER',       \$_ENV['IMAP_USER']        ?? '');\ndefine('IMAP_PASS',       \$_ENV['IMAP_PASS']        ?? '');\n\ndefine('BREVO_API_KEY',          \$_ENV['BREVO_API_KEY']         ?? '');\ndefine('MS_OAUTH_CLIENT_ID',     \$_ENV['MS_OAUTH_CLIENT_ID']    ?? '');\ndefine('MS_OAUTH_CLIENT_SECRET', \$_ENV['MS_OAUTH_CLIENT_SECRET']?? '');\ndefine('MS_OAUTH_TENANT_ID',     \$_ENV['MS_OAUTH_TENANT_ID']    ?? 'common');\ndefine('MS_OAUTH_REDIRECT_URI',  \$_ENV['MS_OAUTH_REDIRECT_URI'] ?? '');\n\ndefine('N8N_API_KEY',     \$_ENV['N8N_API_KEY']      ?? '');\ndefine('SESSION_NAME',    \$_ENV['SESSION_NAME']     ?? 'hts_session');\n\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
+            $appConfig = "<?php\nrequire_once __DIR__ . '/../includes/env_loader.php';\nloadEnv(__DIR__ . '/../.env');\n\ndefine('APP_NAME',        \$_ENV['APP_NAME']        ?? 'Canada Fintech Symposium');\ndefine('APP_URL',         \$_ENV['APP_URL']          ?? '$appUrl');\ndefine('APP_VERSION',     \$_ENV['APP_VERSION']      ?? '2.0.0');\n\ndefine('SMTP_HOST',       \$_ENV['SMTP_HOST']        ?? 'smtp-relay.brevo.com');\ndefine('SMTP_PORT',       (int)(\$_ENV['SMTP_PORT']  ?? 587));\ndefine('SMTP_SECURE',     \$_ENV['SMTP_SECURE']      ?? 'tls');\ndefine('SMTP_USER',       \$_ENV['SMTP_USER']        ?? '');\ndefine('SMTP_PASS',       \$_ENV['SMTP_PASS']        ?? '');\ndefine('SMTP_FROM_EMAIL', \$_ENV['SMTP_FROM_EMAIL']  ?? '');\ndefine('SMTP_FROM_NAME',  \$_ENV['SMTP_FROM_NAME']   ?? APP_NAME);\n\ndefine('IMAP_HOST',       \$_ENV['IMAP_HOST']        ?? '');\ndefine('IMAP_USER',       \$_ENV['IMAP_USER']        ?? '');\ndefine('IMAP_PASS',       \$_ENV['IMAP_PASS']        ?? '');\n\ndefine('BREVO_API_KEY',          \$_ENV['BREVO_API_KEY']         ?? '');\ndefine('MS_OAUTH_CLIENT_ID',     \$_ENV['MS_OAUTH_CLIENT_ID']    ?? '');\ndefine('MS_OAUTH_CLIENT_SECRET', \$_ENV['MS_OAUTH_CLIENT_SECRET']?? '');\ndefine('MS_OAUTH_TENANT_ID',     \$_ENV['MS_OAUTH_TENANT_ID']    ?? 'common');\ndefine('MS_OAUTH_REDIRECT_URI',  \$_ENV['MS_OAUTH_REDIRECT_URI'] ?? '');\n\ndefine('N8N_API_KEY',     \$_ENV['N8N_API_KEY']      ?? '');\ndefine('SESSION_NAME',    \$_ENV['SESSION_NAME']     ?? 'fts_session');\n\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
 
             file_put_contents(__DIR__ . '/../config/database.php', $dbConfig);
             file_put_contents(__DIR__ . '/../config/config.php',   $appConfig);
@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auto Installer — Canada HealthTech Symposium</title>
+<title>Auto Installer — Canada Fintech Symposium</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0f1a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -282,10 +282,10 @@ a.go-btn{display:block;width:100%;background:#10b981;color:#fff;text-decoration:
     <div style="text-align:center;margin-bottom:16px">
       <svg viewBox="0 0 100 100" width="52" height="52" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 8px rgba(204,0,0,.4))">
         <path d="M50 5 L58 30 L75 20 L65 38 L85 35 L70 50 L80 70 L60 60 L55 85 L50 75 L45 85 L40 60 L20 70 L30 50 L15 35 L35 38 L25 20 L42 30 Z" fill="#CC0000"/>
-        <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CHTS</text>
+        <text x="50" y="58" text-anchor="middle" fill="white" font-size="16" font-weight="900" font-family="Arial">CFTS</text>
       </svg>
     </div>
-    <h1 style="text-align:center">Canada HealthTech Symposium</h1>
+    <h1 style="text-align:center">Canada Fintech Symposium</h1>
     <p class="sub" style="text-align:center">Auto Installer v2.0</p>
 
     <?php if ($error): ?>
@@ -318,7 +318,7 @@ a.go-btn{display:block;width:100%;background:#10b981;color:#fff;text-decoration:
         </div>
         <div class="group">
             <label>DB Name *</label>
-            <input type="text" name="db_name" placeholder="healthtech_db" required>
+            <input type="text" name="db_name" placeholder="fintech_db" required>
         </div>
         <div class="group">
             <label>DB User *</label>
@@ -332,7 +332,7 @@ a.go-btn{display:block;width:100%;background:#10b981;color:#fff;text-decoration:
         <div class="section">Application</div>
         <div class="group">
             <label>App URL *</label>
-            <input type="url" name="app_url" value="https://yourdomain.com/healthtech" placeholder="https://yourdomain.com/healthtech" required>
+            <input type="url" name="app_url" value="https://yourdomain.com/fintech" placeholder="https://yourdomain.com/fintech" required>
         </div>
 
         <div class="section">Super Admin Account *</div>

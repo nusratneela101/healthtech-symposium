@@ -50,7 +50,7 @@ foreach ($leads as $l) {
     $fn = trim($l['first_name'] ?? '');
     $ln = trim($l['last_name'] ?? '');
     $segment = trim($l['segment'] ?? 'Other');
-    $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
+    $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','Fintech Startups','Other'];
     if (!in_array($segment, $validSegs)) $segment = 'Other';
 
     try {

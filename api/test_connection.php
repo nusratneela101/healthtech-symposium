@@ -76,6 +76,32 @@ switch ($service) {
         }
         break;
 
+    case 'brevo_info':
+        $key = getSetting('brevo_api_key') ?: BREVO_API_KEY;
+        if (!$key) { echo json_encode(['success'=>false,'error'=>'No Brevo API key configured']); exit; }
+        $ch = curl_init('https://api.brevo.com/v3/account');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => ['api-key: '.$key, 'Accept: application/json'],
+            CURLOPT_TIMEOUT => 10,
+        ]);
+        $body = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($code === 200) {
+            $data = json_decode($body, true) ?? [];
+            echo json_encode([
+                'success'          => true,
+                'plan'             => $data['plan'][0]['type'] ?? '—',
+                'credits'          => $data['plan'][0]['credits'] ?? '—',
+                'creditsRemaining' => $data['plan'][0]['creditsRemaining'] ?? '—',
+                'email'            => $data['email'] ?? '',
+            ]);
+        } else {
+            echo json_encode(['success'=>false,'error'=>'HTTP '.$code]);
+        }
+        break;
+
     default:
         http_response_code(400);
         echo json_encode(['success'=>false,'error'=>'Unknown service']);

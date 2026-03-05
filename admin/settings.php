@@ -48,6 +48,9 @@ function s(string $key, string $fallback = ''): string {
         'imap'          => '📥 IMAP',
         'branding'      => '🎨 Branding',
         'api_keys'      => '🔑 API Keys',
+        'n8n'           => '🤖 n8n',
+        'apollo'        => '🔍 Apollo',
+        'brevo'         => '📧 Brevo',
         'email_defaults'=> '⚙️ Email Defaults',
         'sending_limits'=> '📊 Sending Limits',
     ];
@@ -359,6 +362,7 @@ function s(string $key, string $fallback = ''): string {
         <div class="settings-grid">
             <?php
             $apiFields = [
+                'n8n_url'                => ['label'=>'N8N Instance URL', 'type'=>'text', 'placeholder'=>'https://yourname.app.n8n.cloud'],
                 'n8n_api_key'            => ['label'=>'N8N API Key'],
                 'brevo_api_key'          => ['label'=>'Brevo API Key'],
                 'ms_oauth_client_id'     => ['label'=>'MS OAuth Client ID'],
@@ -367,13 +371,19 @@ function s(string $key, string $fallback = ''): string {
                 'apollo_api_key'         => ['label'=>'Apollo API Key'],
             ];
             foreach ($apiFields as $fieldId => $cfg):
+            $ftype = $cfg['type'] ?? 'password';
+            $fph   = $cfg['placeholder'] ?? 'Leave blank to keep current';
             ?>
             <div class="sf-row">
                 <label><?php echo $cfg['label']; ?></label>
+                <?php if ($ftype === 'text'): ?>
+                <input class="fi" id="<?php echo $fieldId; ?>" type="text" value="<?php echo s($fieldId,''); ?>" placeholder="<?php echo htmlspecialchars($fph); ?>" style="width:100%">
+                <?php else: ?>
                 <div style="position:relative">
-                    <input class="fi" id="<?php echo $fieldId; ?>" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                    <input class="fi" id="<?php echo $fieldId; ?>" type="password" value="" placeholder="<?php echo htmlspecialchars($fph); ?>" style="width:100%;padding-right:80px">
                     <button type="button" onclick="togglePw('<?php echo $fieldId; ?>',this)" class="pw-toggle">Show</button>
                 </div>
+                <?php endif; ?>
             </div>
             <?php endforeach; ?>
         </div>
@@ -388,6 +398,218 @@ function s(string $key, string $fallback = ''): string {
                 <div id="brevo-result"></div>
                 <div id="n8n-result"></div>
                 <div id="apollo-result"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── n8n ─────────────────────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-n8n" style="display:none">
+    <?php
+    $workflowMeta = [
+        'fintech_master_workflow.json' => ['name'=>'Master Campaign Sender','schedule'=>'Every 5 min','active'=>true],
+        'lead_collector.json'          => ['name'=>'Lead Collector (Apollo)','schedule'=>'Daily 8 AM','active'=>true],
+        'followup_sender.json'         => ['name'=>'Follow-up Sender','schedule'=>'Daily 10 AM','active'=>true],
+        'response_tracker.json'        => ['name'=>'Response Tracker (IMAP)','schedule'=>'Every 10 min','active'=>true],
+        'thursday_campaign.json'       => ['name'=>'Thursday Campaign (DEPRECATED)','schedule'=>'—','active'=>false],
+    ];
+    $coreWorkflows = array_keys($workflowMeta);
+    $wfDir = __DIR__ . '/../n8n_workflows/';
+    $allFiles = glob($wfDir . '*.json') ?: [];
+    $wfFiles = [];
+    foreach ($allFiles as $f) {
+        $bn = basename($f);
+        $wfFiles[$bn] = $f;
+    }
+    ?>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Card 1: Connection -->
+        <div class="gc">
+            <div class="gc-title">🔌 n8n Connection</div>
+            <div class="gc-sub">Configure your n8n instance</div>
+            <div class="settings-grid" style="grid-template-columns:1fr">
+                <div class="sf-row">
+                    <label>n8n Instance URL</label>
+                    <input class="fi" id="n8n_instance_url" type="text" value="<?php echo s('n8n_url',''); ?>" placeholder="https://yourname.app.n8n.cloud">
+                </div>
+                <div class="sf-row">
+                    <label>n8n API Key</label>
+                    <div style="position:relative">
+                        <input class="fi" id="n8n_instance_api_key" type="password" value="" placeholder="Leave blank to keep" style="width:100%;padding-right:80px">
+                        <button type="button" onclick="togglePw('n8n_instance_api_key',this)" class="pw-toggle">Show</button>
+                    </div>
+                </div>
+                <div class="sf-row">
+                    <label>n8n Webhook URL <span style="color:#8a9ab5;font-size:11px">(optional)</span></label>
+                    <input class="fi" id="n8n_webhook_url" type="text" value="<?php echo s('n8n_webhook_url',''); ?>" placeholder="https://yourname.app.n8n.cloud/webhook/...">
+                </div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn-launch" onclick="saveN8n()">💾 Save n8n Settings</button>
+                <button class="btn-sec" onclick="testConnection('n8n','n8n-tab-result')">🔗 Test n8n Connection</button>
+            </div>
+            <div id="n8n-tab-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+        <!-- Card 2: Workflow Manager -->
+        <div class="gc">
+            <div class="gc-title">📁 n8n Workflow Manager</div>
+            <div class="gc-sub">Manage workflow JSON files</div>
+            <div class="tbl-wrap" style="margin-top:16px;overflow-x:auto">
+                <table class="dt" style="width:100%;font-size:12px">
+                    <thead>
+                        <tr>
+                            <th>Workflow</th>
+                            <th>Schedule</th>
+                            <th>Status</th>
+                            <th>Size</th>
+                            <th>Modified</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($wfFiles as $filename => $filepath):
+                        $meta = $workflowMeta[$filename] ?? ['name'=>$filename,'schedule'=>'—','active'=>true];
+                        $isCore = in_array($filename, $coreWorkflows);
+                        $size = file_exists($filepath) ? round(filesize($filepath)/1024,1).'KB' : '—';
+                        $mtime = file_exists($filepath) ? date('M j, Y', filemtime($filepath)) : '—';
+                    ?>
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;color:#e2e8f0"><?php echo htmlspecialchars($meta['name']); ?></div>
+                            <div style="color:#8a9ab5;font-size:11px"><?php echo htmlspecialchars($filename); ?></div>
+                        </td>
+                        <td><?php echo htmlspecialchars($meta['schedule']); ?></td>
+                        <td>
+                            <?php if ($meta['active']): ?>
+                            <span style="background:#10b981;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">Active</span>
+                            <?php else: ?>
+                            <span style="background:#6b7280;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px">Deprecated</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo $size; ?></td>
+                        <td><?php echo $mtime; ?></td>
+                        <td style="white-space:nowrap">
+                            <a href="<?php echo APP_URL; ?>/api/download_workflow.php?file=<?php echo urlencode($filename); ?>" class="btn-sec" style="font-size:11px;padding:3px 8px;text-decoration:none;display:inline-block">⬇️</a>
+                            <button class="btn-sec" style="font-size:11px;padding:3px 8px" onclick="patchWorkflow('<?php echo htmlspecialchars($filename,ENT_QUOTES); ?>')">🔄</button>
+                            <?php if (!$isCore): ?>
+                            <button class="btn-sec" style="font-size:11px;padding:3px 8px;color:#ef4444" onclick="deleteWorkflow('<?php echo htmlspecialchars($filename,ENT_QUOTES); ?>')">🗑️</button>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;border-top:1px solid #1e3a5f;padding-top:16px">
+                <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px">📤 Upload New Workflow</div>
+                <input type="file" id="wf_upload_file" accept=".json" style="color:#e2e8f0;font-size:12px">
+                <div style="margin-top:8px">
+                    <button class="btn-launch" style="font-size:12px;padding:6px 14px" onclick="uploadWorkflow()">📤 Upload</button>
+                </div>
+                <div id="wf-upload-result" style="margin-top:6px;font-size:12px"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Apollo ───────────────────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-apollo" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Card 1: Apollo API -->
+        <div class="gc">
+            <div class="gc-title">🔍 Apollo API Configuration</div>
+            <div class="gc-sub">Apollo.io credentials</div>
+            <div class="settings-grid" style="grid-template-columns:1fr;margin-top:16px">
+                <div class="sf-row">
+                    <label>Apollo API Key</label>
+                    <div style="position:relative">
+                        <input class="fi" id="apollo_api_key_tab" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                        <button type="button" onclick="togglePw('apollo_api_key_tab',this)" class="pw-toggle">Show</button>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn-launch" onclick="saveApolloKey()">💾 Save</button>
+                <button class="btn-sec" onclick="testConnection('apollo','apollo-tab-result')">🔍 Test Apollo</button>
+            </div>
+            <div id="apollo-tab-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+        <!-- Card 2: Search Config -->
+        <div class="gc">
+            <div class="gc-title">⚙️ Apollo Search Configuration</div>
+            <div class="gc-sub">Parameters used by the lead_collector workflow</div>
+            <div class="settings-grid" style="grid-template-columns:1fr;margin-top:16px">
+                <div class="sf-row">
+                    <label>Search Location</label>
+                    <input class="fi" id="apollo_search_location" type="text" value="<?php echo s('apollo_search_location','Canada'); ?>" placeholder="e.g. Canada">
+                </div>
+                <div class="sf-row">
+                    <label>Search Industry</label>
+                    <input class="fi" id="apollo_search_industry" type="text" value="<?php echo s('apollo_search_industry','Health Technology'); ?>" placeholder="e.g. Health Technology">
+                </div>
+                <div class="sf-row">
+                    <label>Job Titles to Target</label>
+                    <textarea class="fi" id="apollo_search_titles" rows="4" placeholder="One per line: CEO, CTO, VP of Digital Health…" style="resize:vertical"><?php echo s('apollo_search_titles',''); ?></textarea>
+                </div>
+                <div class="sf-row">
+                    <label>Results Per Page</label>
+                    <input class="fi" id="apollo_per_page" type="number" value="<?php echo s('apollo_per_page','100'); ?>" min="10" max="200">
+                </div>
+                <div class="sf-row">
+                    <label>Max Pages</label>
+                    <input class="fi" id="apollo_max_pages" type="number" value="<?php echo s('apollo_max_pages','5'); ?>" min="1" max="20">
+                </div>
+            </div>
+            <div style="margin-top:16px">
+                <button class="btn-launch" onclick="saveApolloConfig()">💾 Save Apollo Config</button>
+            </div>
+            <div style="margin-top:12px;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:10px;font-size:12px;color:#8a9ab5">
+                These settings are read by n8n's lead_collector workflow via<br>
+                <code style="color:#60a5fa">GET <?php echo APP_URL; ?>/api/get_apollo_config.php?api_key=YOUR_KEY</code>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Brevo ────────────────────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-brevo" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Card 1: Brevo API -->
+        <div class="gc">
+            <div class="gc-title">📧 Brevo API</div>
+            <div class="gc-sub">Brevo (Sendinblue) credentials and sender info</div>
+            <div class="settings-grid" style="grid-template-columns:1fr;margin-top:16px">
+                <div class="sf-row">
+                    <label>Brevo API Key</label>
+                    <div style="position:relative">
+                        <input class="fi" id="brevo_api_key_tab" type="password" value="" placeholder="Leave blank to keep" style="width:100%;padding-right:80px">
+                        <button type="button" onclick="togglePw('brevo_api_key_tab',this)" class="pw-toggle">Show</button>
+                    </div>
+                </div>
+                <div class="sf-row">
+                    <label>Sender Name</label>
+                    <input class="fi" id="brevo_sender_name" type="text" value="<?php echo s('brevo_sender_name', SMTP_FROM_NAME); ?>" placeholder="<?php echo htmlspecialchars(SMTP_FROM_NAME); ?>">
+                </div>
+                <div class="sf-row">
+                    <label>Sender Email</label>
+                    <input class="fi" id="brevo_sender_email" type="email" value="<?php echo s('brevo_sender_email', SMTP_FROM_EMAIL); ?>" placeholder="<?php echo htmlspecialchars(SMTP_FROM_EMAIL); ?>">
+                </div>
+            </div>
+            <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn-launch" onclick="saveBrevoSettings()">💾 Save Brevo Settings</button>
+                <button class="btn-sec" onclick="testConnection('brevo','brevo-tab-result')">🧪 Test Brevo</button>
+            </div>
+            <div id="brevo-tab-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+        <!-- Card 2: Account Info -->
+        <div class="gc">
+            <div class="gc-title">📊 Brevo Account Info</div>
+            <div class="gc-sub">Live account data from Brevo API</div>
+            <div id="brevo-account-info" style="margin-top:16px;font-size:13px;color:#8a9ab5">
+                Click Refresh to load account info.
+            </div>
+            <div style="margin-top:16px">
+                <button class="btn-sec" onclick="loadBrevoInfo()">🔄 Refresh</button>
             </div>
         </div>
     </div>
@@ -800,6 +1022,154 @@ async function loadLimitStats() {
 }
 // Load when tab is shown
 document.getElementById('tabn-sending_limits')?.addEventListener('click', loadLimitStats);
+
+function saveN8n() {
+    var settings = {
+        n8n_url:         document.getElementById('n8n_instance_url').value,
+        n8n_api_key:     document.getElementById('n8n_instance_api_key').value,
+        n8n_webhook_url: document.getElementById('n8n_webhook_url').value
+    };
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:'n8n', settings: settings})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){ showToast('✅ n8n settings saved','success'); }
+        else { showToast('❌ '+(d.error||'Save failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function saveApolloKey() {
+    var settings = { apollo_api_key: document.getElementById('apollo_api_key_tab').value };
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:'api_keys', settings: settings})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){ showToast('✅ Apollo key saved','success'); }
+        else { showToast('❌ '+(d.error||'Save failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function saveApolloConfig() {
+    var settings = {
+        apollo_search_location: document.getElementById('apollo_search_location').value,
+        apollo_search_industry: document.getElementById('apollo_search_industry').value,
+        apollo_search_titles:   document.getElementById('apollo_search_titles').value,
+        apollo_per_page:        document.getElementById('apollo_per_page').value,
+        apollo_max_pages:       document.getElementById('apollo_max_pages').value
+    };
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:'api_keys', settings: settings})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){ showToast('✅ Apollo config saved','success'); }
+        else { showToast('❌ '+(d.error||'Save failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function saveBrevoSettings() {
+    var settings = {
+        brevo_api_key:    document.getElementById('brevo_api_key_tab').value,
+        brevo_sender_name:  document.getElementById('brevo_sender_name').value,
+        brevo_sender_email: document.getElementById('brevo_sender_email').value
+    };
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:'api_keys', settings: settings})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){ showToast('✅ Brevo settings saved','success'); }
+        else { showToast('❌ '+(d.error||'Save failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function loadBrevoInfo() {
+    var el = document.getElementById('brevo-account-info');
+    el.innerHTML = '<span style="color:#8a9ab5">Loading…</span>';
+    fetch('<?php echo APP_URL; ?>/api/test_connection.php?service=brevo_info')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            el.innerHTML = '<table style="font-size:13px;color:#e2e8f0;border-collapse:collapse;width:100%">'
+                + '<tr><td style="color:#8a9ab5;padding:4px 0">Email</td><td>'+d.email+'</td></tr>'
+                + '<tr><td style="color:#8a9ab5;padding:4px 0">Plan</td><td>'+d.plan+'</td></tr>'
+                + '<tr><td style="color:#8a9ab5;padding:4px 0">Credits</td><td>'+d.credits+'</td></tr>'
+                + '<tr><td style="color:#8a9ab5;padding:4px 0">Remaining</td><td>'+d.creditsRemaining+'</td></tr>'
+                + '</table>';
+        } else {
+            el.innerHTML = '<span style="color:#ef4444">❌ '+d.error+'</span>';
+        }
+    })
+    .catch(function(e){ el.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; });
+}
+
+function uploadWorkflow() {
+    var fi = document.getElementById('wf_upload_file');
+    var res = document.getElementById('wf-upload-result');
+    if (!fi.files.length) { showToast('Select a .json file first','warning'); return; }
+    var fd = new FormData();
+    fd.append('workflow', fi.files[0]);
+    res.innerHTML = '<span style="color:#8a9ab5">Uploading…</span>';
+    fetch('<?php echo APP_URL; ?>/api/upload_workflow.php', { method:'POST', body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            res.innerHTML = '<span style="color:#10b981">✅ Uploaded: '+d.filename+'</span>';
+            showToast('✅ Workflow uploaded','success');
+            setTimeout(function(){ location.reload(); }, 1500);
+        } else {
+            res.innerHTML = '<span style="color:#ef4444">❌ '+(d.error||'Upload failed')+'</span>';
+        }
+    })
+    .catch(function(e){ res.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; });
+}
+
+function patchWorkflow(filename) {
+    var a = document.createElement('a');
+    a.href = '<?php echo APP_URL; ?>/api/patch_workflow.php';
+    fetch(a.href, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({filename: filename})
+    })
+    .then(function(r){
+        if (!r.ok) return r.json().then(function(d){ throw new Error(d.error||'Error'); });
+        return r.blob();
+    })
+    .then(function(blob){
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = filename.replace('.json','_patched.json');
+        link.click();
+        URL.revokeObjectURL(url);
+        showToast('✅ Patched workflow downloaded','success');
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function deleteWorkflow(filename) {
+    if (!confirm('Delete '+filename+'? This cannot be undone.')) return;
+    fetch('<?php echo APP_URL; ?>/api/delete_workflow.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({filename: filename})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) { showToast('✅ Deleted','success'); setTimeout(function(){ location.reload(); },1000); }
+        else { showToast('❌ '+(d.error||'Delete failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
 </script>
 
 <?php require_once __DIR__ . '/../includes/layout_end.php'; ?>

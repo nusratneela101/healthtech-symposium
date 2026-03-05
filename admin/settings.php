@@ -32,6 +32,7 @@ function s(string $key, string $fallback = ''): string {
         'ms_oauth_client_id'     => MS_OAUTH_CLIENT_ID,
         'ms_oauth_tenant_id'     => MS_OAUTH_TENANT_ID,
         'site_name'       => APP_NAME,
+        'email_provider'  => '',
     ];
     return htmlspecialchars($consts[$key] ?? $fallback);
 }
@@ -42,6 +43,7 @@ function s(string $key, string $fallback = ''): string {
 <div id="settings-tabs" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
     <?php
     $tabs = [
+        'email_setup'   => '📮 Email Setup',
         'smtp'          => '📧 SMTP',
         'imap'          => '📥 IMAP',
         'branding'      => '🎨 Branding',
@@ -57,8 +59,155 @@ function s(string $key, string $fallback = ''): string {
     <?php endforeach; ?>
 </div>
 
+<!-- ─── Email Setup ───────────────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-email_setup">
+    <div class="gc">
+        <div class="gc-title">📮 Email Provider Setup</div>
+        <div class="gc-sub">Select your outgoing email provider — configuration fields will appear below</div>
+
+        <?php $currentProvider = $settingsRows['email_provider'] ?? ''; ?>
+        <div class="provider-grid">
+
+            <!-- Microsoft 365 -->
+            <div class="provider-card<?php echo $currentProvider==='microsoft365'?' provider-selected':''; ?>"
+                 onclick="selectProvider('microsoft365')" id="card-microsoft365">
+                <div class="provider-card-header">
+                    <span class="provider-icon">🏢</span>
+                    <span class="provider-name">Microsoft 365</span>
+                    <span class="provider-badge provider-badge-best">✅ সেরা</span>
+                </div>
+                <div class="provider-email">info@canadafintechsymposium.com</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: মাঝারি</div>
+                <?php if($currentProvider==='microsoft365'): ?>
+                <div class="provider-selected-label">✓ Selected</div>
+                <?php endif; ?>
+            </div>
+
+            <!-- cPanel Email -->
+            <div class="provider-card<?php echo $currentProvider==='cpanel'?' provider-selected':''; ?>"
+                 onclick="selectProvider('cpanel')" id="card-cpanel">
+                <div class="provider-card-header">
+                    <span class="provider-icon">🌐</span>
+                    <span class="provider-name">cPanel Email</span>
+                    <span class="provider-badge provider-badge-good">✅ ভালো</span>
+                </div>
+                <div class="provider-email">info@fintech.softandpix.com</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <?php if($currentProvider==='cpanel'): ?>
+                <div class="provider-selected-label">✓ Selected</div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Business Email (SMTP) -->
+            <div class="provider-card<?php echo $currentProvider==='business'?' provider-selected':''; ?>"
+                 onclick="selectProvider('business')" id="card-business">
+                <div class="provider-card-header">
+                    <span class="provider-icon">📧</span>
+                    <span class="provider-name">Business Email (SMTP)</span>
+                    <span class="provider-badge provider-badge-good">✅ ভালো</span>
+                </div>
+                <div class="provider-email">info@canadafintechsymposium.com</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <?php if($currentProvider==='business'): ?>
+                <div class="provider-selected-label">✓ Selected</div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Gmail -->
+            <div class="provider-card provider-disabled<?php echo $currentProvider==='gmail'?' provider-selected':''; ?>"
+                 onclick="selectProvider('gmail')" id="card-gmail">
+                <div class="provider-card-header">
+                    <span class="provider-icon">📮</span>
+                    <span class="provider-name">Gmail</span>
+                    <span class="provider-badge provider-badge-limited">❌ সীমিত</span>
+                </div>
+                <div class="provider-email">@gmail.com</div>
+                <div class="provider-meta">Delivery: ⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <?php if($currentProvider==='gmail'): ?>
+                <div class="provider-selected-label">✓ Selected</div>
+                <?php endif; ?>
+            </div>
+
+        </div><!-- /.provider-grid -->
+
+        <!-- Config section (shown after selection) -->
+        <div id="provider-config" style="display:<?php echo $currentProvider?'block':'none'; ?>;margin-top:24px">
+            <div class="gc-title" id="provider-config-title" style="font-size:15px;margin-bottom:14px">
+                <?php
+                $titles = ['microsoft365'=>'🏢 Microsoft 365 Configuration','cpanel'=>'🌐 cPanel Email Configuration','business'=>'📧 Business Email Configuration','gmail'=>'📮 Gmail Configuration'];
+                echo htmlspecialchars($titles[$currentProvider] ?? 'Configuration');
+                ?>
+            </div>
+            <div class="settings-grid">
+                <div class="sf-row">
+                    <label>SMTP Host</label>
+                    <input class="fi" id="ep_smtp_host" value="" placeholder="smtp.example.com">
+                </div>
+                <div class="sf-row">
+                    <label>SMTP Port</label>
+                    <input class="fi" id="ep_smtp_port" type="number" value="587" placeholder="587">
+                </div>
+                <div class="sf-row">
+                    <label>Encryption</label>
+                    <select class="fi" id="ep_smtp_secure">
+                        <option value="tls">TLS</option>
+                        <option value="ssl">SSL</option>
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="sf-row">
+                    <label>SMTP Username</label>
+                    <input class="fi" id="ep_smtp_user" value="" placeholder="user@domain.com">
+                </div>
+                <div class="sf-row">
+                    <label>SMTP Password</label>
+                    <div style="position:relative">
+                        <input class="fi" id="ep_smtp_pass" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                        <button type="button" onclick="togglePw('ep_smtp_pass',this)" class="pw-toggle">Show</button>
+                    </div>
+                </div>
+                <div class="sf-row">
+                    <label>From Email</label>
+                    <input class="fi" id="ep_smtp_from_email" value="" placeholder="noreply@domain.com">
+                </div>
+                <div class="sf-row">
+                    <label>From Name</label>
+                    <input class="fi" id="ep_smtp_from_name" value="Canada Fintech Symposium" placeholder="Canada Fintech Symposium">
+                </div>
+                <div class="sf-row" id="ep_imap_host_row">
+                    <label>IMAP Host</label>
+                    <input class="fi" id="ep_imap_host" value="" placeholder="{mail.example.com:993/imap/ssl}INBOX">
+                </div>
+                <div class="sf-row" id="ep_imap_user_row">
+                    <label>IMAP Username</label>
+                    <input class="fi" id="ep_imap_user" value="" placeholder="user@domain.com">
+                </div>
+                <div class="sf-row" id="ep_imap_pass_row">
+                    <label>IMAP Password</label>
+                    <div style="position:relative">
+                        <input class="fi" id="ep_imap_pass" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                        <button type="button" onclick="togglePw('ep_imap_pass',this)" class="pw-toggle">Show</button>
+                    </div>
+                </div>
+            </div>
+            <div id="ep_gmail_note" style="display:none;margin-top:10px;padding:10px;background:#1a2f4e;border:1px solid #e9a800;border-radius:6px;font-size:13px;color:#e9a800">
+                ⚠️ Gmail requires an App Password. Two-Factor Authentication must be enabled on your Google account.
+            </div>
+            <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                <button class="btn-launch" onclick="applyProviderSettings()">💾 Apply &amp; Save This Provider</button>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input class="fi" id="ep_test_email_to" placeholder="test@example.com" style="width:200px">
+                    <button class="btn-sec" onclick="sendProviderTestEmail()">🧪 Send Test Email</button>
+                </div>
+            </div>
+            <div id="ep-test-email-result" style="margin-top:10px;font-size:13px"></div>
+        </div><!-- /#provider-config -->
+
+    </div>
+</div>
+
 <!-- ─── SMTP ──────────────────────────────────────────────────────────── -->
-<div class="tab-panel" id="tab-smtp">
+<div class="tab-panel" id="tab-smtp" style="display:none">
     <div class="gc">
         <div class="gc-title">📧 SMTP Configuration</div>
         <div class="gc-sub">Outgoing email server settings</div>
@@ -229,6 +378,16 @@ function s(string $key, string $fallback = ''): string {
         </div>
         <div style="margin-top:20px">
             <button class="btn-launch" onclick="saveSection('api_keys',<?php echo json_encode(array_keys($apiFields)); ?>)">💾 Save API Keys</button>
+            <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn-sec" onclick="testConnection('brevo','brevo-result')">🧪 Test Brevo</button>
+                <button class="btn-sec" onclick="testConnection('n8n','n8n-result')">🔗 Test n8n</button>
+                <button class="btn-sec" onclick="testConnection('apollo','apollo-result')">🔍 Test Apollo</button>
+            </div>
+            <div style="margin-top:8px;font-size:13px;display:flex;flex-direction:column;gap:4px">
+                <div id="brevo-result"></div>
+                <div id="n8n-result"></div>
+                <div id="apollo-result"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -268,7 +427,23 @@ function s(string $key, string $fallback = ''): string {
 .sf-row { display:flex;flex-direction:column;gap:6px }
 .sf-row label { font-size:13px;color:#8a9ab5 }
 .pw-toggle { position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#1a2f4e;border:1px solid #1e3a5f;color:#e2e8f0;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:12px }
-@media(max-width:640px){ .settings-grid { grid-template-columns:1fr } }
+/* Provider cards */
+.provider-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px }
+.provider-card { background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:16px;cursor:pointer;transition:.2s;position:relative }
+.provider-card:hover { border-color:#0d6efd;background:rgba(13,110,253,0.06) }
+.provider-selected { border:2px solid #0d6efd !important;background:rgba(13,110,253,0.1) !important }
+.provider-disabled { opacity:.6;cursor:not-allowed }
+.provider-card-header { display:flex;align-items:center;gap:8px;margin-bottom:8px }
+.provider-icon { font-size:20px }
+.provider-name { font-size:14px;font-weight:600;color:#e2e8f0;flex:1 }
+.provider-badge { font-size:11px;padding:2px 8px;border-radius:12px;white-space:nowrap }
+.provider-badge-best { background:rgba(16,185,129,0.15);color:#10b981 }
+.provider-badge-good { background:rgba(59,130,246,0.15);color:#60a5fa }
+.provider-badge-limited { background:rgba(239,68,68,0.15);color:#f87171 }
+.provider-email { font-size:12px;color:#8a9ab5;margin-bottom:4px }
+.provider-meta { font-size:12px;color:#60738a }
+.provider-selected-label { position:absolute;bottom:10px;right:12px;font-size:11px;color:#10b981;font-weight:600 }
+@media(max-width:640px){ .settings-grid { grid-template-columns:1fr } .provider-grid { grid-template-columns:1fr } }
 </style>
 
 <script>
@@ -336,6 +511,190 @@ function showToast(msg, type){
     el.textContent = msg;
     wrap.appendChild(el);
     setTimeout(function(){ el.remove(); }, 4000);
+}
+
+var providerDefaults = {
+    microsoft365: {
+        smtp_host: 'smtp-mail.outlook.com',
+        smtp_port: '587',
+        smtp_secure: 'tls',
+        smtp_user: 'info@canadafintechsymposium.com',
+        smtp_from_email: 'info@canadafintechsymposium.com',
+        smtp_from_name: 'Canada Fintech Symposium',
+        imap_host: '{outlook.office365.com:993/imap/ssl}INBOX',
+        imap_user: 'info@canadafintechsymposium.com',
+        hasImap: true,
+        title: '🏢 Microsoft 365 Configuration'
+    },
+    cpanel: {
+        smtp_host: 'mail.softandpix.com',
+        smtp_port: '587',
+        smtp_secure: 'tls',
+        smtp_user: 'info@fintech.softandpix.com',
+        smtp_from_email: 'info@fintech.softandpix.com',
+        smtp_from_name: 'Canada Fintech Symposium',
+        imap_host: '{mail.softandpix.com:993/imap/ssl}INBOX',
+        imap_user: 'info@fintech.softandpix.com',
+        hasImap: true,
+        title: '🌐 cPanel Email Configuration'
+    },
+    business: {
+        smtp_host: '',
+        smtp_port: '587',
+        smtp_secure: 'tls',
+        smtp_user: 'info@canadafintechsymposium.com',
+        smtp_from_email: 'info@canadafintechsymposium.com',
+        smtp_from_name: 'Canada Fintech Symposium',
+        hasImap: false,
+        title: '📧 Business Email Configuration'
+    },
+    gmail: {
+        smtp_host: 'smtp.gmail.com',
+        smtp_port: '587',
+        smtp_secure: 'tls',
+        smtp_user: '',
+        smtp_from_email: '',
+        smtp_from_name: 'Canada Fintech Symposium',
+        hasImap: false,
+        title: '📮 Gmail Configuration'
+    }
+};
+
+var currentSelectedProvider = '<?php echo htmlspecialchars($settingsRows['email_provider'] ?? ''); ?>';
+
+function selectProvider(provider) {
+    // Update card styles
+    ['microsoft365','cpanel','business','gmail'].forEach(function(p) {
+        var card = document.getElementById('card-'+p);
+        if (!card) return;
+        card.classList.remove('provider-selected');
+        var lbl = card.querySelector('.provider-selected-label');
+        if (lbl) lbl.remove();
+    });
+    var selCard = document.getElementById('card-'+provider);
+    if (selCard) {
+        selCard.classList.add('provider-selected');
+        var lbl = document.createElement('div');
+        lbl.className = 'provider-selected-label';
+        lbl.textContent = '✓ Selected';
+        selCard.appendChild(lbl);
+    }
+    currentSelectedProvider = provider;
+
+    // Populate fields
+    var d = providerDefaults[provider];
+    if (!d) return;
+    document.getElementById('provider-config-title').textContent = d.title;
+    document.getElementById('ep_smtp_host').value = d.smtp_host || '';
+    document.getElementById('ep_smtp_port').value = d.smtp_port || '587';
+    var secEl = document.getElementById('ep_smtp_secure');
+    for (var i=0; i<secEl.options.length; i++) {
+        secEl.options[i].selected = (secEl.options[i].value === (d.smtp_secure || 'tls'));
+    }
+    document.getElementById('ep_smtp_user').value = d.smtp_user || '';
+    document.getElementById('ep_smtp_from_email').value = d.smtp_from_email || '';
+    document.getElementById('ep_smtp_from_name').value = d.smtp_from_name || '';
+
+    // IMAP fields
+    var imapRows = ['ep_imap_host_row','ep_imap_user_row','ep_imap_pass_row'];
+    imapRows.forEach(function(id) {
+        document.getElementById(id).style.display = d.hasImap ? '' : 'none';
+    });
+    if (d.hasImap) {
+        document.getElementById('ep_imap_host').value = d.imap_host || '';
+        document.getElementById('ep_imap_user').value = d.imap_user || '';
+    }
+
+    // Gmail note
+    document.getElementById('ep_gmail_note').style.display = (provider === 'gmail') ? 'block' : 'none';
+
+    document.getElementById('provider-config').style.display = 'block';
+}
+
+function applyProviderSettings() {
+    if (!currentSelectedProvider) { showToast('Please select a provider first','warning'); return; }
+    var smtpSettings = {
+        smtp_host: document.getElementById('ep_smtp_host').value,
+        smtp_port: document.getElementById('ep_smtp_port').value,
+        smtp_secure: document.getElementById('ep_smtp_secure').value,
+        smtp_user: document.getElementById('ep_smtp_user').value,
+        smtp_pass: document.getElementById('ep_smtp_pass').value,
+        smtp_from_email: document.getElementById('ep_smtp_from_email').value,
+        smtp_from_name: document.getElementById('ep_smtp_from_name').value
+    };
+    var d = providerDefaults[currentSelectedProvider];
+    var saves = [
+        fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({group:'smtp', settings: smtpSettings})
+        }).then(function(r){ return r.json(); })
+    ];
+    if (d && d.hasImap) {
+        var imapSettings = {
+            imap_host: document.getElementById('ep_imap_host').value,
+            imap_user: document.getElementById('ep_imap_user').value,
+            imap_pass: document.getElementById('ep_imap_pass').value
+        };
+        saves.push(
+            fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({group:'imap', settings: imapSettings})
+            }).then(function(r){ return r.json(); })
+        );
+    }
+    saves.push(
+        fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({group:'email_setup', settings: {email_provider: currentSelectedProvider}})
+        }).then(function(r){ return r.json(); })
+    );
+    Promise.all(saves).then(function(results) {
+        var allOk = results.every(function(d){ return d.success; });
+        if (allOk) { showToast('✅ Provider settings saved','success'); }
+        else { showToast('❌ Error saving some settings','error'); }
+    }).catch(function(e){ showToast('❌ Network error: '+e.message,'error'); });
+}
+
+function sendProviderTestEmail() {
+    var to = document.getElementById('ep_test_email_to').value.trim();
+    if (!to) { showToast('Enter a recipient email address first','warning'); return; }
+    var res = document.getElementById('ep-test-email-result');
+    res.textContent = 'Sending…';
+    fetch('<?php echo APP_URL; ?>/api/send_test_email.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({to_email: to})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            res.innerHTML = '<span style="color:#10b981">✅ '+d.message+' ('+d.elapsed_ms+'ms via '+d.via+')</span>';
+            showToast('✅ Test email sent!','success');
+        } else {
+            res.innerHTML = '<span style="color:#ef4444">❌ '+d.error+' (via '+d.via+')</span>';
+            showToast('❌ Test email failed','error');
+        }
+    })
+    .catch(function(e){ res.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; });
+}
+
+function testConnection(service, resultId) {
+    var res = document.getElementById(resultId);
+    res.innerHTML = '<span style="color:#8a9ab5">Testing…</span>';
+    fetch('<?php echo APP_URL; ?>/api/test_connection.php?service='+encodeURIComponent(service))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            res.innerHTML = '<span style="color:#10b981">✅ '+d.message+'</span>';
+        } else {
+            res.innerHTML = '<span style="color:#ef4444">❌ Error: '+d.error+'</span>';
+        }
+    })
+    .catch(function(e){ res.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; });
+}
+
+// On load, if a provider was already saved, populate the config fields
+if (currentSelectedProvider && providerDefaults[currentSelectedProvider]) {
+    selectProvider(currentSelectedProvider);
 }
 </script>
 

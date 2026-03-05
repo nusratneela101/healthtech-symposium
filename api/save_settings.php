@@ -25,6 +25,7 @@ $allowedKeys = [
     'branding' => ['site_name','site_tagline','logo_url','primary_color','accent_color','footer_text'],
     'api_keys' => ['n8n_api_key','brevo_api_key','ms_oauth_client_id','ms_oauth_client_secret','ms_oauth_tenant_id','apollo_api_key'],
     'email_defaults' => ['send_delay','max_batch','test_mode_default'],
+    'email_setup'    => ['email_provider'],
 ];
 
 if (!isset($allowedKeys[$group])) {

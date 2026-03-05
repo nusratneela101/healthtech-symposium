@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_followup'])) {
 $templates = Database::fetchAll("SELECT id, name FROM email_templates ORDER BY is_default DESC, id DESC");
 $campaigns = Database::fetchAll(
     "SELECT c.*, t.name AS tpl_name,
-            (SELECT COUNT(*) FROM email_logs el WHERE el.campaign_id = c.id AND el.follow_up_sequence = 2) AS followup_sent_count,
+            (SELECT COUNT(*) FROM email_logs el WHERE el.campaign_id = c.id AND el.follow_up_sequence >= 2) AS followup_sent_count,
             (SELECT COUNT(*) FROM responses r WHERE r.campaign_id = c.id) AS response_count
      FROM campaigns c
      LEFT JOIN email_templates t ON c.template_id = t.id

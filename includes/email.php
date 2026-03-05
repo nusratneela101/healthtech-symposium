@@ -91,8 +91,12 @@ class EmailService {
     }
 
     public static function injectTrackingPixel(string $html, int $logId): string {
-        $pixel = '<img src="' . APP_URL . '/api/track_open.php?id=' . $logId
-               . '" width="1" height="1" alt="" style="display:none" />';
+        $hmac  = defined('N8N_API_KEY') && N8N_API_KEY !== ''
+               ? hash_hmac('sha256', (string)$logId, N8N_API_KEY)
+               : '';
+        $url   = APP_URL . '/api/track_open.php?id=' . $logId
+               . ($hmac !== '' ? '&h=' . urlencode($hmac) : '');
+        $pixel = '<img src="' . $url . '" width="1" height="1" alt="" style="display:none" />';
         if (stripos($html, '</body>') !== false) {
             return str_ireplace('</body>', $pixel . '</body>', $html);
         }

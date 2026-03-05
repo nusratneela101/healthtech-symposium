@@ -69,11 +69,10 @@ $followupStats = Database::fetchAll(
         c.name,
         SUM(CASE WHEN el.follow_up_sequence = 1 THEN 1 ELSE 0 END) AS first_sent,
         SUM(CASE WHEN el.follow_up_sequence >= 2 THEN 1 ELSE 0 END) AS followup_sent,
-        SUM(CASE WHEN el.follow_up_sequence = 1 AND r.id IS NOT NULL THEN 1 ELSE 0 END) AS first_replies,
-        SUM(CASE WHEN el.follow_up_sequence >= 2 AND r.id IS NOT NULL THEN 1 ELSE 0 END) AS followup_replies
+        COUNT(DISTINCT r.id) AS total_responses
      FROM campaigns c
      JOIN email_logs el ON el.campaign_id = c.id AND el.status = 'sent'
-     LEFT JOIN responses r ON r.lead_id = el.lead_id AND r.campaign_id = c.id
+     LEFT JOIN responses r ON r.campaign_id = c.id
      GROUP BY c.id
      HAVING followup_sent > 0
      ORDER BY c.created_at DESC LIMIT 5"
@@ -231,34 +230,30 @@ $recentLeads = Database::fetchAll(
 <?php if ($followupStats): ?>
 <div class="gc">
     <div class="gc-title">🔁 Follow-up Effectiveness</div>
-    <div class="gc-sub">First email vs follow-up response rates</div>
+    <div class="gc-sub">Campaigns with follow-up emails — send counts and response totals</div>
     <div class="tbl-wrap">
         <table class="dt">
             <thead>
                 <tr>
                     <th>Campaign</th>
-                    <th>1st Email Sent</th>
-                    <th>1st Replies</th>
-                    <th>1st Reply Rate</th>
+                    <th>1st Emails Sent</th>
                     <th>Follow-ups Sent</th>
-                    <th>Follow-up Replies</th>
-                    <th>Follow-up Rate</th>
+                    <th>Total Responses</th>
+                    <th>Overall Reply Rate</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($followupStats as $fs): ?>
             <?php
-                $firstRate   = $fs['first_sent']   > 0 ? round(($fs['first_replies']   / $fs['first_sent'])   * 100, 1) : 0;
-                $followRate  = $fs['followup_sent'] > 0 ? round(($fs['followup_replies'] / $fs['followup_sent']) * 100, 1) : 0;
+                $totalSent   = (int)$fs['first_sent'] + (int)$fs['followup_sent'];
+                $replyRate   = $totalSent > 0 ? round(((int)$fs['total_responses'] / $totalSent) * 100, 1) : 0;
             ?>
             <tr>
                 <td><?php echo htmlspecialchars($fs['name']); ?></td>
                 <td><?php echo (int)$fs['first_sent']; ?></td>
-                <td style="color:#10b981"><?php echo (int)$fs['first_replies']; ?></td>
-                <td><span class="pill <?php echo $firstRate >= 5 ? 'p-responded' : 'p-queued'; ?>"><?php echo $firstRate; ?>%</span></td>
-                <td><?php echo (int)$fs['followup_sent']; ?></td>
-                <td style="color:#8b5cf6"><?php echo (int)$fs['followup_replies']; ?></td>
-                <td><span class="pill <?php echo $followRate >= 5 ? 'p-responded' : 'p-queued'; ?>"><?php echo $followRate; ?>%</span></td>
+                <td style="color:#8b5cf6"><?php echo (int)$fs['followup_sent']; ?></td>
+                <td style="color:#10b981"><?php echo (int)$fs['total_responses']; ?></td>
+                <td><span class="pill <?php echo $replyRate >= 5 ? 'p-responded' : 'p-queued'; ?>"><?php echo $replyRate; ?>%</span></td>
             </tr>
             <?php endforeach; ?>
             </tbody>

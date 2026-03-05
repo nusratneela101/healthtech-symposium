@@ -2,19 +2,26 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/csrf.php';
+require_once __DIR__ . '/includes/rate_limiter.php';
 
 $error = '';
 $lockoutSeconds = 0;
 
-// Rate limiting: max 5 failed attempts, 15-minute lockout
+// Rate limiting: max 5 failed attempts per IP (per 15 min) + session-based lockout
 if (!isset($_SESSION['login_attempts'])) {
     $_SESSION['login_attempts'] = 0;
     $_SESSION['login_locked_until'] = 0;
 }
 
+// Check IP-based rate limit (10 attempts per 15-minute window per IP)
+$ipAllowed = RateLimiter::check(RateLimiter::getIdentifier(), 'login', 10, 900);
+
 if ($_SESSION['login_locked_until'] > time()) {
     $lockoutSeconds = $_SESSION['login_locked_until'] - time();
     $error = 'Too many failed attempts. Please try again in ' . ceil($lockoutSeconds / 60) . ' minute(s).';
+} elseif (!$ipAllowed) {
+    $lockoutSeconds = 900;
+    $error = 'Too many login attempts from this IP. Please try again in 15 minutes.';
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify()) {
         $error = 'Invalid request. Please refresh and try again.';
@@ -34,6 +41,7 @@ if ($_SESSION['login_locked_until'] > time()) {
                 header('Location: ' . APP_URL . '/admin/dashboard.php');
                 exit;
             } else {
+                RateLimiter::check(RateLimiter::getIdentifier(), 'login', 10, 900); // record failed attempt
                 $_SESSION['login_attempts']++;
                 if ($_SESSION['login_attempts'] >= 5) {
                     $_SESSION['login_locked_until'] = time() + 900; // 15 minutes

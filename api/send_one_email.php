@@ -116,21 +116,26 @@ $logId = Database::lastInsertId();
 // Inject tracking pixel
 $bodyWithPixel = EmailService::injectTrackingPixel($body, $logId);
 
-if ($campaign['test_mode']) {
-    $status  = 'sent';
-    $msgId   = 'test-' . uniqid();
-    $sentVia = 'test';
-} else {
-    $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
-    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $bodyWithPixel, '', $tags);
-    if ($result['success']) {
+try {
+    if ($campaign['test_mode']) {
         $status  = 'sent';
-        $msgId   = $result['message_id'] ?? '';
-        $sentVia = $result['via'] ?? 'smtp';
+        $msgId   = 'test-' . uniqid();
+        $sentVia = 'test';
     } else {
-        $status   = 'failed';
-        $errorMsg = $result['error'] ?? '';
+        $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
+        $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $bodyWithPixel, '', $tags);
+        if ($result['success']) {
+            $status  = 'sent';
+            $msgId   = $result['message_id'] ?? '';
+            $sentVia = $result['via'] ?? 'smtp';
+        } else {
+            $status   = 'failed';
+            $errorMsg = $result['error'] ?? '';
+        }
     }
+} catch (Exception $e) {
+    $status   = 'failed';
+    $errorMsg = $e->getMessage();
 }
 
 // Update the log entry with final status

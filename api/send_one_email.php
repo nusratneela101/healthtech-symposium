@@ -3,6 +3,7 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/rate_limiter.php';
+require_once __DIR__ . '/check_sending_limits.php';
 
 header('Content-Type: application/json');
 
@@ -30,6 +31,20 @@ if (!$campaign) {
     echo json_encode(['error' => 'Campaign not found']);
     exit;
 }
+
+// ── Sending limit check ──────────────────────────────────────────────────
+$limitCheck = checkSendingLimits($followUpSeq);
+if (!$limitCheck['allowed']) {
+    echo json_encode([
+        'done'        => true,
+        'limit_hit'   => true,
+        'reason'      => $limitCheck['reason'],
+        'sent'        => $campaign['sent_count'],
+        'failed'      => $campaign['failed_count'],
+    ]);
+    exit;
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 // If campaign is done, return summary
 if ($campaign['status'] === 'completed') {

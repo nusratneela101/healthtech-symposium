@@ -32,6 +32,13 @@ define('SESSION_NAME',    $_ENV['SESSION_NAME']     ?? 'fts_session');
 
 define('APOLLO_API_KEY',  $_ENV['APOLLO_API_KEY']   ?? '');
 
+define('EMAIL_DAILY_LIMIT',      (int)($_ENV['EMAIL_DAILY_LIMIT']      ?? 0));
+define('EMAIL_WEEKLY_LIMIT',     (int)($_ENV['EMAIL_WEEKLY_LIMIT']     ?? 0));
+define('EMAIL_MONTHLY_LIMIT',    (int)($_ENV['EMAIL_MONTHLY_LIMIT']    ?? 0));
+define('FOLLOWUP_DAILY_LIMIT',   (int)($_ENV['FOLLOWUP_DAILY_LIMIT']   ?? 0));
+define('FOLLOWUP_WEEKLY_LIMIT',  (int)($_ENV['FOLLOWUP_WEEKLY_LIMIT']  ?? 0));
+define('FOLLOWUP_MONTHLY_LIMIT', (int)($_ENV['FOLLOWUP_MONTHLY_LIMIT'] ?? 0));
+
 session_name(SESSION_NAME);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -77,6 +84,12 @@ function getSetting(string $key, string $default = ''): string {
         'ms_oauth_tenant_id'     => MS_OAUTH_TENANT_ID,
         'site_name'        => APP_NAME,
         'apollo_api_key'   => APOLLO_API_KEY,
+        'email_daily_limit'      => (string)EMAIL_DAILY_LIMIT,
+        'email_weekly_limit'     => (string)EMAIL_WEEKLY_LIMIT,
+        'email_monthly_limit'    => (string)EMAIL_MONTHLY_LIMIT,
+        'followup_daily_limit'   => (string)FOLLOWUP_DAILY_LIMIT,
+        'followup_weekly_limit'  => (string)FOLLOWUP_WEEKLY_LIMIT,
+        'followup_monthly_limit' => (string)FOLLOWUP_MONTHLY_LIMIT,
     ];
     return $map[$key] ?? $default;
 }

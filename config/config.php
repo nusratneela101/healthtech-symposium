@@ -2,20 +2,23 @@
 require_once __DIR__ . '/../includes/env_loader.php';
 loadEnv(__DIR__ . '/../.env');
 
+// Canada Eastern Time (Toronto) — UTC-5 / UTC-4 DST
+date_default_timezone_set('America/Toronto');
+
 define('APP_NAME',        $_ENV['APP_NAME']        ?? 'Canada Fintech Symposium');
-define('APP_URL',         $_ENV['APP_URL']          ?? 'https://YOURSITE.com/fintech');
+define('APP_URL',         $_ENV['APP_URL']          ?? 'https://fintech.softandpix.com');
 define('APP_VERSION',     $_ENV['APP_VERSION']      ?? '2.0.0');
 
-define('SMTP_HOST',       $_ENV['SMTP_HOST']        ?? 'smtp-mail.outlook.com');
+define('SMTP_HOST',       $_ENV['SMTP_HOST']        ?? 'smtp-relay.brevo.com');
 define('SMTP_PORT',       (int)($_ENV['SMTP_PORT']  ?? 587));
 define('SMTP_SECURE',     $_ENV['SMTP_SECURE']      ?? 'tls');
-define('SMTP_USER',       $_ENV['SMTP_USER']        ?? 'sm@101bdtech.com');
+define('SMTP_USER',       $_ENV['SMTP_USER']        ?? '');
 define('SMTP_PASS',       $_ENV['SMTP_PASS']        ?? '');
-define('SMTP_FROM_EMAIL', $_ENV['SMTP_FROM_EMAIL']  ?? 'sm@101bdtech.com');
+define('SMTP_FROM_EMAIL', $_ENV['SMTP_FROM_EMAIL']  ?? 'info@fintech.softandpix.com');
 define('SMTP_FROM_NAME',  $_ENV['SMTP_FROM_NAME']   ?? 'Canada Fintech Symposium');
 
-define('IMAP_HOST',       $_ENV['IMAP_HOST']        ?? '{outlook.office365.com:993/imap/ssl}INBOX');
-define('IMAP_USER',       $_ENV['IMAP_USER']        ?? 'sm@101bdtech.com');
+define('IMAP_HOST',       $_ENV['IMAP_HOST']        ?? '');
+define('IMAP_USER',       $_ENV['IMAP_USER']        ?? '');
 define('IMAP_PASS',       $_ENV['IMAP_PASS']        ?? '');
 
 define('BREVO_API_KEY',         $_ENV['BREVO_API_KEY']         ?? '');

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email.php';
+require_once __DIR__ . '/../includes/rate_limiter.php';
 
 header('Content-Type: application/json');
 
@@ -13,6 +14,9 @@ if ($apiKey !== N8N_API_KEY) {
     echo json_encode(['error' => 'Unauthorized']);
     exit;
 }
+
+// Rate limit: 60 email sends per minute per API caller
+RateLimiter::enforce($apiKey ?: RateLimiter::getIdentifier(), 'api/send_one_email', 60, 60);
 
 $campaignId      = (int)($input['campaign_id']       ?? 0);
 $followUpSeq     = max(1, (int)($input['follow_up_sequence'] ?? 1));

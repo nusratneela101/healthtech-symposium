@@ -30,8 +30,20 @@ class EmailService {
         string $toName,
         string $subject,
         string $htmlBody,
-        string $textBody = ''
+        string $textBody = '',
+        array  $tags = []
     ): array {
+        // Use Brevo API if key is configured
+        if (defined('BREVO_API_KEY') && BREVO_API_KEY !== '') {
+            require_once __DIR__ . '/brevo.php';
+            $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags);
+            if ($result['success']) {
+                return ['success' => true, 'message_id' => $result['message_id'], 'via' => 'brevo'];
+            }
+            return ['success' => false, 'error' => $result['error'], 'via' => 'brevo'];
+        }
+
+        // Fallback to PHPMailer SMTP
         try {
             $mail = self::getMailer();
             $mail->addAddress($toEmail, $toName);
@@ -40,9 +52,9 @@ class EmailService {
             $mail->Body     = $htmlBody;
             $mail->AltBody  = $textBody ?: strip_tags($htmlBody);
             $mail->send();
-            return ['success' => true, 'message_id' => $mail->getLastMessageID()];
+            return ['success' => true, 'message_id' => $mail->getLastMessageID(), 'via' => 'smtp'];
         } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => $e->getMessage(), 'via' => 'smtp'];
         }
     }
 

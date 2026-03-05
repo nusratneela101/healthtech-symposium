@@ -1,0 +1,98 @@
+{
+  "name": "Lead Collector — Daily Apollo Import",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }]
+        }
+      },
+      "name": "Schedule — Daily 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/v1/mixed_people/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Cache-Control", "value": "no-cache" }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "person_locations",
+              "value": "[\"Canada\"]"
+            },
+            {
+              "name": "person_titles",
+              "value": "[\"CTO\",\"VP\",\"Director\",\"CEO\",\"Founder\",\"Head of\",\"Managing Partner\"]"
+            },
+            { "name": "per_page", "value": "100" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Apollo — Search Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const people = $input.first().json.people || [];\nreturn people\n  .filter(p => p.email && p.email_status === 'verified')\n  .map(p => ({\n    json: {\n      first_name:   p.first_name  || '',\n      last_name:    p.last_name   || '',\n      full_name:    (p.first_name + ' ' + p.last_name).trim(),\n      email:        p.email,\n      company:      p.organization?.name || '',\n      job_title:    p.title || '',\n      role:         p.title || '',\n      linkedin_url: p.linkedin_url || '',\n      city:         p.city || '',\n      province:     p.state || '',\n      country:      'Canada',\n      source:       'Apollo'\n    }\n  }));"
+      },
+      "name": "Code — Filter & Map",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://fintech.softandpix.com/api/save_lead.php",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "api_key", "value": "YOUR_API_KEY" },
+            { "name": "leads",   "value": "={{ JSON.stringify($input.all().map(i => i.json)) }}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "POST — Save Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "summary", "value": "={{ 'Saved ' + $json.saved + ' new leads, skipped ' + $json.skipped }}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set — Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Schedule — Daily 8AM": { "main": [[{ "node": "Apollo — Search Leads", "type": "main", "index": 0 }]] },
+    "Apollo — Search Leads": { "main": [[{ "node": "Code — Filter & Map", "type": "main", "index": 0 }]] },
+    "Code — Filter & Map":   { "main": [[{ "node": "POST — Save Leads",    "type": "main", "index": 0 }]] },
+    "POST — Save Leads":     { "main": [[{ "node": "Set — Summary",        "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1"
+}

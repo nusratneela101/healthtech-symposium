@@ -14,7 +14,8 @@ if ($apiKey !== N8N_API_KEY) {
     exit;
 }
 
-$campaignId = (int)($input['campaign_id'] ?? 0);
+$campaignId      = (int)($input['campaign_id']       ?? 0);
+$followUpSeq     = max(1, (int)($input['follow_up_sequence'] ?? 1));
 if (!$campaignId) {
     echo json_encode(['error' => 'campaign_id required']);
     exit;
@@ -46,11 +47,20 @@ if ($campaign['filter_segment']) { $where .= ' AND l.segment=?';      $params[] 
 if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?';     $params[] = '%' . $campaign['filter_role'] . '%'; }
 if ($campaign['filter_province']){ $where .= ' AND l.province=?';     $params[] = $campaign['filter_province']; }
 
+// For follow-up sequences: allow re-emailed leads but check no log exists for this sequence
+if ($followUpSeq > 1) {
+    $where  = "l.status NOT IN ('unsubscribed','bounced')";
+    $params = [];
+    if ($campaign['filter_segment']) { $where .= ' AND l.segment=?';  $params[] = $campaign['filter_segment']; }
+    if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?'; $params[] = '%' . $campaign['filter_role'] . '%'; }
+    if ($campaign['filter_province']){ $where .= ' AND l.province=?'; $params[] = $campaign['filter_province']; }
+}
+
 $lead = Database::fetchOne(
     "SELECT l.* FROM leads l
-     LEFT JOIN email_logs el ON el.lead_id = l.id AND el.campaign_id = ?
+     LEFT JOIN email_logs el ON el.lead_id = l.id AND el.campaign_id = ? AND el.follow_up_sequence = ?
      WHERE $where AND el.id IS NULL LIMIT 1",
-    array_merge([$campaignId], $params)
+    array_merge([$campaignId, $followUpSeq], $params)
 );
 
 if (!$lead) {
@@ -89,15 +99,19 @@ $subject = str_replace(
 $status    = 'failed';
 $msgId     = '';
 $errorMsg  = '';
+$sentVia   = 'smtp';
 
 if ($campaign['test_mode']) {
-    $status = 'sent';
-    $msgId  = 'test-' . uniqid();
+    $status  = 'sent';
+    $msgId   = 'test-' . uniqid();
+    $sentVia = 'test';
 } else {
-    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body);
+    $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
+    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags);
     if ($result['success']) {
-        $status = 'sent';
-        $msgId  = $result['message_id'] ?? '';
+        $status  = 'sent';
+        $msgId   = $result['message_id'] ?? '';
+        $sentVia = $result['via'] ?? 'smtp';
     } else {
         $status   = 'failed';
         $errorMsg = $result['error'] ?? '';
@@ -106,9 +120,9 @@ if ($campaign['test_mode']) {
 
 // Log
 Database::query(
-    "INSERT INTO email_logs (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,sent_at)
-     VALUES(?,?,?,?,?,?,?,?,NOW())",
-    [$campaignId, $lead['id'], $lead['email'], $lead['full_name'], $subject, $status, $msgId, $errorMsg]
+    "INSERT INTO email_logs (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,follow_up_sequence,sent_at)
+     VALUES(?,?,?,?,?,?,?,?,?,NOW())",
+    [$campaignId, $lead['id'], $lead['email'], $lead['full_name'], $subject, $status, $msgId, $errorMsg, $followUpSeq]
 );
 
 if ($status === 'sent') {
@@ -122,5 +136,6 @@ echo json_encode([
     'done'    => false,
     'sent_to' => $lead['email'],
     'status'  => $status,
+    'via'     => $sentVia,
     'error'   => $errorMsg ?: null,
 ]);

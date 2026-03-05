@@ -77,9 +77,11 @@ CREATE TABLE IF NOT EXISTS `email_logs` (
   `recipient_email` varchar(200) NOT NULL,
   `recipient_name` varchar(200) DEFAULT '',
   `subject` varchar(500) DEFAULT '',
-  `status` enum('queued','sent','failed','bounced','opened') DEFAULT 'queued',
+  `status` enum('queued','sent','failed','bounced','opened','delivered') DEFAULT 'queued',
   `message_id` varchar(500) DEFAULT '',
   `error_message` text,
+  `follow_up_sequence` tinyint(1) DEFAULT 1,
+  `opened_at` datetime DEFAULT NULL,
   `sent_at` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
@@ -95,7 +97,7 @@ CREATE TABLE IF NOT EXISTS `responses` (
   `body_text` text,
   `body_html` longtext,
   `message_id` varchar(500) DEFAULT NULL,
-  `response_type` enum('interested','not_interested','more_info','auto_reply','bounce','other') DEFAULT 'other',
+  `response_type` enum('interested','not_interested','more_info','wrong_person','auto_reply','bounce','other') DEFAULT 'other',
   `is_read` tinyint(1) DEFAULT 0,
   `is_replied` tinyint(1) DEFAULT 0,
   `received_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -108,9 +110,55 @@ CREATE TABLE IF NOT EXISTS `response_replies` (
   `response_id` int(11) NOT NULL,
   `replied_by` int(11) DEFAULT NULL,
   `reply_subject` varchar(500) DEFAULT '',
-  `reply_body` longtext,
-  `sent_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  `reply_body` text,
+  `message_id` varchar(500) DEFAULT '',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_response` (`response_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `oauth_accounts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `provider` varchar(50) NOT NULL DEFAULT 'microsoft',
+  `email` varchar(200) NOT NULL,
+  `access_token` text NOT NULL,
+  `refresh_token` text NOT NULL,
+  `token_expires_at` datetime DEFAULT NULL,
+  `scopes` varchar(500) DEFAULT '',
+  `connected_by` int(11) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `provider_email` (`provider`, `email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `reply_threads` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `lead_id` int(11) DEFAULT NULL,
+  `campaign_id` int(11) DEFAULT NULL,
+  `subject` varchar(500) DEFAULT '',
+  `conversation_id` varchar(500) DEFAULT '',
+  `last_message_at` datetime DEFAULT NULL,
+  `message_count` int(11) DEFAULT 1,
+  `status` enum('active','closed','archived') DEFAULT 'active',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_lead` (`lead_id`),
+  KEY `idx_campaign` (`campaign_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `entity_type` varchar(50) DEFAULT '',
+  `entity_id` int(11) DEFAULT NULL,
+  `details` text,
+  `ip_address` varchar(45) DEFAULT '',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`),
+  KEY `idx_action` (`action`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 20 Sample Canadian Leads

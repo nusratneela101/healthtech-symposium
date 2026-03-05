@@ -63,3 +63,20 @@ function paginate(int $total, int $page, int $perPage, string $baseUrl): string 
     $html .= '</div>';
     return $html;
 }
+
+function audit_log(string $action, string $entityType = '', ?int $entityId = null, string $details = ''): void {
+    try {
+        $userId = null;
+        if (class_exists('Auth') && method_exists('Auth', 'user')) {
+            $u = Auth::user();
+            $userId = $u['id'] ?? null;
+        }
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        Database::query(
+            "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, details, ip_address) VALUES (?,?,?,?,?,?)",
+            [$userId, $action, $entityType, $entityId, $details, $ip]
+        );
+    } catch (Exception $e) {
+        // Silently fail — audit log should not break the main request
+    }
+}

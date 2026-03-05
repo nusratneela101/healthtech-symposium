@@ -21,6 +21,7 @@ $subject     = trim($input['subject']          ?? '');
 $status      = trim($input['status']           ?? 'sent');
 $msgId       = trim($input['message_id']       ?? '');
 $errorMsg    = trim($input['error_message']    ?? '');
+$followUpSeq = max(1, (int)($input['follow_up_sequence'] ?? 1));
 
 if (!$recipEmail) {
     echo json_encode(['error' => 'recipient_email required']);
@@ -30,9 +31,9 @@ if (!$recipEmail) {
 try {
     Database::query(
         "INSERT INTO email_logs
-         (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,sent_at)
-         VALUES(?,?,?,?,?,?,?,?,NOW())",
-        [$campaignId, $leadId, $recipEmail, $recipName, $subject, $status, $msgId, $errorMsg]
+         (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,follow_up_sequence,sent_at)
+         VALUES(?,?,?,?,?,?,?,?,?,NOW())",
+        [$campaignId, $leadId, $recipEmail, $recipName, $subject, $status, $msgId, $errorMsg, $followUpSeq]
     );
     if ($leadId && $status === 'sent') {
         Database::query("UPDATE leads SET status='emailed' WHERE id=? AND status='new'", [$leadId]);

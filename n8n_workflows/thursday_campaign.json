@@ -1,0 +1,99 @@
+{
+  "name": "Thursday Campaign Sender",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 9 * * 4" }]
+        }
+      },
+      "name": "Schedule — Thursday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://fintech.softandpix.com/api/send_one_email.php",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "api_key",     "value": "YOUR_API_KEY" },
+            { "name": "campaign_id", "value": "1" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "POST — Send Batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": { "amount": 1, "unit": "seconds" },
+      "name": "Wait — 1s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            { "value1": "={{ $json.done }}", "value2": true }
+          ]
+        }
+      },
+      "name": "IF — Done?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://fintech.softandpix.com/api/update_campaign.php",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "api_key",     "value": "YOUR_API_KEY" },
+            { "name": "campaign_id", "value": "1" },
+            { "name": "sent",        "value": "={{ $json.sent }}" },
+            { "name": "failed",      "value": "={{ $json.failed }}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "POST — Update Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@canadafintechsymposium.com",
+        "toEmail":   "admin@canadafintechsymposium.com",
+        "subject":   "✅ Thursday Campaign Complete",
+        "text":      "={{ 'Campaign finished. Sent: ' + $json.sent + ', Failed: ' + $json.failed }}"
+      },
+      "name": "Email — Notify Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    }
+  ],
+  "connections": {
+    "Schedule — Thursday 9AM": { "main": [[{ "node": "POST — Send Batch",     "type": "main", "index": 0 }]] },
+    "POST — Send Batch":       { "main": [[{ "node": "Wait — 1s",             "type": "main", "index": 0 }]] },
+    "Wait — 1s":               { "main": [[{ "node": "IF — Done?",            "type": "main", "index": 0 }]] },
+    "IF — Done?": {
+      "main": [
+        [{ "node": "POST — Update Campaign", "type": "main", "index": 0 }],
+        [{ "node": "POST — Send Batch",      "type": "main", "index": 0 }]
+      ]
+    },
+    "POST — Update Campaign":  { "main": [[{ "node": "Email — Notify Admin",  "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1"
+}

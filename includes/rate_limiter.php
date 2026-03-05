@@ -75,11 +75,11 @@ class RateLimiter {
 
     /**
      * Get the caller's identifier (IP address).
+     * Uses only REMOTE_ADDR to prevent spoofing via X-Forwarded-For.
+     * If behind a trusted reverse proxy, configure trusted IPs in your web server
+     * and let it set REMOTE_ADDR to the real client IP.
      */
     public static function getIdentifier(): string {
-        return $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['HTTP_X_REAL_IP']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? 'unknown';
+        return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     }
 }

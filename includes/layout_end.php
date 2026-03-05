@@ -55,8 +55,9 @@
 
     function escHtml(s){ var d=document.createElement('div');d.textContent=s;return d.innerHTML; }
 
-    // Poll every 30 seconds
-    setInterval(function(){
+    // Poll every 30 seconds, pause when tab is hidden
+    var pollInterval = setInterval(function(){
+        if (document.hidden) return;
         fetch('<?php echo APP_URL; ?>/api/notifications.php')
             .then(function(r){ return r.json(); })
             .then(function(d){
@@ -67,6 +68,7 @@
                 loaded = false;
             }).catch(function(){});
     }, 30000);
+    window.addEventListener('beforeunload', function(){ clearInterval(pollInterval); });
 })();
 </script>
 </body>

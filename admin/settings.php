@@ -86,7 +86,7 @@ function s(string $key, string $fallback = ''): string {
             <div class="sf-row">
                 <label>Password</label>
                 <div style="position:relative">
-                    <input class="fi" id="smtp_pass" type="password" value="<?php echo htmlspecialchars($settingsRows['smtp_pass'] ?? ''); ?>" placeholder="••••••••" style="width:100%;padding-right:80px">
+                    <input class="fi" id="smtp_pass" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
                     <button type="button" onclick="togglePw('smtp_pass',this)" class="pw-toggle">Show</button>
                 </div>
             </div>
@@ -209,20 +209,19 @@ function s(string $key, string $fallback = ''): string {
         <div class="settings-grid">
             <?php
             $apiFields = [
-                'n8n_api_key'            => ['label'=>'N8N API Key',          'const'=> N8N_API_KEY],
-                'brevo_api_key'          => ['label'=>'Brevo API Key',         'const'=> BREVO_API_KEY],
-                'ms_oauth_client_id'     => ['label'=>'MS OAuth Client ID',    'const'=> MS_OAUTH_CLIENT_ID],
-                'ms_oauth_client_secret' => ['label'=>'MS OAuth Client Secret','const'=> MS_OAUTH_CLIENT_SECRET],
-                'ms_oauth_tenant_id'     => ['label'=>'MS OAuth Tenant ID',    'const'=> MS_OAUTH_TENANT_ID],
-                'apollo_api_key'         => ['label'=>'Apollo API Key',        'const'=> APOLLO_API_KEY],
+                'n8n_api_key'            => ['label'=>'N8N API Key'],
+                'brevo_api_key'          => ['label'=>'Brevo API Key'],
+                'ms_oauth_client_id'     => ['label'=>'MS OAuth Client ID'],
+                'ms_oauth_client_secret' => ['label'=>'MS OAuth Client Secret'],
+                'ms_oauth_tenant_id'     => ['label'=>'MS OAuth Tenant ID'],
+                'apollo_api_key'         => ['label'=>'Apollo API Key'],
             ];
             foreach ($apiFields as $fieldId => $cfg):
-                $val = $settingsRows[$fieldId] ?? $cfg['const'];
             ?>
             <div class="sf-row">
                 <label><?php echo $cfg['label']; ?></label>
                 <div style="position:relative">
-                    <input class="fi" id="<?php echo $fieldId; ?>" type="password" value="<?php echo htmlspecialchars($val); ?>" placeholder="Enter key…" style="width:100%;padding-right:80px">
+                    <input class="fi" id="<?php echo $fieldId; ?>" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
                     <button type="button" onclick="togglePw('<?php echo $fieldId; ?>',this)" class="pw-toggle">Show</button>
                 </div>
             </div>

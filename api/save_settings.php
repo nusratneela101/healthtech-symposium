@@ -34,12 +34,18 @@ if (!isset($allowedKeys[$group])) {
 }
 
 $saved = 0;
+$sensitiveKeys = ['smtp_pass','imap_pass','n8n_api_key','brevo_api_key',
+                  'ms_oauth_client_id','ms_oauth_client_secret','apollo_api_key'];
 foreach ($input['settings'] as $key => $value) {
     $key = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($key)));
     if (!in_array($key, $allowedKeys[$group], true)) {
         continue;
     }
     $value = (string)$value;
+    // For sensitive fields, skip saving if the user left the field blank
+    if (in_array($key, $sensitiveKeys, true) && $value === '') {
+        continue;
+    }
     try {
         Database::query(
             "INSERT INTO site_settings (setting_key, setting_value, setting_group, updated_by)

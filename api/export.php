@@ -14,9 +14,14 @@ $status    = trim($_GET['status']    ?? '');
 $segment   = trim($_GET['segment']   ?? '');
 $province  = trim($_GET['province']  ?? '');
 
-// Validate date format
-if ($dateFrom && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) $dateFrom = '';
-if ($dateTo   && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo))   $dateTo   = '';
+// Validate date format and logical validity
+function isValidDate(string $d): bool {
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) return false;
+    [$y, $m, $day] = explode('-', $d);
+    return checkdate((int)$m, (int)$day, (int)$y);
+}
+if ($dateFrom && !isValidDate($dateFrom)) $dateFrom = '';
+if ($dateTo   && !isValidDate($dateTo))   $dateTo   = '';
 
 $filename = $type . '_' . date('Y-m-d_His') . '.csv';
 header('Content-Type: text/csv; charset=UTF-8');

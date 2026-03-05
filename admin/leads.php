@@ -109,7 +109,7 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
 
 <?php if (Auth::isSuperAdmin()): ?>
 <!-- Bulk Actions Bar -->
-<div id="bulk-bar" style="display:none;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+<div id="bulk-bar" style="display:none;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:12px 16px;margin-bottom:16px;align-items:center;gap:12px;flex-wrap:wrap">
     <span id="bulk-count" style="font-size:13px;color:#8a9ab5">0 selected</span>
     <select class="fi" id="bulk-action" style="min-width:180px">
         <option value="">— Bulk Action —</option>

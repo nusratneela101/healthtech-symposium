@@ -40,9 +40,11 @@ if ($method === 'POST') {
             echo json_encode(['success' => true]);
         } elseif (is_array($ids) && !empty($ids)) {
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            // Only mark as read if the notification belongs to this user (or is global)
             Database::query(
-                "UPDATE notifications SET is_read = 1 WHERE id IN ($placeholders)",
-                array_map('intval', $ids)
+                "UPDATE notifications SET is_read = 1
+                 WHERE id IN ($placeholders) AND (user_id = ? OR user_id IS NULL)",
+                array_merge(array_map('intval', $ids), [$userId])
             );
             echo json_encode(['success' => true]);
         } else {

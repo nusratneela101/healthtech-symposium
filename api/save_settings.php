@@ -23,7 +23,10 @@ $allowedKeys = [
     'smtp'     => ['smtp_host','smtp_port','smtp_secure','smtp_user','smtp_pass','smtp_from_email','smtp_from_name'],
     'imap'     => ['imap_host','imap_port','imap_user','imap_pass','imap_secure','imap_mailbox','imap_poll_interval'],
     'branding' => ['site_name','site_tagline','logo_url','primary_color','accent_color','footer_text'],
-    'api_keys' => ['n8n_api_key','brevo_api_key','ms_oauth_client_id','ms_oauth_client_secret','ms_oauth_tenant_id','apollo_api_key'],
+    'api_keys' => ['n8n_api_key','brevo_api_key','ms_oauth_client_id','ms_oauth_client_secret','ms_oauth_tenant_id','apollo_api_key',
+                   'n8n_url','apollo_search_titles','apollo_search_location','apollo_search_industry',
+                   'apollo_per_page','apollo_max_pages','brevo_sender_name','brevo_sender_email'],
+    'n8n'      => ['n8n_url','n8n_api_key','n8n_webhook_url'],
     'email_defaults' => ['send_delay','max_batch','test_mode_default'],
     'email_setup'    => ['email_provider'],
     'sending_limits' => [

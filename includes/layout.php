@@ -96,6 +96,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='schedule_campaign.php'?' active':''; ?>">
             📅 Schedule
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/n8n_manager.php"
+           class="nav-item<?php echo $currentPage==='n8n_manager.php'?' active':''; ?>">
+            🤖 n8n Manager
+        </a>
         <?php endif; ?>
         <a href="<?php echo APP_URL; ?>/admin/audit.php"
            class="nav-item<?php echo $currentPage==='audit.php'?' active':''; ?>">

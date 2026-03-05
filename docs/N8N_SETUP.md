@@ -1,4 +1,4 @@
-# n8n Setup Guide — Canada HealthTech Symposium 2026
+# n8n Setup Guide — Canada Fintech Symposium 2026
 
 This guide explains how to import and configure the n8n workflow files located in `n8n_workflows/`.
 
@@ -19,7 +19,7 @@ Campaign sending is now **fully controlled by the Super Admin**:
 
 1. **Super Admin creates a campaign** in [Auto Campaign](/admin/auto_campaign.php)
 2. **Super Admin schedules it** in [Schedule Campaign](/admin/schedule_campaign.php) — picks any date & time
-3. **n8n polls every 5 minutes** via `healthtech_master_workflow.json` — calls `api/get_scheduled_campaigns.php`
+3. **n8n polls every 5 minutes** via `fintech_master_workflow.json` — calls `api/get_scheduled_campaigns.php`
 4. **When the scheduled time arrives**, n8n loops through `send_one_email.php` until all emails are sent
 5. **Campaign is marked complete** automatically
 
@@ -60,7 +60,7 @@ N8N_API_KEY=<your_secure_key>   # set a strong unique value for production
 
 | File | Purpose | Active By Default |
 |---|---|---|
-| `healthtech_master_workflow.json` | Polls every 5 min for due scheduled campaigns → sends emails | No |
+| `fintech_master_workflow.json` | Polls every 5 min for due scheduled campaigns → sends emails | No |
 | `lead_collector.json` | Daily 8 AM — imports leads from Apollo | No |
 | `followup_sender.json` | Daily 10 AM — sends follow-up sequence 2 | No |
 | `response_tracker.json` | Every 10 min — polls IMAP inbox for replies | No |
@@ -90,10 +90,10 @@ The `response_tracker.json` uses n8n's built-in `emailSend` node for **admin not
 
 | Field | Value |
 |-------|-------|
-| **Name** | `HealthTech SMTP` |
+| **Name** | `Fintech SMTP` |
 | **Host** | `smtp.office365.com` |
 | **Port** | `587` |
-| **User** | `info@canadahealthtechsymposium.com` |
+| **User** | `info@canadafintechsymposium.com` |
 | **Password** | `<Outlook app password>` |
 | **SSL/TLS** | STARTTLS |
 
@@ -124,7 +124,7 @@ To cancel a scheduled campaign, click **✕ Cancel** next to it in the scheduled
 
 | Workflow File | Schedule | Purpose |
 |---|---|---|
-| `healthtech_master_workflow.json` | Every 5 min | Poll for due campaigns → send emails via PHP API |
+| `fintech_master_workflow.json` | Every 5 min | Poll for due campaigns → send emails via PHP API |
 | `lead_collector.json` | Daily 8 AM | Import leads from Apollo into the database |
 | `followup_sender.json` | Daily 10 AM | Send follow-up sequence 2 to eligible leads |
 | `response_tracker.json` | Every 10 min | Poll IMAP inbox, save responses, alert admin if new replies |

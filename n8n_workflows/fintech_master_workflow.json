@@ -1,6 +1,6 @@
 {
-  "name": "HealthTech Master Campaign Runner",
-  "description": "Canada HealthTech Symposium — Master Campaign Runner for fintech.softandpix.com",
+  "name": "Fintech Master Campaign Runner",
+  "description": "Canada Fintech Symposium — Master Campaign Runner for fintech.softandpix.com",
   "nodes": [
     {
       "parameters": {
@@ -27,7 +27,7 @@
           "parameters": [
             {
               "name": "api_key",
-              "value": "hts2026secure"
+              "value": "fts2026secure"
             }
           ]
         },
@@ -89,7 +89,7 @@
           "parameters": [
             {
               "name": "api_key",
-              "value": "hts2026secure"
+              "value": "fts2026secure"
             },
             {
               "name": "campaign_id",
@@ -202,6 +202,6 @@
     "executionOrder": "v1"
   },
   "staticData": null,
-  "tags": ["healthtech", "campaign", "scheduled"],
+  "tags": ["fintech", "campaign", "scheduled"],
   "pinData": {}
 }

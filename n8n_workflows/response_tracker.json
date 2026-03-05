@@ -1,5 +1,5 @@
 {
-  "name": "HealthTech Response Tracker",
+  "name": "Fintech Response Tracker",
   "nodes": [
     {
       "parameters": {
@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/poll_inbox.php",
+        "url": "https://YOURSITE.com/fintech/api/poll_inbox.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -50,7 +50,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/save_response.php",
+        "url": "https://YOURSITE.com/fintech/api/save_response.php",
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
@@ -106,9 +106,9 @@
       "parameters": {
         "fromEmail": "sm@101bdtech.com",
         "toEmail": "sm@101bdtech.com",
-        "subject": "HealthTech: {{ $json.saved }} New Response(s) Received",
+        "subject": "Fintech: {{ $json.saved }} New Response(s) Received",
         "emailType": "html",
-        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View Responses →</a></p>",
+        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/fintech/admin/responses.php\">View Responses →</a></p>",
         "options": {}
       },
       "id": "alert-email",
@@ -119,7 +119,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/check_hot_leads.php",
+        "url": "https://YOURSITE.com/fintech/api/check_hot_leads.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -170,9 +170,9 @@
       "parameters": {
         "fromEmail": "sm@101bdtech.com",
         "toEmail": "sm@101bdtech.com",
-        "subject": "🔥 HealthTech Hot Lead Alert: {{ $json.count }} Interested Response(s)",
+        "subject": "🔥 Fintech Hot Lead Alert: {{ $json.count }} Interested Response(s)",
         "emailType": "html",
-        "message": "<h2>🔥 Hot Lead Alert!</h2><p><strong>{{ $json.count }}</strong> interested response(s) detected.</p><p>These leads have shown interest and require immediate follow-up.</p><pre>{{ JSON.stringify($json.leads, null, 2) }}</pre><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View All Responses →</a></p>",
+        "message": "<h2>🔥 Hot Lead Alert!</h2><p><strong>{{ $json.count }}</strong> interested response(s) detected.</p><p>These leads have shown interest and require immediate follow-up.</p><pre>{{ JSON.stringify($json.leads, null, 2) }}</pre><p><a href=\"https://YOURSITE.com/fintech/admin/responses.php\">View All Responses →</a></p>",
         "options": {}
       },
       "id": "hot-lead-alert",
@@ -219,6 +219,6 @@
     "executionOrder": "v1"
   },
   "staticData": null,
-  "tags": ["healthtech","imap","responses"],
+  "tags": ["fintech","imap","responses"],
   "pinData": {}
 }

@@ -27,10 +27,10 @@ if (!$toEmail) {
     exit;
 }
 
-$subject = trim($input['subject'] ?? 'Test Email — Canada HealthTech Symposium');
+$subject = trim($input['subject'] ?? 'Test Email — Canada Fintech Symposium');
 $body    = trim($input['body']    ?? '');
 if ($body === '') {
-    $body = '<p>This is a test email sent from the <strong>Canada HealthTech Symposium</strong> platform.</p>'
+    $body = '<p>This is a test email sent from the <strong>Canada Fintech Symposium</strong> platform.</p>'
           . '<p>If you received this, your SMTP/email configuration is working correctly.</p>'
           . '<p style="color:#888;font-size:12px">Sent at: ' . date('Y-m-d H:i:s T') . '</p>';
 }

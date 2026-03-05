@@ -1,6 +1,6 @@
-# 🏥 Canada HealthTech Symposium 2026 — Campaign Management Platform
+# 💼 Canada Fintech Symposium 2026 — Campaign Management Platform
 
-A complete, production-ready PHP web application for managing the **Canada HealthTech Symposium 2026** — including lead management, automated email campaigns, IMAP inbox polling, response tracking, and n8n workflow automation.
+A complete, production-ready PHP web application for managing the **Canada Fintech Symposium 2026** — including lead management, automated email campaigns, IMAP inbox polling, response tracking, and n8n workflow automation.
 
 ---
 
@@ -71,7 +71,7 @@ Five n8n workflow files are included in `n8n_workflows/`. See **[docs/N8N_SETUP.
 ## 📁 Project Structure
 
 ```
-healthtech-symposium/
+fintech-symposium/
 ├── index.php                   # Redirects to dashboard
 ├── login.php                   # Login page
 ├── logout.php                  # Session logout
@@ -117,7 +117,7 @@ healthtech-symposium/
 │   ├── setup.sql               # Database schema and seed data
 │   └── auto_installer.php      # Web-based installer
 ├── n8n_workflows/
-│   ├── healthtech_master_workflow.json  # Polls every 5 min → sends scheduled campaigns
+│   ├── fintech_master_workflow.json  # Polls every 5 min → sends scheduled campaigns
 │   ├── lead_collector.json             # Daily 8 AM — imports leads from Apollo
 │   ├── followup_sender.json            # Daily 10 AM — sends follow-up sequence 2
 │   ├── response_tracker.json           # Every 10 min — polls IMAP inbox

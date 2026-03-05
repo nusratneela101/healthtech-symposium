@@ -56,7 +56,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/collect_leads.php",
+        "url": "https://YOURSITE.com/fintech/api/collect_leads.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [

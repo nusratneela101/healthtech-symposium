@@ -1,5 +1,5 @@
 /**
- * Canada HealthTech Symposium — app.js
+ * Canada Fintech Symposium — app.js
  */
 
 /** Start live clock in #clock element */

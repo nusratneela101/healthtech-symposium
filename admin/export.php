@@ -3,7 +3,7 @@ $pageTitle = 'Export Data';
 require_once __DIR__ . '/../includes/layout.php';
 Auth::requireSuperAdmin();
 
-$segments  = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
+$segments  = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','Fintech Startups','Other'];
 $statuses  = ['new','emailed','responded','converted','unsubscribed','bounced'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province ASC");
 ?>

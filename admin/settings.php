@@ -96,7 +96,7 @@ function s(string $key, string $fallback = ''): string {
             </div>
             <div class="sf-row">
                 <label>From Name</label>
-                <input class="fi" id="smtp_from_name" value="<?php echo s('smtp_from_name'); ?>" placeholder="Canada HealthTech Symposium">
+                <input class="fi" id="smtp_from_name" value="<?php echo s('smtp_from_name'); ?>" placeholder="Canada Fintech Symposium">
             </div>
         </div>
         <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
@@ -166,11 +166,11 @@ function s(string $key, string $fallback = ''): string {
         <div class="settings-grid">
             <div class="sf-row">
                 <label>Site Name</label>
-                <input class="fi" id="site_name" value="<?php echo s('site_name','Canada HealthTech Symposium 2026'); ?>" placeholder="Canada HealthTech Symposium 2026">
+                <input class="fi" id="site_name" value="<?php echo s('site_name','Canada Fintech Symposium 2026'); ?>" placeholder="Canada Fintech Symposium 2026">
             </div>
             <div class="sf-row">
                 <label>Site Tagline</label>
-                <input class="fi" id="site_tagline" value="<?php echo s('site_tagline','Igniting the Future of Health'); ?>" placeholder="Igniting the Future of Health">
+                <input class="fi" id="site_tagline" value="<?php echo s('site_tagline','Igniting the Future of Finance'); ?>" placeholder="Igniting the Future of Finance">
             </div>
             <div class="sf-row">
                 <label>Logo URL</label>
@@ -192,7 +192,7 @@ function s(string $key, string $fallback = ''): string {
             </div>
             <div class="sf-row" style="grid-column:span 2">
                 <label>Footer Text</label>
-                <input class="fi" id="footer_text" value="<?php echo s('footer_text','© 2026 Canada HealthTech Symposium. All rights reserved.'); ?>" placeholder="© 2026 Canada HealthTech Symposium" style="width:100%">
+                <input class="fi" id="footer_text" value="<?php echo s('footer_text','© 2026 Canada Fintech Symposium. All rights reserved.'); ?>" placeholder="© 2026 Canada Fintech Symposium" style="width:100%">
             </div>
         </div>
         <div style="margin-top:20px">

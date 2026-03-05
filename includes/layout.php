@@ -70,6 +70,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='campaign.php'?' active':''; ?>">
             📧 Campaign
         </a>
+        <?php if (Auth::isSuperAdmin()): ?>
+        <a href="<?php echo APP_URL; ?>/admin/schedule_campaign.php"
+           class="nav-item<?php echo $currentPage==='schedule_campaign.php'?' active':''; ?>">
+            📅 Schedule
+        </a>
+        <?php endif; ?>
         <a href="<?php echo APP_URL; ?>/admin/audit.php"
            class="nav-item<?php echo $currentPage==='audit.php'?' active':''; ?>">
             📋 Audit Report

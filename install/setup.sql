@@ -60,11 +60,13 @@ CREATE TABLE IF NOT EXISTS `campaigns` (
   `total_leads` int(11) DEFAULT 0,
   `sent_count` int(11) DEFAULT 0,
   `failed_count` int(11) DEFAULT 0,
-  `status` enum('draft','running','completed','paused') DEFAULT 'draft',
+  `status` enum('draft','scheduled','running','completed','paused') DEFAULT 'draft',
   `test_mode` tinyint(1) DEFAULT 0,
   `created_by` int(11) DEFAULT NULL,
   `started_at` datetime DEFAULT NULL,
   `completed_at` datetime DEFAULT NULL,
+  `scheduled_at` datetime DEFAULT NULL,
+  `scheduled_by` int(11) DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `campaign_key` (`campaign_key`)
@@ -183,6 +185,13 @@ INSERT IGNORE INTO `leads` (`first_name`,`last_name`,`full_name`,`email`,`compan
 ('Ben','Sharma','Ben Sharma','b.sharma@koho.ca','KOHO Financial','Product Manager','Product Manager','FinTech Startups','Canada','British Columbia','Vancouver','Apollo','new'),
 ('Ella','Morrison','Ella Morrison','e.morrison@clearco.com','Clearco','Business Development Manager','Business Development Manager','FinTech Startups','Canada','Ontario','Toronto','Apollo','new'),
 ('Kevin','Nguyen','Kevin Nguyen','k.nguyen@mastercard.ca','Mastercard Canada','VP Channel Sales','VP Channel Sales','Technology & Solution Providers','Canada','Ontario','Toronto','Apollo','new');
+
+-- Migration: Add scheduling columns to campaigns
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_at` datetime DEFAULT NULL AFTER `completed_at`;
+ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_by` int(11) DEFAULT NULL AFTER `scheduled_at`;
+
+-- Migration: Add 'scheduled' status to campaigns
+ALTER TABLE `campaigns` MODIFY COLUMN `status` enum('draft','scheduled','running','completed','paused') DEFAULT 'draft';
 
 -- Default Email Template
 INSERT INTO `email_templates` (`name`,`subject`,`html_body`,`is_default`) VALUES (

@@ -21,6 +21,13 @@ class EmailService {
         $mail->SMTPSecure = SMTP_SECURE;
         $mail->Port       = SMTP_PORT;
         $mail->CharSet    = 'UTF-8';
+        $mail->SMTPOptions = [
+            'ssl' => [
+                'verify_peer'       => false,
+                'verify_peer_name'  => false,
+                'allow_self_signed' => true,
+            ],
+        ];
         $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
         return $mail;
     }

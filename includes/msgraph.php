@@ -1,4 +1,8 @@
 <?php
+// Microsoft 365 OAuth2 + Graph API
+// If basic SMTP/IMAP auth is disabled by your M365 admin,
+// use OAuth2 flow: Admin Panel → Microsoft 365 → Connect
+// Then n8n should call /api/msgraph/poll_inbox.php instead of /api/poll_inbox.php
 class MsGraph {
 
     private static function tenantUrl(): string {

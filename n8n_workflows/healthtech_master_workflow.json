@@ -1,6 +1,6 @@
 {
   "name": "HealthTech Master Campaign Runner",
-  "description": "Canada HealthTech Symposium — Master Campaign Runner. Before activating, replace all occurrences of YOURSITE.com with your actual domain in the HTTP Request node URLs.",
+  "description": "Canada HealthTech Symposium — Master Campaign Runner for fintech.softandpix.com",
   "nodes": [
     {
       "parameters": {
@@ -21,13 +21,13 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/get_scheduled_campaigns.php",
+        "url": "https://fintech.softandpix.com/api/get_scheduled_campaigns.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "api_key",
-              "value": "YOUR_N8N_API_KEY"
+              "value": "hts2026secure"
             }
           ]
         },
@@ -81,7 +81,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/healthtech/api/send_one_email.php",
+        "url": "https://fintech.softandpix.com/api/send_one_email.php",
         "method": "POST",
         "sendBody": true,
         "contentType": "json",
@@ -89,7 +89,7 @@
           "parameters": [
             {
               "name": "api_key",
-              "value": "YOUR_N8N_API_KEY"
+              "value": "hts2026secure"
             },
             {
               "name": "campaign_id",
@@ -177,7 +177,7 @@
     },
     "Any Campaigns Due?": {
       "main": [
-        [{"node": "Split Campaigns", "type": "main", "index": 0}],
+        [[{"node": "Split Campaigns", "type": "main", "index": 0}]],
         []
       ]
     },
@@ -192,8 +192,8 @@
     },
     "Campaign Done?": {
       "main": [
-        [{"node": "Campaign Complete", "type": "main", "index": 0}],
-        [{"node": "Send One Email", "type": "main", "index": 0}]
+        [[{"node": "Campaign Complete", "type": "main", "index": 0}]],
+        [[{"node": "Send One Email", "type": "main", "index": 0}]]
       ]
     }
   },

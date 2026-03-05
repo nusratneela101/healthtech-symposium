@@ -77,6 +77,7 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
     <div style="display:flex;gap:10px">
     <a href="<?php echo APP_URL; ?>/admin/import_leads.php" class="btn-launch" style="text-decoration:none;font-size:13px">+ Import Leads</a>
     <a href="<?php echo htmlspecialchars(APP_URL . '/admin/leads.php?export_csv=1&' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??'']))); ?>" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export CSV</a>
+    <button class="btn-sec" style="font-size:13px" onclick="autoFixSegments()" aria-label="Auto-fix lead segments">🔍 Auto-Fix Segments</button>
     </div>
     <?php endif; ?>
 </div>
@@ -321,6 +322,21 @@ function doBulkExport(ids){
         a.click();
     })
     .catch(function(e){ alert('Export error: ' + e.message); });
+}
+
+function autoFixSegments(){
+    if (!confirm('Run auto-detection on all leads with segment "Other"?')) return;
+    fetch('<?php echo APP_URL; ?>/api/fix_segments.php', { method: 'POST' })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            showToast('✅ Fixed ' + d.fixed + ' of ' + d.total + ' "Other" leads.', 'success');
+            if (d.fixed > 0) setTimeout(function(){ location.reload(); }, 1500);
+        } else {
+            showToast('❌ Error: ' + (d.error || 'Unknown'), 'error');
+        }
+    })
+    .catch(function(e){ showToast('❌ Network error: ' + e.message, 'error'); });
 }
 
 function showToast(msg, type){

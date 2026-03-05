@@ -61,7 +61,7 @@ if (isset($_GET['export_csv']) && Auth::isSuperAdmin()) {
 
 $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 $leads = Database::fetchAll(
-    "SELECT * FROM leads WHERE $where ORDER BY created_at DESC LIMIT $perPage OFFSET $offset",
+    "SELECT id, full_name, email, company, job_title, role, segment, province, status, score, created_at FROM leads WHERE $where ORDER BY created_at DESC LIMIT $perPage OFFSET $offset",
     $params
 );
 
@@ -107,11 +107,36 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
     </form>
 </div>
 
+<?php if (Auth::isSuperAdmin()): ?>
+<!-- Bulk Actions Bar -->
+<div id="bulk-bar" style="display:none;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="bulk-count" style="font-size:13px;color:#8a9ab5">0 selected</span>
+    <select class="fi" id="bulk-action" style="min-width:180px">
+        <option value="">— Bulk Action —</option>
+        <option value="bulk_delete">🗑️ Delete Selected</option>
+        <option value="bulk_status_update">🔄 Change Status</option>
+        <option value="bulk_segment_update">📂 Change Segment</option>
+        <option value="bulk_export">⬇️ Export Selected</option>
+    </select>
+    <select class="fi" id="bulk-value-status" style="min-width:140px;display:none">
+        <?php foreach ($statuses as $s): ?><option value="<?php echo $s; ?>"><?php echo ucfirst($s); ?></option><?php endforeach; ?>
+    </select>
+    <select class="fi" id="bulk-value-segment" style="min-width:180px;display:none">
+        <?php foreach ($segments as $s): ?><option value="<?php echo $s; ?>"><?php echo $s; ?></option><?php endforeach; ?>
+    </select>
+    <button class="btn-launch" onclick="applyBulkAction()">▶ Apply</button>
+    <button class="btn-sec" onclick="clearSelection()">✕ Clear</button>
+</div>
+<?php endif; ?>
+
 <div class="gc">
     <div class="tbl-wrap">
         <table class="dt">
             <thead>
                 <tr>
+                    <?php if (Auth::isSuperAdmin()): ?>
+                    <th style="width:36px"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)" style="cursor:pointer"></th>
+                    <?php endif; ?>
                     <th>#</th>
                     <th>Name</th>
                     <th>Email</th>
@@ -120,13 +145,17 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
                     <th>Segment</th>
                     <th>Province</th>
                     <th>Status</th>
+                    <th>Score</th>
                     <th>Added</th>
                     <?php if (Auth::isSuperAdmin()): ?><th>Action</th><?php endif; ?>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($leads as $l): ?>
-            <tr>
+            <tr id="lead-row-<?php echo $l['id']; ?>">
+                <?php if (Auth::isSuperAdmin()): ?>
+                <td><input type="checkbox" class="lead-cb" value="<?php echo $l['id']; ?>" onchange="updateBulkBar()" style="cursor:pointer"></td>
+                <?php endif; ?>
                 <td><?php echo $l['id']; ?></td>
                 <td><?php echo htmlspecialchars($l['full_name']); ?></td>
                 <td style="font-size:12px"><?php echo htmlspecialchars($l['email']); ?></td>
@@ -135,6 +164,13 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
                 <td><?php echo pill($l['segment']); ?></td>
                 <td><?php echo htmlspecialchars($l['province']); ?></td>
                 <td><?php echo pill($l['status']); ?></td>
+                <td style="font-size:12px">
+                    <?php
+                    $score = (int)($l['score'] ?? 0);
+                    $scoreColor = $score >= 50 ? '#ef4444' : ($score >= 20 ? '#f59e0b' : '#8a9ab5');
+                    echo '<span style="font-weight:600;color:'.$scoreColor.'">'.$score.'</span>';
+                    ?>
+                </td>
                 <td style="font-size:12px"><?php echo timeAgo($l['created_at']); ?></td>
                 <?php if (Auth::isSuperAdmin()): ?>
                 <td>
@@ -147,12 +183,155 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
             </tr>
             <?php endforeach; ?>
             <?php if (empty($leads)): ?>
-            <tr><td colspan="<?php echo Auth::isSuperAdmin() ? 10 : 9; ?>" style="text-align:center;color:#8a9ab5;padding:32px">No leads found.</td></tr>
+            <tr><td colspan="<?php echo Auth::isSuperAdmin() ? 12 : 10; ?>" style="text-align:center;color:#8a9ab5;padding:32px">No leads found.</td></tr>
             <?php endif; ?>
             </tbody>
         </table>
     </div>
     <?php echo $pagination; ?>
 </div>
+
+<!-- Confirmation Modal -->
+<div id="bulk-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:12px;padding:24px;max-width:420px;width:90%">
+        <h3 style="margin:0 0 12px;font-size:16px" id="modal-title">Confirm Action</h3>
+        <p style="font-size:14px;color:#8a9ab5;margin:0 0 20px" id="modal-body">Are you sure?</p>
+        <div style="display:flex;gap:10px">
+            <button class="btn-launch" id="modal-confirm" onclick="confirmBulk()">✓ Confirm</button>
+            <button class="btn-sec" onclick="closeBulkModal()">✕ Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var pendingBulkAction = null;
+var pendingBulkIds    = [];
+var pendingBulkValue  = '';
+
+function getSelectedIds(){
+    return Array.from(document.querySelectorAll('.lead-cb:checked')).map(function(cb){ return parseInt(cb.value); });
+}
+
+function toggleSelectAll(cb){
+    document.querySelectorAll('.lead-cb').forEach(function(c){ c.checked = cb.checked; });
+    updateBulkBar();
+}
+
+function clearSelection(){
+    document.querySelectorAll('.lead-cb,#select-all').forEach(function(c){ c.checked = false; });
+    updateBulkBar();
+}
+
+function updateBulkBar(){
+    var ids = getSelectedIds();
+    var bar = document.getElementById('bulk-bar');
+    bar.style.display = ids.length > 0 ? 'flex' : 'none';
+    document.getElementById('bulk-count').textContent = ids.length + ' selected';
+    // Reset selects
+    document.getElementById('bulk-value-status').style.display  = 'none';
+    document.getElementById('bulk-value-segment').style.display = 'none';
+}
+
+document.getElementById('bulk-action').addEventListener('change', function(){
+    document.getElementById('bulk-value-status').style.display  = this.value === 'bulk_status_update'  ? 'inline-block' : 'none';
+    document.getElementById('bulk-value-segment').style.display = this.value === 'bulk_segment_update' ? 'inline-block' : 'none';
+});
+
+function applyBulkAction(){
+    var ids    = getSelectedIds();
+    var action = document.getElementById('bulk-action').value;
+    if (!ids.length) { alert('No leads selected'); return; }
+    if (!action)     { alert('Select a bulk action'); return; }
+
+    if (action === 'bulk_export') {
+        doBulkExport(ids);
+        return;
+    }
+
+    var value = '';
+    if (action === 'bulk_status_update')  value = document.getElementById('bulk-value-status').value;
+    if (action === 'bulk_segment_update') value = document.getElementById('bulk-value-segment').value;
+
+    pendingBulkAction = action;
+    pendingBulkIds    = ids;
+    pendingBulkValue  = value;
+
+    var titles = { bulk_delete:'Delete Leads', bulk_status_update:'Change Status', bulk_segment_update:'Change Segment' };
+    var bodies = {
+        bulk_delete: 'Permanently delete ' + ids.length + ' lead(s)? This cannot be undone.',
+        bulk_status_update: 'Update status of ' + ids.length + ' lead(s) to "' + value + '"?',
+        bulk_segment_update: 'Update segment of ' + ids.length + ' lead(s) to "' + value + '"?',
+    };
+    document.getElementById('modal-title').textContent = titles[action] || 'Confirm';
+    document.getElementById('modal-body').textContent  = bodies[action] || 'Are you sure?';
+    document.getElementById('bulk-modal').style.display = 'flex';
+}
+
+function closeBulkModal(){
+    document.getElementById('bulk-modal').style.display = 'none';
+}
+
+function confirmBulk(){
+    closeBulkModal();
+    var payload = { action: pendingBulkAction, ids: pendingBulkIds };
+    if (pendingBulkValue) payload.value = pendingBulkValue;
+
+    fetch('<?php echo APP_URL; ?>/api/bulk_leads.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.success) {
+            if (pendingBulkAction === 'bulk_delete') {
+                pendingBulkIds.forEach(function(id){ var r = document.getElementById('lead-row-'+id); if(r) r.remove(); });
+            }
+            clearSelection();
+            var msg = d.affected + ' lead(s) updated.';
+            if (typeof showToast === 'function') showToast('✅ ' + msg, 'success');
+            else alert(msg);
+            if (pendingBulkAction === 'bulk_status_update' || pendingBulkAction === 'bulk_segment_update') {
+                setTimeout(function(){ location.reload(); }, 1200);
+            }
+        } else {
+            alert('Error: ' + (d.error || 'Unknown error'));
+        }
+    })
+    .catch(function(e){ alert('Network error: ' + e.message); });
+}
+
+function doBulkExport(ids){
+    fetch('<?php echo APP_URL; ?>/api/bulk_leads.php', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({action:'bulk_export', ids: ids})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (!d.success || !d.leads) { alert('Export failed'); return; }
+        var cols = ['id','full_name','email','company','job_title','role','segment','country','province','city','source','status','linkedin_url','created_at'];
+        var csv  = cols.join(',') + '\n';
+        d.leads.forEach(function(l){
+            csv += cols.map(function(c){ return '"' + String(l[c]||'').replace(/"/g,'""') + '"'; }).join(',') + '\n';
+        });
+        var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'leads_selected_' + Date.now() + '.csv';
+        a.click();
+    })
+    .catch(function(e){ alert('Export error: ' + e.message); });
+}
+
+function showToast(msg, type){
+    var wrap = document.getElementById('toast-wrap');
+    if(!wrap) return;
+    var el = document.createElement('div');
+    el.className = 'toast toast-'+(type||'info');
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 4000);
+}
+</script>
 
 <?php require_once __DIR__ . '/../includes/layout_end.php'; ?>

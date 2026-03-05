@@ -13,6 +13,15 @@ try {
     $unreadCount = (int)($row['cnt'] ?? 0);
 } catch (Exception $e) {}
 
+$notifCount = 0;
+try {
+    $notifRow = Database::fetchOne(
+        "SELECT COUNT(*) AS cnt FROM notifications WHERE (user_id = ? OR user_id IS NULL) AND is_read = 0",
+        [$user['id'] ?? 0]
+    );
+    $notifCount = (int)($notifRow['cnt'] ?? 0);
+} catch (Exception $e) {}
+
 $flash = getFlash();
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
@@ -106,6 +115,14 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='oauth_connect.php'?' active':''; ?>">
             🔗 Microsoft 365
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/export.php"
+           class="nav-item<?php echo $currentPage==='export.php'?' active':''; ?>">
+            ⬇️ Export Data
+        </a>
+        <a href="<?php echo APP_URL; ?>/admin/settings.php"
+           class="nav-item<?php echo $currentPage==='settings.php'?' active':''; ?>">
+            ⚙️ Settings
+        </a>
         <?php endif; ?>
     </nav>
     <div class="sb-user">
@@ -124,6 +141,22 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <div style="display:flex;align-items:center;gap:16px">
             <div class="tb-clock" id="clock"></div>
             <div class="live-pill"><span class="ld"></span>LIVE</div>
+            <!-- Notification Bell -->
+            <div style="position:relative;cursor:pointer" id="notif-bell" title="Notifications">
+                <span style="font-size:20px">🔔</span>
+                <?php if ($notifCount > 0): ?>
+                <span id="notif-badge" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:50%;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 2px"><?php echo min($notifCount,99); ?></span>
+                <?php else: ?>
+                <span id="notif-badge" style="display:none;position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border-radius:50%;font-size:10px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 2px"></span>
+                <?php endif; ?>
+                <div id="notif-dropdown" style="display:none;position:absolute;right:0;top:28px;width:320px;background:#0d1b2e;border:1px solid #1e3a5f;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9999;max-height:400px;overflow-y:auto">
+                    <div style="padding:12px 16px;border-bottom:1px solid #1e3a5f;display:flex;justify-content:space-between;align-items:center">
+                        <span style="font-weight:600;font-size:13px">Notifications</span>
+                        <button onclick="markAllNotifRead()" style="background:none;border:none;color:#0d6efd;font-size:12px;cursor:pointer">Mark all read</button>
+                    </div>
+                    <div id="notif-list" style="padding:8px 0"><div style="padding:16px;text-align:center;color:#8a9ab5;font-size:13px">Loading…</div></div>
+                </div>
+            </div>
             <?php if (Auth::isSuperAdmin()): ?>
                 <span class="badge-sa">SUPER ADMIN</span>
             <?php endif; ?>

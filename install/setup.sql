@@ -260,3 +260,62 @@ INSERT INTO `email_templates` (`name`,`subject`,`html_body`,`is_default`) VALUES
 
 -- Migration: Add hot_alert_sent column to responses table
 ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `hot_alert_sent` tinyint(1) NOT NULL DEFAULT 0 AFTER `is_replied`;
+
+-- Site Settings table (Feature A)
+CREATE TABLE IF NOT EXISTS `site_settings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `setting_key` varchar(100) NOT NULL,
+  `setting_value` text,
+  `setting_group` varchar(50) DEFAULT 'general',
+  `updated_by` int(11) DEFAULT NULL,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `setting_key` (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Lead Tags system (Feature B14)
+CREATE TABLE IF NOT EXISTS `lead_tags` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `color` varchar(7) DEFAULT '#0d6efd',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `lead_tag_map` (
+  `lead_id` int(11) NOT NULL,
+  `tag_id` int(11) NOT NULL,
+  PRIMARY KEY (`lead_id`, `tag_id`),
+  FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`tag_id`) REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Notifications table (Feature D8)
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `title` varchar(200) NOT NULL,
+  `message` text,
+  `type` enum('info','success','warning','error') DEFAULT 'info',
+  `is_read` tinyint(1) DEFAULT 0,
+  `link` varchar(500) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `is_read` (`is_read`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Rate Limits table (Feature D24)
+CREATE TABLE IF NOT EXISTS `rate_limits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `identifier` varchar(200) NOT NULL,
+  `endpoint` varchar(200) NOT NULL,
+  `requests` int DEFAULT 1,
+  `window_start` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `identifier_endpoint` (`identifier`, `endpoint`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Migration: Add score column to leads table (Feature D17)
+ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `score` int DEFAULT 0 AFTER `notes`;

@@ -83,7 +83,7 @@ $activity = Database::fetchAll(
 
 // Recent leads
 $recentLeads = Database::fetchAll(
-    "SELECT id, full_name, email, company, job_title, status, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
+    "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
 );
 ?>
 
@@ -271,7 +271,7 @@ $recentLeads = Database::fetchAll(
     <div class="gc-sub">Latest additions to the database</div>
     <div class="tbl-wrap">
         <table class="dt">
-            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Company</th><th>Job Title</th><th>Status</th><th>Added</th></tr></thead>
+            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Company</th><th>Job Title</th><th>Status</th><th>Score</th><th>Added</th></tr></thead>
             <tbody>
             <?php foreach ($recentLeads as $l): ?>
             <tr>
@@ -281,6 +281,13 @@ $recentLeads = Database::fetchAll(
                 <td><?php echo htmlspecialchars($l['company']); ?></td>
                 <td><?php echo htmlspecialchars($l['job_title']); ?></td>
                 <td><?php echo pill($l['status']); ?></td>
+                <td>
+                    <?php
+                    $sc = (int)($l['score'] ?? 0);
+                    $sc_color = $sc >= 50 ? '#ef4444' : ($sc >= 20 ? '#f59e0b' : '#8a9ab5');
+                    echo '<span style="font-weight:600;color:'.$sc_color.'">'.$sc.'</span>';
+                    ?>
+                </td>
                 <td><?php echo timeAgo($l['created_at']); ?></td>
             </tr>
             <?php endforeach; ?>

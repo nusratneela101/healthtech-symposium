@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/rate_limiter.php';
 
 header('Content-Type: application/json');
 
@@ -12,6 +13,9 @@ if ($apiKey !== N8N_API_KEY) {
     echo json_encode(['error' => 'Unauthorized']);
     exit;
 }
+
+// Rate limit: 120 requests per minute per API caller
+RateLimiter::enforce($apiKey ?: RateLimiter::getIdentifier(), 'api/save_lead', 120, 60);
 
 $leads   = $input['leads'] ?? [];
 $source  = trim($input['source'] ?? 'Apollo');

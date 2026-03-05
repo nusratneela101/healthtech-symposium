@@ -180,6 +180,14 @@ $recentLeads = Database::fetchAll(
     </div>
 </div>
 
+<div class="gc" style="margin-top:20px" id="limits-widget">
+    <div class="gc-title">📊 Today's Sending Limits</div>
+    <div class="gc-sub">Real-time usage against configured limits</div>
+    <div id="limits-content" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px">
+        <div style="text-align:center;color:#8a9ab5;font-size:13px">Loading...</div>
+    </div>
+</div>
+
 <div class="grid-2">
     <div class="gc">
         <div class="gc-title">📈 Daily Email Activity (14 Days)</div>
@@ -335,6 +343,34 @@ new ApexCharts(document.getElementById('campChart'), {
     legend:{labels:{colors:'#8a9ab5'}},
     tooltip:{theme:'dark'}
 }).render();
+
+(async function loadDashboardLimits() {
+    try {
+        const r = await fetch('<?php echo APP_URL; ?>/api/get_sending_stats.php');
+        const d = await r.json();
+        const container = document.getElementById('limits-content');
+        if (!container) return;
+        const allRows = [
+            ...d.campaign.map(x => ({ ...x, type: 'Campaign' })),
+            ...d.followup.map(x => ({ ...x, type: 'Follow-up' })),
+        ];
+        container.innerHTML = allRows.map(x => {
+            const pct = Math.min(x.pct, 100);
+            const barColor = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : '#10b981';
+            const caption = x.limit === 0
+                ? `${x.sent} sent — Unlimited`
+                : `${x.sent} / ${x.limit} (${pct}%)`;
+            return `<div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px">
+                <div style="font-size:12px;color:#8a9ab5;margin-bottom:4px">${x.type} · ${x.label}</div>
+                <div style="font-size:18px;font-weight:700;color:#e2e8f0">${x.sent}</div>
+                <div style="background:#1e3355;border-radius:4px;height:5px;margin:6px 0;overflow:hidden">
+                    <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width .4s"></div>
+                </div>
+                <div style="font-size:11px;color:#8a9ab5">${caption}</div>
+            </div>`;
+        }).join('');
+    } catch(e) {}
+})();
 </script>
 
 <?php require_once __DIR__ . '/../includes/layout_end.php'; ?>

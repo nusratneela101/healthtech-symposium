@@ -26,6 +26,10 @@ $allowedKeys = [
     'api_keys' => ['n8n_api_key','brevo_api_key','ms_oauth_client_id','ms_oauth_client_secret','ms_oauth_tenant_id','apollo_api_key'],
     'email_defaults' => ['send_delay','max_batch','test_mode_default'],
     'email_setup'    => ['email_provider'],
+    'sending_limits' => [
+        'email_daily_limit','email_weekly_limit','email_monthly_limit',
+        'followup_daily_limit','followup_weekly_limit','followup_monthly_limit',
+    ],
 ];
 
 if (!isset($allowedKeys[$group])) {

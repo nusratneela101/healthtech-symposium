@@ -49,6 +49,7 @@ function s(string $key, string $fallback = ''): string {
         'branding'      => '🎨 Branding',
         'api_keys'      => '🔑 API Keys',
         'email_defaults'=> '⚙️ Email Defaults',
+        'sending_limits'=> '📊 Sending Limits',
     ];
     $firstTab = true;
     foreach ($tabs as $id => $label):
@@ -420,6 +421,79 @@ function s(string $key, string $fallback = ''): string {
     </div>
 </div>
 
+<!-- ─── SENDING LIMITS ──────────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-sending_limits" style="display:none">
+    <div class="gc">
+        <div class="gc-title">📊 Sending Limits</div>
+        <div class="gc-sub">Set maximum emails per period. 0 = Unlimited. Limits are enforced in real-time by the sending API.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px">
+
+            <!-- Campaign Emails -->
+            <div>
+                <div style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:16px">📧 Campaign Emails (Sequence 1)</div>
+                <div class="sf-row">
+                    <label>Daily Limit</label>
+                    <input class="fi" id="email_daily_limit" type="number" min="0"
+                           value="<?php echo s('email_daily_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_email_daily"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_email_daily">Loading...</div>
+                </div>
+                <div class="sf-row">
+                    <label>Weekly Limit</label>
+                    <input class="fi" id="email_weekly_limit" type="number" min="0"
+                           value="<?php echo s('email_weekly_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_email_weekly"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_email_weekly">Loading...</div>
+                </div>
+                <div class="sf-row">
+                    <label>Monthly Limit</label>
+                    <input class="fi" id="email_monthly_limit" type="number" min="0"
+                           value="<?php echo s('email_monthly_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_email_monthly"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_email_monthly">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Follow-up Emails -->
+            <div>
+                <div style="font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:16px">📨 Follow-up Emails (Sequence 2+)</div>
+                <div class="sf-row">
+                    <label>Daily Limit</label>
+                    <input class="fi" id="followup_daily_limit" type="number" min="0"
+                           value="<?php echo s('followup_daily_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_followup_daily"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_followup_daily">Loading...</div>
+                </div>
+                <div class="sf-row">
+                    <label>Weekly Limit</label>
+                    <input class="fi" id="followup_weekly_limit" type="number" min="0"
+                           value="<?php echo s('followup_weekly_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_followup_weekly"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_followup_weekly">Loading...</div>
+                </div>
+                <div class="sf-row">
+                    <label>Monthly Limit</label>
+                    <input class="fi" id="followup_monthly_limit" type="number" min="0"
+                           value="<?php echo s('followup_monthly_limit','0'); ?>" placeholder="0 = Unlimited">
+                    <div class="limit-bar-wrap" id="bar_followup_monthly"><div class="limit-bar" style="width:0%"></div></div>
+                    <div class="limit-caption" id="cap_followup_monthly">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px">
+            <button class="btn-launch"
+                onclick="saveSection('sending_limits',[
+                    'email_daily_limit','email_weekly_limit','email_monthly_limit',
+                    'followup_daily_limit','followup_weekly_limit','followup_monthly_limit'
+                ])">💾 Save Limits</button>
+            <span style="font-size:12px;color:#8a9ab5;margin-left:12px">0 = Unlimited (no restriction applied)</span>
+        </div>
+        <div id="sending_limits-result" style="margin-top:10px;font-size:13px"></div>
+    </div>
+</div>
+
 <style>
 .tab-btn { background:#1a2f4e;border:1px solid #1e3a5f;color:#e2e8f0;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;transition:.2s }
 .tab-btn.active,.tab-btn:hover { background:#0d6efd;border-color:#0d6efd;color:#fff }
@@ -444,6 +518,11 @@ function s(string $key, string $fallback = ''): string {
 .provider-meta { font-size:12px;color:#60738a }
 .provider-selected-label { position:absolute;bottom:10px;right:12px;font-size:11px;color:#10b981;font-weight:600 }
 @media(max-width:640px){ .settings-grid { grid-template-columns:1fr } .provider-grid { grid-template-columns:1fr } }
+.limit-bar-wrap { background:#1e3355; border-radius:4px; height:6px; margin-top:6px; overflow:hidden; }
+.limit-bar      { height:100%; background:#10b981; border-radius:4px; transition:width .4s; }
+.limit-bar.warn { background:#f59e0b; }
+.limit-bar.danger { background:#ef4444; }
+.limit-caption  { font-size:11px; color:#8a9ab5; margin-top:3px; }
 </style>
 
 <script>
@@ -696,6 +775,31 @@ function testConnection(service, resultId) {
 if (currentSelectedProvider && providerDefaults[currentSelectedProvider]) {
     selectProvider(currentSelectedProvider);
 }
+
+async function loadLimitStats() {
+    try {
+        const r = await fetch('<?php echo APP_URL; ?>/api/get_sending_stats.php');
+        const d = await r.json();
+        const rows = [
+            ...d.campaign.map(x => ({ ...x, prefix: 'email_' + x.label.toLowerCase() })),
+            ...d.followup.map(x => ({ ...x, prefix: 'followup_' + x.label.toLowerCase() })),
+        ];
+        rows.forEach(x => {
+            const barWrap = document.getElementById('bar_' + x.prefix);
+            const cap     = document.getElementById('cap_' + x.prefix);
+            if (!barWrap || !cap) return;
+            const bar = barWrap.querySelector('.limit-bar');
+            const pct = Math.min(x.pct, 100);
+            bar.style.width = pct + '%';
+            bar.className   = 'limit-bar' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+            cap.textContent = x.limit === 0
+                ? `${x.sent} sent — Unlimited`
+                : `${x.sent} / ${x.limit} sent (${pct}%)`;
+        });
+    } catch(e) {}
+}
+// Load when tab is shown
+document.getElementById('tabn-sending_limits')?.addEventListener('click', loadLimitStats);
 </script>
 
 <?php require_once __DIR__ . '/../includes/layout_end.php'; ?>

@@ -37,13 +37,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth:
     exit;
 }
 
+// CSV export (superadmin only)
+if (isset($_GET['export_csv']) && Auth::isSuperAdmin()) {
+    $exportLeads = Database::fetchAll(
+        "SELECT * FROM leads WHERE $where ORDER BY created_at DESC",
+        $params
+    );
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="leads_' . date('Y-m-d') . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['ID','First Name','Last Name','Full Name','Email','Company','Job Title','Role','Segment','Country','Province','City','Source','Status','LinkedIn','Created At']);
+    foreach ($exportLeads as $l) {
+        fputcsv($out, [
+            $l['id'], $l['first_name'], $l['last_name'], $l['full_name'], $l['email'],
+            $l['company'], $l['job_title'], $l['role'], $l['segment'],
+            $l['country'], $l['province'], $l['city'], $l['source'],
+            $l['status'], $l['linkedin_url'], $l['created_at']
+        ]);
+    }
+    fclose($out);
+    exit;
+}
+
 $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 $leads = Database::fetchAll(
     "SELECT * FROM leads WHERE $where ORDER BY created_at DESC LIMIT $perPage OFFSET $offset",
     $params
 );
 
-$segments  = ['Financial Institutions','Technology & Solution Providers','Venture Capital / Investors','FinTech Startups','Other'];
+$segments  = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
 $statuses  = ['new','emailed','responded','converted','unsubscribed','bounced'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province ASC");
 $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??''])));
@@ -52,7 +74,10 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <h2 style="font-size:20px">👥 Lead Database <span style="font-size:14px;color:#8a9ab5;font-weight:400">(<?php echo number_format($total); ?> total)</span></h2>
     <?php if (Auth::isSuperAdmin()): ?>
+    <div style="display:flex;gap:10px">
     <a href="<?php echo APP_URL; ?>/admin/import_leads.php" class="btn-launch" style="text-decoration:none;font-size:13px">+ Import Leads</a>
+    <a href="<?php echo htmlspecialchars(APP_URL . '/admin/leads.php?export_csv=1&' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??'']))); ?>" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export CSV</a>
+    </div>
     <?php endif; ?>
 </div>
 

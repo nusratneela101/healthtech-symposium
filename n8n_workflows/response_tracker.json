@@ -1,5 +1,5 @@
 {
-  "name": "FinTech Response Tracker",
+  "name": "HealthTech Response Tracker",
   "nodes": [
     {
       "parameters": {
@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/poll_inbox.php",
+        "url": "https://YOURSITE.com/healthtech/api/poll_inbox.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -50,7 +50,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/save_response.php",
+        "url": "https://YOURSITE.com/healthtech/api/save_response.php",
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
@@ -104,11 +104,11 @@
     },
     {
       "parameters": {
-        "fromEmail": "info@canadafintechsymposium.com",
-        "toEmail": "info@canadafintechsymposium.com",
-        "subject": "FinTech: {{ $json.saved }} New Response(s) Received",
+        "fromEmail": "sm@101bdtech.com",
+        "toEmail": "sm@101bdtech.com",
+        "subject": "HealthTech: {{ $json.saved }} New Response(s) Received",
         "emailType": "html",
-        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://fintech.softandpix.com/admin/responses.php\">View Responses →</a></p>",
+        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View Responses →</a></p>",
         "options": {}
       },
       "id": "alert-email",
@@ -116,6 +116,70 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://YOURSITE.com/healthtech/api/check_hot_leads.php",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "HTS2026Key"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "check-hot-leads",
+      "name": "Check Hot Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "hot-lead-check",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-hot-leads",
+      "name": "Hot Leads Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "sm@101bdtech.com",
+        "toEmail": "sm@101bdtech.com",
+        "subject": "🔥 HealthTech Hot Lead Alert: {{ $json.count }} Interested Response(s)",
+        "emailType": "html",
+        "message": "<h2>🔥 Hot Lead Alert!</h2><p><strong>{{ $json.count }}</strong> interested response(s) detected.</p><p>These leads have shown interest and require immediate follow-up.</p><pre>{{ JSON.stringify($json.leads, null, 2) }}</pre><p><a href=\"https://YOURSITE.com/healthtech/admin/responses.php\">View All Responses →</a></p>",
+        "options": {}
+      },
+      "id": "hot-lead-alert",
+      "name": "Send Hot Lead Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2000, 100]
     }
   ],
   "connections": {
@@ -136,6 +200,18 @@
         [{"node":"Send Alert Email","type":"main","index":0}],
         []
       ]
+    },
+    "Send Alert Email": {
+      "main": [[{"node":"Check Hot Leads","type":"main","index":0}]]
+    },
+    "Check Hot Leads": {
+      "main": [[{"node":"Hot Leads Found?","type":"main","index":0}]]
+    },
+    "Hot Leads Found?": {
+      "main": [
+        [{"node":"Send Hot Lead Alert","type":"main","index":0}],
+        []
+      ]
     }
   },
   "active": false,
@@ -143,6 +219,6 @@
     "executionOrder": "v1"
   },
   "staticData": null,
-  "tags": ["fintech","imap","responses"],
+  "tags": ["healthtech","imap","responses"],
   "pinData": {}
 }

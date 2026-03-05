@@ -50,7 +50,7 @@ foreach ($leads as $l) {
     $fn = trim($l['first_name'] ?? '');
     $ln = trim($l['last_name'] ?? '');
     $segment = trim($l['segment'] ?? 'Other');
-    $validSegs = ['Financial Institutions','Technology & Solution Providers','Venture Capital / Investors','FinTech Startups','Other'];
+    $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
     if (!in_array($segment, $validSegs)) $segment = 'Other';
 
     try {
@@ -90,5 +90,6 @@ echo json_encode([
     'collection_id' => $collectionId,
     'saved' => $saved,
     'skipped' => $skipped,
-    'duplicates' => $duplicates
+    'duplicates' => $duplicates,
+    'total_fetched' => count($leads)
 ]);

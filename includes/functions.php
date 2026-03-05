@@ -24,6 +24,11 @@ function pill(string $status): string {
         'Venture Capital / Investors'      => 'p-vc',
         'FinTech Startups'                 => 'p-ft',
         'Technology & Solution Providers'  => 'p-tp',
+        'Healthcare Providers'             => 'p-hp',
+        'Health IT & Digital Health'       => 'p-hi',
+        'Pharmaceutical & Biotech'         => 'p-pb',
+        'Medical Devices'                  => 'p-md',
+        'HealthTech Startups'              => 'p-hs',
     ];
     $cls = $map[$status] ?? 'p-other';
     return '<span class="pill ' . $cls . '">' . htmlspecialchars($status) . '</span>';

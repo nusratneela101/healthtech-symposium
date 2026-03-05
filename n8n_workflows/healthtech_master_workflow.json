@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/get_scheduled_campaigns.php",
+        "url": "https://YOURSITE.com/healthtech/api/get_scheduled_campaigns.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -80,7 +80,7 @@
     },
     {
       "parameters": {
-        "url": "https://fintech.softandpix.com/api/send_one_email.php",
+        "url": "https://YOURSITE.com/healthtech/api/send_one_email.php",
         "method": "POST",
         "sendBody": true,
         "contentType": "json",

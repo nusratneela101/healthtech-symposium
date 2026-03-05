@@ -186,12 +186,68 @@ INSERT IGNORE INTO `leads` (`first_name`,`last_name`,`full_name`,`email`,`compan
 ('Ella','Morrison','Ella Morrison','e.morrison@clearco.com','Clearco','Business Development Manager','Business Development Manager','FinTech Startups','Canada','Ontario','Toronto','Apollo','new'),
 ('Kevin','Nguyen','Kevin Nguyen','k.nguyen@mastercard.ca','Mastercard Canada','VP Channel Sales','VP Channel Sales','Technology & Solution Providers','Canada','Ontario','Toronto','Apollo','new');
 
+-- Lead collection history tables (included here for fresh installs; also added as migration below for existing installs)
+CREATE TABLE IF NOT EXISTS `lead_collections` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `source` varchar(100) DEFAULT 'Apollo',
+  `total_fetched` int(11) DEFAULT 0,
+  `total_saved` int(11) DEFAULT 0,
+  `total_skipped` int(11) DEFAULT 0,
+  `total_duplicates` int(11) DEFAULT 0,
+  `search_params` text DEFAULT NULL,
+  `status` enum('running','completed','failed') DEFAULT 'completed',
+  `error_message` text DEFAULT NULL,
+  `started_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `lead_collection_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `collection_id` int(11) NOT NULL,
+  `lead_id` int(11) NOT NULL,
+  `action` enum('created','skipped','duplicate') DEFAULT 'created',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_collection` (`collection_id`),
+  KEY `idx_lead` (`lead_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Migration: Add scheduling columns to campaigns
 ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_at` datetime DEFAULT NULL AFTER `completed_at`;
 ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_by` int(11) DEFAULT NULL AFTER `scheduled_at`;
 
 -- Migration: Add 'scheduled' status to campaigns
 ALTER TABLE `campaigns` MODIFY COLUMN `status` enum('draft','scheduled','running','completed','paused') DEFAULT 'draft';
+
+-- Migration: Lead collection history tables
+CREATE TABLE IF NOT EXISTS `lead_collections` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `source` varchar(100) DEFAULT 'Apollo',
+  `total_fetched` int(11) DEFAULT 0,
+  `total_saved` int(11) DEFAULT 0,
+  `total_skipped` int(11) DEFAULT 0,
+  `total_duplicates` int(11) DEFAULT 0,
+  `search_params` text DEFAULT NULL,
+  `status` enum('running','completed','failed') DEFAULT 'completed',
+  `error_message` text DEFAULT NULL,
+  `started_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `lead_collection_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `collection_id` int(11) NOT NULL,
+  `lead_id` int(11) NOT NULL,
+  `action` enum('created','skipped','duplicate') DEFAULT 'created',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_collection` (`collection_id`),
+  KEY `idx_lead` (`lead_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Default Email Template
 INSERT INTO `email_templates` (`name`,`subject`,`html_body`,`is_default`) VALUES (

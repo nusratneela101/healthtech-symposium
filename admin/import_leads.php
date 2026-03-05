@@ -23,6 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
             $segment   = trim($data['segment'] ?? 'Other');
             $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices & Equipment','Venture Capital / Investors','Other'];
             if (!in_array($segment, $validSegs)) $segment = 'Other';
+            if ($segment === 'Other') {
+                $segment = detectSegment(trim($data['job_title'] ?? ''), trim($data['company'] ?? ''));
+            }
             try {
                 Database::query(
                     "INSERT IGNORE INTO leads
@@ -66,7 +69,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['manual_email'])) {
                 [
                     $fn, $ln, "$fn $ln", $email,
                     trim($_POST['company'] ?? ''), trim($_POST['job_title'] ?? ''),
-                    trim($_POST['role'] ?? ''), trim($_POST['segment'] ?? 'Other'),
+                    trim($_POST['role'] ?? ''), ($seg = trim($_POST['segment'] ?? 'Other')) === 'Other'
+                        ? detectSegment(trim($_POST['job_title'] ?? ''), trim($_POST['company'] ?? ''))
+                        : $seg,
                     trim($_POST['country'] ?? 'Canada'), trim($_POST['province'] ?? ''),
                     trim($_POST['city'] ?? ''), 'Manual',
                 ]

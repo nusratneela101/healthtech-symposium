@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/rate_limiter.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
 
@@ -52,6 +53,11 @@ foreach ($leads as $l) {
     $segment = trim($l['segment'] ?? 'Other');
     $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','Fintech Startups','Other'];
     if (!in_array($segment, $validSegs)) $segment = 'Other';
+    if ($segment === 'Other') {
+        $jobTitle = trim($l['role'] ?? ($l['job_title'] ?? ''));
+        $company  = trim($l['company'] ?? '');
+        $segment  = detectSegment($jobTitle, $company);
+    }
     try {
         Database::query(
             "INSERT IGNORE INTO leads

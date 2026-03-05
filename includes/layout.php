@@ -22,6 +22,12 @@ try {
     $notifCount = (int)($notifRow['cnt'] ?? 0);
 } catch (Exception $e) {}
 
+$emailProvider = '';
+try {
+    $epRow = Database::fetchOne("SELECT setting_value FROM site_settings WHERE setting_key='email_provider'");
+    $emailProvider = $epRow['setting_value'] ?? '';
+} catch (Exception $e) {}
+
 $flash = getFlash();
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
@@ -111,10 +117,12 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='users.php'?' active':''; ?>">
             👤 Users
         </a>
+        <?php if (Auth::isSuperAdmin() && $emailProvider === 'microsoft365'): ?>
         <a href="<?php echo APP_URL; ?>/admin/oauth_connect.php"
            class="nav-item<?php echo $currentPage==='oauth_connect.php'?' active':''; ?>">
             🔗 Microsoft 365
         </a>
+        <?php endif; ?>
         <a href="<?php echo APP_URL; ?>/admin/export.php"
            class="nav-item<?php echo $currentPage==='export.php'?' active':''; ?>">
             ⬇️ Export Data

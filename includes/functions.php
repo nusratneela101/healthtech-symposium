@@ -67,6 +67,45 @@ function paginate(int $total, int $page, int $perPage, string $baseUrl): string 
     return $html;
 }
 
+function detectSegment(string $jobTitle, string $company): string {
+    $haystack = trim($jobTitle) . ' ' . trim($company);
+
+    $rules = [
+        'Healthcare Providers' => [
+            'doctor','physician','hospital','clinic','nurse','surgeon',
+            'medical director','health system','health centre','healthcare',
+        ],
+        'Health IT & Digital Health' => [
+            'cto','software','digital health','it','platform','tech','data',
+            'engineer','developer','health it','informatics',
+        ],
+        'Pharmaceutical & Biotech' => [
+            'pharma','drug','biotech','biotechnology','clinical',
+            'therapeutics','bioscience',
+        ],
+        'Medical Devices & Equipment' => [
+            'device','medical equipment','implant','diagnostics','imaging','medtech',
+        ],
+        'Venture Capital / Investors' => [
+            'vc','venture capital','investor','capital','fund','managing partner',
+            'angel','investment','private equity',
+        ],
+        'Fintech Startups' => [
+            'startup','fintech','founder','co-founder',
+        ],
+    ];
+
+    foreach ($rules as $segment => $keywords) {
+        foreach ($keywords as $kw) {
+            if (stripos($haystack, $kw) !== false) {
+                return $segment;
+            }
+        }
+    }
+
+    return 'Other';
+}
+
 function audit_log(string $action, string $entityType = '', ?int $entityId = null, string $details = ''): void {
     try {
         $userId = null;

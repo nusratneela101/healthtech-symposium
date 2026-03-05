@@ -106,9 +106,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `recipient_email` varchar(200) NOT NULL,
               `recipient_name` varchar(200) DEFAULT '',
               `subject` varchar(500) DEFAULT '',
-              `status` enum('queued','sent','failed','bounced','opened') DEFAULT 'queued',
+              `status` enum('queued','sent','failed','bounced','opened','delivered') DEFAULT 'queued',
               `message_id` varchar(500) DEFAULT '',
               `error_message` text,
+              `follow_up_sequence` tinyint(1) DEFAULT 1,
+              `opened_at` datetime DEFAULT NULL,
               `sent_at` datetime DEFAULT NULL,
               `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`)
@@ -124,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `body_text` text,
               `body_html` longtext,
               `message_id` varchar(500) DEFAULT NULL,
-              `response_type` enum('interested','not_interested','more_info','auto_reply','bounce','other') DEFAULT 'other',
+              `response_type` enum('interested','not_interested','more_info','wrong_person','auto_reply','bounce','other') DEFAULT 'other',
               `is_read` tinyint(1) DEFAULT 0,
               `is_replied` tinyint(1) DEFAULT 0,
               `received_at` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -137,9 +139,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `response_id` int(11) NOT NULL,
               `replied_by` int(11) DEFAULT NULL,
               `reply_subject` varchar(500) DEFAULT '',
-              `reply_body` longtext,
-              `sent_at` datetime DEFAULT CURRENT_TIMESTAMP,
-              PRIMARY KEY (`id`)
+              `reply_body` text,
+              `message_id` varchar(500) DEFAULT '',
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_response` (`response_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `oauth_accounts` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `provider` varchar(50) NOT NULL DEFAULT 'microsoft',
+              `email` varchar(200) NOT NULL,
+              `access_token` text NOT NULL,
+              `refresh_token` text NOT NULL,
+              `token_expires_at` datetime DEFAULT NULL,
+              `scopes` varchar(500) DEFAULT '',
+              `connected_by` int(11) DEFAULT NULL,
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `provider_email` (`provider`, `email`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `reply_threads` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `lead_id` int(11) DEFAULT NULL,
+              `campaign_id` int(11) DEFAULT NULL,
+              `subject` varchar(500) DEFAULT '',
+              `conversation_id` varchar(500) DEFAULT '',
+              `last_message_at` datetime DEFAULT NULL,
+              `message_count` int(11) DEFAULT 1,
+              `status` enum('active','closed','archived') DEFAULT 'active',
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_lead` (`lead_id`),
+              KEY `idx_campaign` (`campaign_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `audit_logs` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `user_id` int(11) DEFAULT NULL,
+              `action` varchar(100) NOT NULL,
+              `entity_type` varchar(50) DEFAULT '',
+              `entity_id` int(11) DEFAULT NULL,
+              `details` text,
+              `ip_address` varchar(45) DEFAULT '',
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_user` (`user_id`),
+              KEY `idx_action` (`action`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             // Insert superadmin
@@ -157,12 +205,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute(['FinTech Symposium 2026 Invitation','Exclusive Invitation: Canada FinTech Symposium 2026', $tplBody]);
 
             // Write config files
-            $dbConfig = "<?php\nclass Database {\n    private static ?PDO \$instance = null;\n    private static array \$config = [\n        'host'    => '$dbHost',\n        'dbname'  => '$dbName',\n        'user'    => '$dbUser',\n        'pass'    => '$dbPass',\n        'charset' => 'utf8mb4',\n    ];\n    public static function getConnection(): PDO {\n        if (self::\$instance === null) {\n            \$c = self::\$config;\n            \$dsn = \"mysql:host={\$c['host']};dbname={\$c['dbname']};charset={\$c['charset']}\";\n            self::\$instance = new PDO(\$dsn, \$c['user'], \$c['pass'], [\n                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,\n                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,\n                PDO::ATTR_EMULATE_PREPARES   => false,\n            ]);\n        }\n        return self::\$instance;\n    }\n    public static function query(string \$sql, array \$p = []): PDOStatement {\n        \$s = self::getConnection()->prepare(\$sql);\n        \$s->execute(\$p);\n        return \$s;\n    }\n    public static function fetchAll(string \$sql, array \$p = []): array { return self::query(\$sql, \$p)->fetchAll(); }\n    public static function fetchOne(string \$sql, array \$p = []): ?array { \$r = self::query(\$sql, \$p)->fetch(); return \$r ?: null; }\n    public static function lastInsertId(): string { return self::getConnection()->lastInsertId(); }\n}\n";
+            $dbConfig = "<?php\nrequire_once __DIR__ . '/../includes/env_loader.php';\nloadEnv(__DIR__ . '/../.env');\n\nclass Database {\n    private static ?PDO \$instance = null;\n\n    public static function getConnection(): PDO {\n        if (self::\$instance === null) {\n            \$host    = \$_ENV['DB_HOST']    ?? 'localhost';\n            \$dbname  = \$_ENV['DB_NAME']    ?? '';\n            \$user    = \$_ENV['DB_USER']    ?? '';\n            \$pass    = \$_ENV['DB_PASS']    ?? '';\n            \$charset = 'utf8mb4';\n            \$dsn = \"mysql:host={\$host};dbname={\$dbname};charset={\$charset}\";\n            self::\$instance = new PDO(\$dsn, \$user, \$pass, [\n                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,\n                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,\n                PDO::ATTR_EMULATE_PREPARES   => false,\n            ]);\n        }\n        return self::\$instance;\n    }\n    public static function query(string \$sql, array \$p = []): PDOStatement {\n        \$s = self::getConnection()->prepare(\$sql);\n        \$s->execute(\$p);\n        return \$s;\n    }\n    public static function fetchAll(string \$sql, array \$p = []): array { return self::query(\$sql, \$p)->fetchAll(); }\n    public static function fetchOne(string \$sql, array \$p = []): ?array { \$r = self::query(\$sql, \$p)->fetch(); return \$r ?: null; }\n    public static function lastInsertId(): string { return self::getConnection()->lastInsertId(); }\n}\n";
 
-            $appConfig = "<?php\ndefine('APP_NAME',        'Canada FinTech Symposium');\ndefine('APP_URL',         '$appUrl');\ndefine('APP_VERSION',     '2.0.0');\ndefine('SMTP_HOST',       'mail.101bdtech.com');\ndefine('SMTP_PORT',       465);\ndefine('SMTP_SECURE',     'ssl');\ndefine('SMTP_USER',       'sm@101bdtech.com');\ndefine('SMTP_PASS',       'Nurnobi131221');\ndefine('SMTP_FROM_EMAIL', 'sm@101bdtech.com');\ndefine('SMTP_FROM_NAME',  'Canada FinTech Symposium');\ndefine('IMAP_HOST',       '{mail.101bdtech.com:993/imap/ssl/novalidate-cert}INBOX');\ndefine('IMAP_USER',       'sm@101bdtech.com');\ndefine('IMAP_PASS',       'Nurnobi131221');\ndefine('N8N_API_KEY',     'HTS2026Key');\ndefine('SESSION_NAME',    'hts_session');\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
+            // Write .env file
+            $envContent = "APP_NAME=\"Canada HealthTech Symposium\"\n";
+            $envContent .= "APP_URL=\"$appUrl\"\n";
+            $envContent .= "APP_VERSION=\"2.0.0\"\n\n";
+            $envContent .= "DB_HOST=$dbHost\n";
+            $envContent .= "DB_NAME=$dbName\n";
+            $envContent .= "DB_USER=$dbUser\n";
+            $envContent .= "DB_PASS=$dbPass\n\n";
+            $envContent .= "SMTP_HOST=smtp-relay.brevo.com\n";
+            $envContent .= "SMTP_PORT=587\n";
+            $envContent .= "SMTP_SECURE=tls\n";
+            $envContent .= "SMTP_USER=\n";
+            $envContent .= "SMTP_PASS=\n";
+            $envContent .= "SMTP_FROM_EMAIL=\n";
+            $envContent .= "SMTP_FROM_NAME=\"Canada HealthTech Symposium\"\n\n";
+            $envContent .= "IMAP_HOST=\n";
+            $envContent .= "IMAP_USER=\n";
+            $envContent .= "IMAP_PASS=\n\n";
+            $envContent .= "BREVO_API_KEY=\n\n";
+            $envContent .= "MS_OAUTH_CLIENT_ID=\n";
+            $envContent .= "MS_OAUTH_CLIENT_SECRET=\n";
+            $envContent .= "MS_OAUTH_TENANT_ID=common\n";
+            $envContent .= "MS_OAUTH_REDIRECT_URI=$appUrl/api/msgraph/callback.php\n\n";
+            $envContent .= "N8N_API_KEY=change_me_secure_key\n";
+            $envContent .= "SESSION_NAME=hts_session\n";
+
+            $appConfig = "<?php\nrequire_once __DIR__ . '/../includes/env_loader.php';\nloadEnv(__DIR__ . '/../.env');\n\ndefine('APP_NAME',        \$_ENV['APP_NAME']        ?? 'Canada HealthTech Symposium');\ndefine('APP_URL',         \$_ENV['APP_URL']          ?? '$appUrl');\ndefine('APP_VERSION',     \$_ENV['APP_VERSION']      ?? '2.0.0');\n\ndefine('SMTP_HOST',       \$_ENV['SMTP_HOST']        ?? 'smtp-relay.brevo.com');\ndefine('SMTP_PORT',       (int)(\$_ENV['SMTP_PORT']  ?? 587));\ndefine('SMTP_SECURE',     \$_ENV['SMTP_SECURE']      ?? 'tls');\ndefine('SMTP_USER',       \$_ENV['SMTP_USER']        ?? '');\ndefine('SMTP_PASS',       \$_ENV['SMTP_PASS']        ?? '');\ndefine('SMTP_FROM_EMAIL', \$_ENV['SMTP_FROM_EMAIL']  ?? '');\ndefine('SMTP_FROM_NAME',  \$_ENV['SMTP_FROM_NAME']   ?? APP_NAME);\n\ndefine('IMAP_HOST',       \$_ENV['IMAP_HOST']        ?? '');\ndefine('IMAP_USER',       \$_ENV['IMAP_USER']        ?? '');\ndefine('IMAP_PASS',       \$_ENV['IMAP_PASS']        ?? '');\n\ndefine('BREVO_API_KEY',          \$_ENV['BREVO_API_KEY']         ?? '');\ndefine('MS_OAUTH_CLIENT_ID',     \$_ENV['MS_OAUTH_CLIENT_ID']    ?? '');\ndefine('MS_OAUTH_CLIENT_SECRET', \$_ENV['MS_OAUTH_CLIENT_SECRET']?? '');\ndefine('MS_OAUTH_TENANT_ID',     \$_ENV['MS_OAUTH_TENANT_ID']    ?? 'common');\ndefine('MS_OAUTH_REDIRECT_URI',  \$_ENV['MS_OAUTH_REDIRECT_URI'] ?? '');\n\ndefine('N8N_API_KEY',     \$_ENV['N8N_API_KEY']      ?? '');\ndefine('SESSION_NAME',    \$_ENV['SESSION_NAME']     ?? 'hts_session');\n\nsession_name(SESSION_NAME);\nif (session_status() === PHP_SESSION_NONE) session_start();\n";
 
             file_put_contents(__DIR__ . '/../config/database.php', $dbConfig);
             file_put_contents(__DIR__ . '/../config/config.php',   $appConfig);
+            file_put_contents(__DIR__ . '/../.env',                $envContent);
 
             $step = 2;
             $success = 'Installation successful!';

@@ -1,0 +1,92 @@
+{
+  "name": "Follow-up Scheduler — Sequence 2",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 10 * * *" }]
+        }
+      },
+      "name": "Schedule — Daily 10AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://fintech.softandpix.com/api/get_followup_leads.php",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "api_key", "value": "YOUR_API_KEY" },
+            { "name": "limit",   "value": "500" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "GET — Follow-up Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "leads",
+        "options": {}
+      },
+      "name": "Split — Leads",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://fintech.softandpix.com/api/send_one_email.php",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "api_key",            "value": "YOUR_API_KEY" },
+            { "name": "campaign_id",        "value": "={{ $json.campaign_id }}" },
+            { "name": "follow_up_sequence", "value": "2" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "POST — Send Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": { "amount": 2, "unit": "seconds" },
+      "name": "Wait — 2s Rate Limit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "status", "value": "Follow-up batch complete" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Set — Done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Schedule — Daily 10AM":  { "main": [[{ "node": "GET — Follow-up Leads",  "type": "main", "index": 0 }]] },
+    "GET — Follow-up Leads":  { "main": [[{ "node": "Split — Leads",          "type": "main", "index": 0 }]] },
+    "Split — Leads":          { "main": [[{ "node": "POST — Send Follow-up",  "type": "main", "index": 0 }]] },
+    "POST — Send Follow-up":  { "main": [[{ "node": "Wait — 2s Rate Limit",   "type": "main", "index": 0 }]] },
+    "Wait — 2s Rate Limit":   { "main": [[{ "node": "Set — Done",             "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "1"
+}

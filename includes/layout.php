@@ -90,6 +90,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='users.php'?' active':''; ?>">
             👤 Users
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/oauth_connect.php"
+           class="nav-item<?php echo $currentPage==='oauth_connect.php'?' active':''; ?>">
+            🔗 Microsoft 365
+        </a>
         <?php endif; ?>
     </nav>
     <div class="sb-user">

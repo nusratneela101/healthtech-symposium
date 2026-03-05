@@ -1,19 +1,16 @@
 <?php
 class Database {
     private static ?PDO $instance = null;
-    private static array $config = [
-        'host'    => 'localhost',
-        'dbname'  => 'YOUR_DB_NAME',
-        'user'    => 'YOUR_DB_USER',
-        'pass'    => 'YOUR_DB_PASS',
-        'charset' => 'utf8mb4',
-    ];
 
     public static function getConnection(): PDO {
         if (self::$instance === null) {
-            $c = self::$config;
-            $dsn = "mysql:host={$c['host']};dbname={$c['dbname']};charset={$c['charset']}";
-            self::$instance = new PDO($dsn, $c['user'], $c['pass'], [
+            $host    = $_ENV['DB_HOST']    ?? 'localhost';
+            $dbname  = $_ENV['DB_NAME']    ?? '';
+            $user    = $_ENV['DB_USER']    ?? '';
+            $pass    = $_ENV['DB_PASS']    ?? '';
+            $charset = 'utf8mb4';
+            $dsn = "mysql:host={$host};dbname={$dbname};charset={$charset}";
+            self::$instance = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,

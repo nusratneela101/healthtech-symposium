@@ -12,7 +12,20 @@ $stats = [
     'total_campaigns'  => Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0,
     'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0,
     'unread_responses' => $unreadCount,
+    'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0,
+    'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
+    'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE response_type='interested'")['c'] ?? 0,
+    'followups_sent'   => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0,
+    'week_sends'       => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0,
+    'month_sends'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0,
+    'opened'           => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0,
 ];
+
+// Open rate calculation
+$openRateStr = 'N/A';
+if ($stats['emails_sent'] > 0 && $stats['opened'] > 0) {
+    $openRateStr = round(($stats['opened'] / $stats['emails_sent']) * 100, 1) . '%';
+}
 
 // Daily email chart (last 14 days)
 $daily = Database::fetchAll(
@@ -36,6 +49,29 @@ $provinces = Database::fetchAll(
      GROUP BY province ORDER BY cnt DESC LIMIT 8"
 );
 $maxProv = $provinces ? max(array_column($provinces, 'cnt')) : 1;
+
+// Campaign performance (last 5)
+$campPerf = Database::fetchAll(
+    "SELECT c.name, c.sent_count, c.failed_count,
+            COUNT(DISTINCT r.id) AS reply_count
+     FROM campaigns c
+     LEFT JOIN responses r ON r.campaign_id = c.id
+     GROUP BY c.id ORDER BY c.created_at DESC LIMIT 5"
+);
+$campNames    = json_encode(array_column($campPerf, 'name'));
+$campSent     = json_encode(array_map('intval', array_column($campPerf, 'sent_count')));
+$campFailed   = json_encode(array_map('intval', array_column($campPerf, 'failed_count')));
+$campReplied  = json_encode(array_map('intval', array_column($campPerf, 'reply_count')));
+
+// Hot leads
+$hotLeads = Database::fetchAll(
+    "SELECT r.id, r.from_name, r.from_email, r.subject, r.body_text, r.received_at,
+            l.company
+     FROM responses r
+     LEFT JOIN leads l ON r.lead_id = l.id
+     WHERE r.response_type='interested'
+     ORDER BY r.received_at DESC LIMIT 10"
+);
 
 // Activity feed
 $activity = Database::fetchAll(
@@ -100,6 +136,48 @@ $recentLeads = Database::fetchAll(
         <div class="kpi-lbl">Unsubscribed</div>
         <div class="kpi-trend t-dn">↓ Opted Out</div>
     </div>
+    <div class="kpi-card kc-green">
+        <div class="kpi-icon">📥</div>
+        <div class="kpi-val"><?php echo number_format($stats['delivered']); ?></div>
+        <div class="kpi-lbl">Delivered</div>
+        <div class="kpi-trend t-up">↑ Confirmed</div>
+    </div>
+    <div class="kpi-card kc-red">
+        <div class="kpi-icon">⛔</div>
+        <div class="kpi-val"><?php echo number_format($stats['bounced']); ?></div>
+        <div class="kpi-lbl">Bounced / Failed</div>
+        <div class="kpi-trend t-dn">↓ Errors</div>
+    </div>
+    <div class="kpi-card kc-cyan">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-val"><?php echo $openRateStr; ?></div>
+        <div class="kpi-lbl">Open Rate</div>
+        <div class="kpi-trend t-nt"><?php echo $stats['opened'] ? '→ Tracked' : '→ No tracking data'; ?></div>
+    </div>
+    <div class="kpi-card kc-purple">
+        <div class="kpi-icon">🔥</div>
+        <div class="kpi-val"><?php echo number_format($stats['hot_leads']); ?></div>
+        <div class="kpi-lbl">Hot Leads</div>
+        <div class="kpi-trend t-up">↑ Interested</div>
+    </div>
+    <div class="kpi-card kc-blue">
+        <div class="kpi-icon">🔁</div>
+        <div class="kpi-val"><?php echo number_format($stats['followups_sent']); ?></div>
+        <div class="kpi-lbl">Follow-ups Sent</div>
+        <div class="kpi-trend t-up">↑ Seq. 2</div>
+    </div>
+    <div class="kpi-card kc-green">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-val"><?php echo number_format($stats['week_sends']); ?></div>
+        <div class="kpi-lbl">This Week</div>
+        <div class="kpi-trend t-up">↑ Sent</div>
+    </div>
+    <div class="kpi-card kc-yellow">
+        <div class="kpi-icon">🗓️</div>
+        <div class="kpi-val"><?php echo number_format($stats['month_sends']); ?></div>
+        <div class="kpi-lbl">This Month</div>
+        <div class="kpi-trend t-up">↑ Sent</div>
+    </div>
 </div>
 
 <div class="grid-2">
@@ -114,6 +192,49 @@ $recentLeads = Database::fetchAll(
         <div id="donutChart" style="min-height:200px"></div>
     </div>
 </div>
+
+<div class="gc">
+    <div class="gc-title">📊 Campaign Performance</div>
+    <div class="gc-sub">Last 5 campaigns — sent / failed / replies</div>
+    <div id="campChart" style="min-height:220px"></div>
+    <?php foreach ($campPerf as $cp): ?>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#8a9ab5;padding:6px 0;border-bottom:1px solid #1e3355">
+        <span><?php echo htmlspecialchars($cp['name']); ?></span>
+        <span>
+            <span style="color:#10b981">✉ <?php echo $cp['sent_count']; ?></span> &nbsp;
+            <span style="color:#ef4444">✗ <?php echo $cp['failed_count']; ?></span> &nbsp;
+            <span style="color:#f59e0b">💬 <?php echo $cp['reply_count']; ?></span>
+            <?php if ($cp['sent_count'] > 0): ?>
+            <span style="color:#8b5cf6"> · <?php echo round(($cp['reply_count'] / $cp['sent_count']) * 100, 1); ?>% reply rate</span>
+            <?php endif; ?>
+        </span>
+    </div>
+    <?php endforeach; ?>
+</div>
+
+<?php if ($hotLeads): ?>
+<div class="gc">
+    <div class="gc-title">🔥 Hot Leads</div>
+    <div class="gc-sub">Leads who expressed interest</div>
+    <?php foreach ($hotLeads as $hl): ?>
+    <div class="inbox-item">
+        <div class="ia" style="background:linear-gradient(135deg,#f59e0b,#ef4444)"><?php echo strtoupper(substr($hl['from_name'] ?: $hl['from_email'], 0, 1)); ?></div>
+        <div style="flex:1;min-width:0">
+            <div class="if">
+                <strong><?php echo htmlspecialchars($hl['from_name'] ?: $hl['from_email']); ?></strong>
+                <?php if ($hl['company']): ?>
+                    <small style="color:#8a9ab5"> · <?php echo htmlspecialchars($hl['company']); ?></small>
+                <?php endif; ?>
+                <span class="pill p-interested" style="margin-left:8px">Interested</span>
+            </div>
+            <div class="is"><?php echo htmlspecialchars($hl['subject']); ?></div>
+            <div class="ip"><?php echo htmlspecialchars(substr(strip_tags($hl['body_text']), 0, 120)); ?>…</div>
+        </div>
+        <div style="font-size:12px;color:#8a9ab5;white-space:nowrap"><?php echo timeAgo($hl['received_at']); ?></div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <div class="grid-2">
     <div class="gc">
@@ -190,6 +311,22 @@ new ApexCharts(document.getElementById('donutChart'), {
     tooltip:{theme:'dark'},
     dataLabels:{enabled:false},
     plotOptions:{pie:{donut:{size:'60%'}}}
+}).render();
+
+new ApexCharts(document.getElementById('campChart'), {
+    series: [
+        {name:'Sent',    data:<?php echo $campSent; ?>},
+        {name:'Failed',  data:<?php echo $campFailed; ?>},
+        {name:'Replies', data:<?php echo $campReplied; ?>}
+    ],
+    chart:{type:'bar',height:220,background:'transparent',toolbar:{show:false}},
+    colors:['#10b981','#ef4444','#f59e0b'],
+    xaxis:{categories:<?php echo $campNames; ?>,labels:{style:{colors:'#8a9ab5',fontSize:'11px'}}},
+    yaxis:{labels:{style:{colors:'#8a9ab5'}}},
+    grid:{borderColor:'#1e3355'},
+    plotOptions:{bar:{columnWidth:'60%',borderRadius:4}},
+    legend:{labels:{colors:'#8a9ab5'}},
+    tooltip:{theme:'dark'}
 }).render();
 </script>
 

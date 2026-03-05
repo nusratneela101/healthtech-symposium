@@ -20,14 +20,12 @@ function pill(string $status): string {
         'auto_reply'     => 'p-auto',
         'bounce'         => 'p-bounced',
         'other'          => 'p-other',
-        'Financial Institutions'           => 'p-fi',
         'Venture Capital / Investors'      => 'p-vc',
-        'FinTech Startups'                 => 'p-ft',
-        'Technology & Solution Providers'  => 'p-tp',
         'Healthcare Providers'             => 'p-hp',
         'Health IT & Digital Health'       => 'p-hi',
         'Pharmaceutical & Biotech'         => 'p-pb',
         'Medical Devices'                  => 'p-md',
+        'Medical Devices & Equipment'      => 'p-md',
         'HealthTech Startups'              => 'p-hs',
     ];
     $cls = $map[$status] ?? 'p-other';

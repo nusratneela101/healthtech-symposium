@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/layout.php';
 
 $templates = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-$segments  = ['','Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','HealthTech Startups','Other'];
+$segments  = ['','Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices & Equipment','Venture Capital / Investors','Other'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
 
 // Create campaign

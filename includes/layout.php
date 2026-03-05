@@ -52,11 +52,11 @@ $currentPage = basename($_SERVER['PHP_SELF']);
           <div class="cfts-divider"></div>
           <div class="cfts-text">
             <div class="cfts-canada">CANADA</div>
-            <div class="cfts-fintech">HEALTHTECH</div>
+          <div class="cfts-healthtech">HEALTHTECH</div>
             <div class="cfts-symposium">SYMPOSIUM</div>
           </div>
         </div>
-        <div class="cfts-tagline">Igniting the Future of Health</div>
+        <div class="cfts-tagline">Innovating the Future of Healthcare</div>
     </div>
     <nav class="sb-nav">
         <a href="<?php echo APP_URL; ?>/admin/dashboard.php"

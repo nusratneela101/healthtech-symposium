@@ -1,5 +1,5 @@
 {
-  "name": "Thursday Campaign Sender",
+  "name": "Thursday Campaign Sender [DEPRECATED — use Schedule Campaign + Master Runner]",
   "nodes": [
     {
       "parameters": {

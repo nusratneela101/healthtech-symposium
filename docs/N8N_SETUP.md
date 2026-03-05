@@ -1,6 +1,6 @@
 # n8n Setup Guide — Canada FinTech Symposium 2026
 
-This guide explains how to import and configure the five n8n workflow files located in `n8n_workflows/`.
+This guide explains how to import and configure the n8n workflow files located in `n8n_workflows/`.
 
 ---
 
@@ -13,7 +13,28 @@ This guide explains how to import and configure the five n8n workflow files loca
 
 ---
 
-## 2. API Key
+## 2. How the New Scheduling System Works
+
+Campaign sending is now **fully controlled by the Super Admin**:
+
+1. **Super Admin creates a campaign** in [Auto Campaign](/admin/auto_campaign.php)
+2. **Super Admin schedules it** in [Schedule Campaign](/admin/schedule_campaign.php) — picks any date & time
+3. **n8n polls every 5 minutes** via `healthtech_master_workflow.json` — calls `api/get_scheduled_campaigns.php`
+4. **When the scheduled time arrives**, n8n loops through `send_one_email.php` until all emails are sent
+5. **Campaign is marked complete** automatically
+
+Everything else runs on autopilot:
+
+| Automation | Schedule | Description |
+|---|---|---|
+| **Lead Collection** | Daily 8 AM | n8n calls Apollo API → saves new leads via `api/save_lead.php` |
+| **Response Tracking** | Every 10 min | n8n polls IMAP inbox → saves replies via `api/poll_inbox.php` |
+| **Follow-ups** | Daily 10 AM | n8n sends sequence 2 emails to eligible leads |
+| **Campaign Sending** | Super Admin sets date | n8n checks every 5 min and fires when it's time |
+
+---
+
+## 3. API Key
 
 All workflow JSON files use the placeholder `YOUR_N8N_API_KEY`. Before importing (or immediately after), replace every occurrence with the actual value set in your server's `.env`:
 
@@ -27,21 +48,31 @@ N8N_API_KEY=<your_secure_key>   # set a strong unique value for production
 
 ---
 
-## 3. Importing Workflows
+## 4. Importing Workflows
 
 1. Open n8n (`http://localhost:5678`).
 2. Click **Workflows → New** (or the **+** button).
 3. Click the ⋮ menu → **Import from File**.
 4. Select the JSON file from `n8n_workflows/`.
-5. Repeat for each of the five files below.
+5. Repeat for each of the files below.
+
+### Workflow Files
+
+| File | Purpose | Active By Default |
+|---|---|---|
+| `healthtech_master_workflow.json` | Polls every 5 min for due scheduled campaigns → sends emails | No |
+| `lead_collector.json` | Daily 8 AM — imports leads from Apollo | No |
+| `followup_sender.json` | Daily 10 AM — sends follow-up sequence 2 | No |
+| `response_tracker.json` | Every 10 min — polls IMAP inbox for replies | No |
+| `thursday_campaign.json` | **DEPRECATED** — superseded by master workflow + scheduling system | No |
 
 ---
 
-## 4. Credentials to Set Up in n8n
+## 5. Credentials to Set Up in n8n
 
-### 4.1 Apollo.io — HTTP Header Auth
+### 5.1 Apollo.io — HTTP Header Auth
 
-Used by `healthtech_master_workflow.json` and `lead_collector.json`.
+Used by `lead_collector.json`.
 
 | Field | Value |
 |-------|-------|
@@ -51,11 +82,11 @@ Used by `healthtech_master_workflow.json` and `lead_collector.json`.
 
 1. In n8n go to **Credentials → New Credential → HTTP Header Auth**.
 2. Fill in the values above and save.
-3. Open the Apollo Search node in each workflow and select this credential.
+3. Open the Apollo Search node in the lead collector workflow and select this credential.
 
-### 4.2 SMTP — for alert emails (response_tracker & thursday_campaign)
+### 5.2 SMTP — for alert emails (response_tracker)
 
-The `response_tracker.json` and `thursday_campaign.json` still use n8n's built-in `emailSend` node for **admin notifications only**. You need to configure an SMTP credential in n8n for these:
+The `response_tracker.json` uses n8n's built-in `emailSend` node for **admin notifications only**.
 
 | Field | Value |
 |-------|-------|
@@ -68,25 +99,40 @@ The `response_tracker.json` and `thursday_campaign.json` still use n8n's built-i
 
 1. In n8n go to **Credentials → New Credential → SMTP**.
 2. Fill in the values above and save.
-3. Open the `Send Alert Email` / `Email — Notify Admin` node in each workflow and select this credential.
+3. Open the `Send Alert Email` node in `response_tracker.json` and select this credential.
 
-> **Note:** Outbound campaign emails (master workflow & follow-up sender) are sent via `send_one_email.php` — no SMTP credential is needed in n8n for those.
+> **Note:** Outbound campaign emails are sent via `send_one_email.php` — no SMTP credential is needed in n8n for those.
 
 ---
 
-## 5. Workflow Schedule Summary
+## 6. Step-by-Step: Scheduling Your First Campaign
+
+1. **Log in as Super Admin** to the dashboard
+2. Go to **🚀 Auto Campaign** — create a new campaign (select template + lead filters)
+3. Go to **📅 Schedule** in the sidebar
+4. Select your draft campaign from the dropdown
+5. Pick a send date & time using the datetime picker
+6. Click **📅 Schedule Campaign**
+7. The campaign status changes to `scheduled`
+8. n8n will pick it up automatically within 5 minutes of the scheduled time
+
+To cancel a scheduled campaign, click **✕ Cancel** next to it in the scheduled list.
+
+---
+
+## 7. Workflow Schedule Summary
 
 | Workflow File | Schedule | Purpose |
 |---|---|---|
-| `healthtech_master_workflow.json` | Tue & Thu 9 AM | Fetch leads from Apollo, save, then send campaign emails via PHP API |
+| `healthtech_master_workflow.json` | Every 5 min | Poll for due campaigns → send emails via PHP API |
 | `lead_collector.json` | Daily 8 AM | Import leads from Apollo into the database |
 | `followup_sender.json` | Daily 10 AM | Send follow-up sequence 2 to eligible leads |
-| `thursday_campaign.json` | Thu 9 AM | Loop-send campaign batch, update campaign record, notify admin |
 | `response_tracker.json` | Every 10 min | Poll IMAP inbox, save responses, alert admin if new replies |
+| `thursday_campaign.json` | *(DEPRECATED)* | Superseded by master workflow + scheduling system; keep inactive |
 
 ---
 
-## 6. Activating Workflows
+## 8. Activating Workflows
 
 All workflows are imported with `"active": false` so they don't fire immediately.
 
@@ -98,11 +144,12 @@ All workflows are imported with `"active": false` so they don't fire immediately
 
 ---
 
-## 7. Troubleshooting
+## 9. Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
 | `401 Unauthorized` from PHP API | `YOUR_N8N_API_KEY` doesn't match the value in server `.env` |
+| No campaigns picked up | Confirm campaign status is `scheduled` and `scheduled_at` is in the past |
 | Apollo search returns 0 people | Check Apollo credential; verify the API key has People Search scope |
 | Emails not sent | Verify `.env` SMTP settings on the server; check `api/send_one_email.php` logs |
 | IMAP polling fails | Ensure PHP `imap` extension is enabled; check IMAP credentials in `.env` |

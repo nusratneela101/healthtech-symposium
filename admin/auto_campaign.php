@@ -1,10 +1,15 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
 
-$templates = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-$segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
-$segments    = array_merge([''], array_column($segmentRows, 'segment'));
-$provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
+$templates = [];
+$segments  = [];
+$provinces = [];
+try {
+    $templates   = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
+    $segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
+    $segments    = array_merge([''], array_column($segmentRows, 'segment'));
+    $provinces   = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
+} catch (Exception $e) {}
 
 // Create campaign
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
@@ -16,28 +21,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     $key     = 'camp_' . time() . '_' . rand(1000,9999);
     $testMode = isset($_POST['test_mode']) ? 1 : 0;
 
-    $where  = '1=1';
-    $params = [];
-    if ($seg)  { $where .= ' AND segment=?';  $params[] = $seg; }
-    if ($role) { $where .= ' AND role LIKE ?'; $params[] = "%$role%"; }
-    if ($prov) { $where .= ' AND province=?'; $params[] = $prov; }
-    $where .= " AND status NOT IN ('unsubscribed','bounced')";
-    $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
+    try {
+        $where  = '1=1';
+        $params = [];
+        if ($seg)  { $where .= ' AND segment=?';  $params[] = $seg; }
+        if ($role) { $where .= ' AND role LIKE ?'; $params[] = "%$role%"; }
+        if ($prov) { $where .= ' AND province=?'; $params[] = $prov; }
+        $where .= " AND status NOT IN ('unsubscribed','bounced')";
+        $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 
-    Database::query(
-        "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,created_by)
-         VALUES(?,?,?,?,?,?,?,'draft',?,?)",
-        [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, Auth::user()['id']]
-    );
-    $campId = Database::lastInsertId();
-    echo json_encode(['success' => true, 'campaign_id' => $campId, 'campaign_key' => $key, 'total' => $total]);
+        Database::query(
+            "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,created_by)
+             VALUES(?,?,?,?,?,?,?,'draft',?,?)",
+            [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, Auth::user()['id']]
+        );
+        $campId = Database::lastInsertId();
+        echo json_encode(['success' => true, 'campaign_id' => $campId, 'campaign_key' => $key, 'total' => $total]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
     exit;
 }
 
-$recentCampaigns = Database::fetchAll(
-    "SELECT c.*, t.name AS tpl_name FROM campaigns c LEFT JOIN email_templates t ON c.template_id=t.id
-     ORDER BY c.created_at DESC LIMIT 10"
-);
+$recentCampaigns = [];
+try {
+    $recentCampaigns = Database::fetchAll(
+        "SELECT c.*, t.name AS tpl_name FROM campaigns c LEFT JOIN email_templates t ON c.template_id=t.id
+         ORDER BY c.created_at DESC LIMIT 10"
+    );
+} catch (Exception $e) {}
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">🚀 Auto Campaign</h2>

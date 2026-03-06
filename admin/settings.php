@@ -770,23 +770,36 @@ function togglePw(id, btn){
     else { el.type='password'; btn.textContent='Show'; }
 }
 
-function saveSection(group, keys){
+function saveSection(group, fields) {
     var settings = {};
-    keys.forEach(function(k){
-        var el = document.getElementById(k);
-        if(el) settings[k] = el.value;
+    fields.forEach(function(f) {
+        var el = document.getElementById(f);
+        if (el) settings[f] = el.value;
     });
     fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({group: group, settings: settings})
     })
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-        if(d.success){ showToast('✅ Settings saved ('+d.saved+' values updated)', 'success'); }
-        else { showToast('❌ Error: '+(d.error||'Unknown'), 'error'); }
+    .then(function(response) {
+        if (!response.ok) {
+            return response.text().then(function(text) {
+                throw new Error('HTTP ' + response.status + ': ' + text);
+            });
+        }
+        return response.json();
     })
-    .catch(function(e){ showToast('❌ Network error: '+e.message,'error'); });
+    .then(function(d) {
+        if(d.success) {
+            showToast('✅ ' + (d.message || 'Settings saved'), 'success');
+        } else {
+            showToast('❌ '+(d.error||'Save failed'), 'error');
+        }
+    })
+    .catch(function(e) {
+        console.error('Save error:', e);
+        showToast('❌ Network error: '+e.message, 'error');
+    });
 }
 
 function sendTestEmail(){

@@ -8,6 +8,20 @@ header('Content-Type: application/json');
 Auth::check();
 Auth::requireSuperAdmin();
 
+// Auto-create site_settings table if it doesn't exist
+try {
+    Database::query("CREATE TABLE IF NOT EXISTS `site_settings` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `setting_key` varchar(100) NOT NULL,
+        `setting_value` text,
+        `setting_group` varchar(50) DEFAULT 'general',
+        `updated_by` int(11) DEFAULT NULL,
+        `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `setting_key` (`setting_key`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) { /* already exists */ }
+
 $input = json_decode(file_get_contents('php://input'), true) ?? [];
 $group  = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($input['group'] ?? 'general')));
 $userId = Auth::user()['id'];
@@ -46,17 +60,17 @@ if (!isset($allowedKeys[$group])) {
 $saved = 0;
 $sensitiveKeys = ['smtp_pass','imap_pass','n8n_api_key','brevo_api_key',
                   'ms_oauth_client_id','ms_oauth_client_secret','apollo_api_key'];
-foreach ($input['settings'] as $key => $value) {
-    $key = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($key)));
-    if (!in_array($key, $allowedKeys[$group], true)) {
-        continue;
-    }
-    $value = (string)$value;
-    // For sensitive fields, skip saving if the user left the field blank
-    if (in_array($key, $sensitiveKeys, true) && $value === '') {
-        continue;
-    }
-    try {
+try {
+    foreach ($input['settings'] as $key => $value) {
+        $key = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($key)));
+        if (!in_array($key, $allowedKeys[$group], true)) {
+            continue;
+        }
+        $value = (string)$value;
+        // For sensitive fields, skip saving if the user left the field blank
+        if (in_array($key, $sensitiveKeys, true) && $value === '') {
+            continue;
+        }
         Database::query(
             "INSERT INTO site_settings (setting_key, setting_value, setting_group, updated_by)
              VALUES (?, ?, ?, ?)
@@ -67,10 +81,11 @@ foreach ($input['settings'] as $key => $value) {
             [$key, $value, $group, $userId]
         );
         $saved++;
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
-        exit;
     }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
+    exit;
 }
 
 // Audit

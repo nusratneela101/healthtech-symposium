@@ -27,6 +27,7 @@ $allowedKeys = [
                    'n8n_url','apollo_search_titles','apollo_search_location','apollo_search_industry',
                    'apollo_per_page','apollo_max_pages','brevo_sender_name','brevo_sender_email'],
     'n8n'      => ['n8n_url','n8n_api_key','n8n_webhook_url'],
+    'brevo'    => ['brevo_api_key','brevo_sender_name','brevo_sender_email'],
     'email_defaults' => ['send_delay','max_batch','test_mode_default'],
     'email_setup'    => ['email_provider'],
     'sending_limits' => [

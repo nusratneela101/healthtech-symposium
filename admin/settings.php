@@ -78,10 +78,10 @@ function s(string $key, string $fallback = ''): string {
                 <div class="provider-card-header">
                     <span class="provider-icon">🏢</span>
                     <span class="provider-name">Microsoft 365</span>
-                    <span class="provider-badge provider-badge-best">✅ সেরা</span>
+                    <span class="provider-badge provider-badge-best">✅ Best</span>
                 </div>
                 <div class="provider-email">info@canadafintechsymposium.com</div>
-                <div class="provider-meta">Delivery: ⭐⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: মাঝারি</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: Medium</div>
                 <?php if($currentProvider==='microsoft365'): ?>
                 <div class="provider-selected-label">✓ Selected</div>
                 <?php endif; ?>
@@ -93,10 +93,10 @@ function s(string $key, string $fallback = ''): string {
                 <div class="provider-card-header">
                     <span class="provider-icon">🌐</span>
                     <span class="provider-name">cPanel Email</span>
-                    <span class="provider-badge provider-badge-good">✅ ভালো</span>
+                    <span class="provider-badge provider-badge-good">✅ Good</span>
                 </div>
                 <div class="provider-email">info@fintech.softandpix.com</div>
-                <div class="provider-meta">Delivery: ⭐⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐ &nbsp;|&nbsp; Setup: Easy</div>
                 <?php if($currentProvider==='cpanel'): ?>
                 <div class="provider-selected-label">✓ Selected</div>
                 <?php endif; ?>
@@ -108,10 +108,10 @@ function s(string $key, string $fallback = ''): string {
                 <div class="provider-card-header">
                     <span class="provider-icon">📧</span>
                     <span class="provider-name">Business Email (SMTP)</span>
-                    <span class="provider-badge provider-badge-good">✅ ভালো</span>
+                    <span class="provider-badge provider-badge-good">✅ Good</span>
                 </div>
                 <div class="provider-email">info@canadafintechsymposium.com</div>
-                <div class="provider-meta">Delivery: ⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: Easy</div>
                 <?php if($currentProvider==='business'): ?>
                 <div class="provider-selected-label">✓ Selected</div>
                 <?php endif; ?>
@@ -123,10 +123,10 @@ function s(string $key, string $fallback = ''): string {
                 <div class="provider-card-header">
                     <span class="provider-icon">📮</span>
                     <span class="provider-name">Gmail</span>
-                    <span class="provider-badge provider-badge-limited">❌ সীমিত</span>
+                    <span class="provider-badge provider-badge-limited">❌ Limited</span>
                 </div>
                 <div class="provider-email">@gmail.com</div>
-                <div class="provider-meta">Delivery: ⭐⭐ &nbsp;|&nbsp; Setup: সহজ</div>
+                <div class="provider-meta">Delivery: ⭐⭐ &nbsp;|&nbsp; Setup: Easy</div>
                 <?php if($currentProvider==='gmail'): ?>
                 <div class="provider-selected-label">✓ Selected</div>
                 <?php endif; ?>

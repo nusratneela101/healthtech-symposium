@@ -65,7 +65,8 @@ $leads = Database::fetchAll(
     $params
 );
 
-$segments  = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices & Equipment','Venture Capital / Investors','Other'];
+$segmentRows  = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
+$segments  = array_column($segmentRows, 'segment');
 $statuses  = ['new','emailed','responded','converted','unsubscribed','bounced'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province ASC");
 $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??''])));

@@ -54,12 +54,26 @@ $migrations[] = [
     'sql'  => "CREATE TABLE IF NOT EXISTS `notifications` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `user_id` int(11) DEFAULT NULL,
-      `message` text NOT NULL,
-      `link` varchar(500) DEFAULT '',
+      `title` varchar(200) NOT NULL DEFAULT '',
+      `message` text NOT NULL DEFAULT '',
+      `type` enum('info','success','warning','error') DEFAULT 'info',
       `is_read` tinyint(1) DEFAULT 0,
+      `link` varchar(500) DEFAULT NULL,
       `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`)
+      PRIMARY KEY (`id`),
+      KEY `user_id` (`user_id`),
+      KEY `is_read` (`is_read`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'notifications.title_column',
+    'sql'  => "ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `title` varchar(200) NOT NULL DEFAULT ''",
+];
+
+$migrations[] = [
+    'name' => 'notifications.type_column',
+    'sql'  => "ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `type` enum('info','success','warning','error') DEFAULT 'info'",
 ];
 
 $migrations[] = [
@@ -76,6 +90,81 @@ $migrations[] = [
       `completed_at` datetime DEFAULT NULL,
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'lead_collection_items',
+    'sql'  => "CREATE TABLE IF NOT EXISTS `lead_collection_items` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `collection_id` int(11) NOT NULL,
+      `lead_id` int(11) NOT NULL,
+      `action` enum('created','skipped','duplicate') DEFAULT 'created',
+      `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      KEY `idx_collection` (`collection_id`),
+      KEY `idx_lead` (`lead_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'lead_tags',
+    'sql'  => "CREATE TABLE IF NOT EXISTS `lead_tags` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `color` varchar(7) DEFAULT '#0d6efd',
+      `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `name` (`name`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'lead_tag_map',
+    'sql'  => "CREATE TABLE IF NOT EXISTS `lead_tag_map` (
+      `lead_id` int(11) NOT NULL,
+      `tag_id` int(11) NOT NULL,
+      PRIMARY KEY (`lead_id`, `tag_id`),
+      FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
+      FOREIGN KEY (`tag_id`) REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'rate_limits',
+    'sql'  => "CREATE TABLE IF NOT EXISTS `rate_limits` (
+      `id` int(11) NOT NULL AUTO_INCREMENT,
+      `identifier` varchar(200) NOT NULL,
+      `endpoint` varchar(200) NOT NULL,
+      `requests` int DEFAULT 1,
+      `window_start` datetime NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `identifier_endpoint` (`identifier`, `endpoint`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+];
+
+$migrations[] = [
+    'name' => 'campaigns.scheduled_at',
+    'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_at` datetime DEFAULT NULL",
+];
+
+$migrations[] = [
+    'name' => 'campaigns.scheduled_by',
+    'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `scheduled_by` int(11) DEFAULT NULL",
+];
+
+$migrations[] = [
+    'name' => 'campaigns.status_scheduled',
+    'sql'  => "ALTER TABLE `campaigns` MODIFY COLUMN `status` enum('draft','scheduled','running','completed','paused') DEFAULT 'draft'",
+];
+
+$migrations[] = [
+    'name' => 'responses.hot_alert_sent',
+    'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `hot_alert_sent` tinyint(1) NOT NULL DEFAULT 0",
+];
+
+$migrations[] = [
+    'name' => 'leads.score',
+    'sql'  => "ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `score` int DEFAULT 0",
 ];
 
 // ── Run ───────────────────────────────────────────────────────────────────────

@@ -1,12 +1,25 @@
 <?php
+// Start output buffering BEFORE any output
+ob_start();
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 
+// Clear any accidental output
+ob_clean();
+
 header('Content-Type: application/json');
 
-Auth::check();
-Auth::requireSuperAdmin();
+try {
+    Auth::check();
+    Auth::requireSuperAdmin();
+} catch (Exception $e) {
+    ob_clean();
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized: ' . $e->getMessage()]);
+    exit;
+}
 
 // Auto-create site_settings table if it doesn't exist
 try {
@@ -27,6 +40,7 @@ $group  = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($input['group'] ?? 'g
 $userId = Auth::user()['id'];
 
 if (empty($input['settings']) || !is_array($input['settings'])) {
+    ob_clean();
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'No settings provided']);
     exit;
@@ -52,8 +66,9 @@ $allowedKeys = [
 ];
 
 if (!isset($allowedKeys[$group])) {
+    ob_clean();
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Unknown settings group']);
+    echo json_encode(['success' => false, 'error' => 'Unknown settings group: ' . $group]);
     exit;
 }
 
@@ -83,6 +98,7 @@ try {
         $saved++;
     }
 } catch (Exception $e) {
+    ob_clean();
     http_response_code(500);
     echo json_encode(['success' => false, 'error' => 'DB error: ' . $e->getMessage()]);
     exit;
@@ -94,4 +110,5 @@ try {
     audit_log('settings_updated', 'settings', null, "Group: $group, Keys saved: $saved");
 } catch (Exception $e) {}
 
-echo json_encode(['success' => true, 'saved' => $saved]);
+ob_clean();
+echo json_encode(['success' => true, 'saved' => $saved, 'message' => "$saved setting(s) saved successfully"]);

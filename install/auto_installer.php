@@ -60,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `status` enum('new','emailed','responded','converted','unsubscribed','bounced') DEFAULT 'new',
               `linkedin_url` varchar(500) DEFAULT '',
               `notes` text,
+              `score` int DEFAULT 0,
               `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
               `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
@@ -89,11 +90,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `total_leads` int(11) DEFAULT 0,
               `sent_count` int(11) DEFAULT 0,
               `failed_count` int(11) DEFAULT 0,
-              `status` enum('draft','running','completed','paused') DEFAULT 'draft',
+              `status` enum('draft','scheduled','running','completed','paused') DEFAULT 'draft',
               `test_mode` tinyint(1) DEFAULT 0,
               `created_by` int(11) DEFAULT NULL,
               `started_at` datetime DEFAULT NULL,
               `completed_at` datetime DEFAULT NULL,
+              `scheduled_at` datetime DEFAULT NULL,
+              `scheduled_by` int(11) DEFAULT NULL,
               `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
               UNIQUE KEY `campaign_key` (`campaign_key`)
@@ -129,6 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `response_type` enum('interested','not_interested','more_info','wrong_person','auto_reply','bounce','other') DEFAULT 'other',
               `is_read` tinyint(1) DEFAULT 0,
               `is_replied` tinyint(1) DEFAULT 0,
+              `hot_alert_sent` tinyint(1) NOT NULL DEFAULT 0,
               `received_at` datetime DEFAULT CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
               UNIQUE KEY `message_id` (`message_id`)
@@ -204,11 +208,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
               `id` int(11) NOT NULL AUTO_INCREMENT,
               `user_id` int(11) DEFAULT NULL,
-              `message` text NOT NULL,
-              `link` varchar(500) DEFAULT '',
+              `title` varchar(200) NOT NULL DEFAULT '',
+              `message` text NOT NULL DEFAULT '',
+              `type` enum('info','success','warning','error') DEFAULT 'info',
               `is_read` tinyint(1) DEFAULT 0,
+              `link` varchar(500) DEFAULT NULL,
               `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-              PRIMARY KEY (`id`)
+              PRIMARY KEY (`id`),
+              KEY `user_id` (`user_id`),
+              KEY `is_read` (`is_read`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             $pdo->exec("CREATE TABLE IF NOT EXISTS `lead_collections` (
@@ -222,6 +230,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               `started_at` datetime DEFAULT NULL,
               `completed_at` datetime DEFAULT NULL,
               PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `lead_collection_items` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `collection_id` int(11) NOT NULL,
+              `lead_id` int(11) NOT NULL,
+              `action` enum('created','skipped','duplicate') DEFAULT 'created',
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_collection` (`collection_id`),
+              KEY `idx_lead` (`lead_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `lead_tags` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `name` varchar(100) NOT NULL,
+              `color` varchar(7) DEFAULT '#0d6efd',
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `name` (`name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `lead_tag_map` (
+              `lead_id` int(11) NOT NULL,
+              `tag_id` int(11) NOT NULL,
+              PRIMARY KEY (`lead_id`, `tag_id`),
+              FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
+              FOREIGN KEY (`tag_id`) REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `rate_limits` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `identifier` varchar(200) NOT NULL,
+              `endpoint` varchar(200) NOT NULL,
+              `requests` int DEFAULT 1,
+              `window_start` datetime NOT NULL,
+              PRIMARY KEY (`id`),
+              KEY `identifier_endpoint` (`identifier`, `endpoint`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
             // Insert superadmin

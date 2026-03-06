@@ -190,6 +190,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               KEY `idx_action` (`action`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `site_settings` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `setting_key` varchar(100) NOT NULL,
+              `setting_value` text,
+              `setting_group` varchar(50) DEFAULT 'general',
+              `updated_by` int(11) DEFAULT NULL,
+              `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `setting_key` (`setting_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `user_id` int(11) DEFAULT NULL,
+              `message` text NOT NULL,
+              `link` varchar(500) DEFAULT '',
+              `is_read` tinyint(1) DEFAULT 0,
+              `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `lead_collections` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `source` varchar(100) DEFAULT 'Apollo',
+              `total_fetched` int(11) DEFAULT 0,
+              `total_saved` int(11) DEFAULT 0,
+              `total_skipped` int(11) DEFAULT 0,
+              `status` enum('running','done','failed') DEFAULT 'running',
+              `search_params` text,
+              `started_at` datetime DEFAULT NULL,
+              `completed_at` datetime DEFAULT NULL,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
             // Insert superadmin
             $stmt = $pdo->prepare("INSERT IGNORE INTO users (name,email,password,role) VALUES(?,?,?,?)");
             $stmt->execute(['Super Admin', $saEmail, password_hash($saPass, PASSWORD_BCRYPT), 'superadmin']);

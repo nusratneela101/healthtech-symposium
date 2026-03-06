@@ -2,7 +2,8 @@
 require_once __DIR__ . '/../includes/layout.php';
 
 $templates = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-$segments  = ['','Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices & Equipment','Venture Capital / Investors','Other'];
+$segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
+$segments    = array_merge([''], array_column($segmentRows, 'segment'));
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
 
 // Create campaign
@@ -98,6 +99,7 @@ $recentCampaigns = Database::fetchAll(
             </div>
             <div id="statusMsg" style="font-size:13px;color:#10b981;margin-bottom:12px"></div>
         </div>
+        <div id="noProgressMsg" style="padding:24px 0;text-align:center;color:#8a9ab5;font-size:13px">No campaign running. Launch a campaign to see live progress.</div>
         <div id="logTerminal" style="background:#0a0f1a;border:1px solid #1e3355;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font-family:monospace;font-size:12px;color:#4ade80"></div>
     </div>
 </div>
@@ -155,6 +157,7 @@ async function launchCampaign() {
     totalCount  = json.total;
     sentCount   = 0;
     document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('noProgressMsg').style.display = 'none';
     document.getElementById('totalCount').textContent = totalCount;
     log(`Campaign #${campaignId} created. ${totalCount} leads targeted.`);
 

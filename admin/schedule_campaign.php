@@ -41,21 +41,27 @@ if (isset($_GET['cancel']) && (int)$_GET['cancel'] > 0) {
 }
 
 // Get draft campaigns for scheduling
-$draftCampaigns = Database::fetchAll(
-    "SELECT c.*, t.name AS tpl_name FROM campaigns c
-     LEFT JOIN email_templates t ON c.template_id=t.id
-     WHERE c.status IN ('draft') ORDER BY c.created_at DESC"
-);
+$draftCampaigns = [];
+try {
+    $draftCampaigns = Database::fetchAll(
+        "SELECT c.*, t.name AS tpl_name FROM campaigns c
+         LEFT JOIN email_templates t ON c.template_id=t.id
+         WHERE c.status IN ('draft') ORDER BY c.created_at DESC"
+    );
+} catch (Exception $e) {}
 
 // Get all scheduled campaigns
-$scheduledCampaigns = Database::fetchAll(
-    "SELECT c.*, t.name AS tpl_name, u.name AS scheduled_by_name
-     FROM campaigns c
-     LEFT JOIN email_templates t ON c.template_id=t.id
-     LEFT JOIN users u ON c.scheduled_by=u.id
-     WHERE c.scheduled_at IS NOT NULL AND c.status IN ('scheduled','running','completed')
-     ORDER BY c.scheduled_at DESC"
-);
+$scheduledCampaigns = [];
+try {
+    $scheduledCampaigns = Database::fetchAll(
+        "SELECT c.*, t.name AS tpl_name, u.name AS scheduled_by_name
+         FROM campaigns c
+         LEFT JOIN email_templates t ON c.template_id=t.id
+         LEFT JOIN users u ON c.scheduled_by=u.id
+         WHERE c.scheduled_at IS NOT NULL AND c.status IN ('scheduled','running','completed')
+         ORDER BY c.scheduled_at DESC"
+    );
+} catch (Exception $e) {}
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">📅 Schedule Campaign</h2>
@@ -64,6 +70,12 @@ $scheduledCampaigns = Database::fetchAll(
     <div class="gc">
         <div class="gc-title">⏰ Schedule a Campaign</div>
         <div class="gc-sub">Pick a campaign and set send date/time. n8n will automatically trigger at that time.</div>
+        <?php if (empty($draftCampaigns)): ?>
+        <div style="margin-top:16px;padding:16px;background:#0a1628;border:1px solid #1e3355;border-radius:8px;font-size:13px;color:#8a9ab5;text-align:center">
+            No campaigns available to schedule.<br>
+            <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php" style="color:#0d6efd;margin-top:8px;display:inline-block">Create a campaign first →</a>
+        </div>
+        <?php else: ?>
         <form method="POST" style="margin-top:16px">
             <input type="hidden" name="schedule_campaign" value="1">
             <div style="margin-bottom:14px">
@@ -88,6 +100,7 @@ $scheduledCampaigns = Database::fetchAll(
             </div>
             <button type="submit" class="btn-launch">📅 Schedule Campaign</button>
         </form>
+        <?php endif; ?>
     </div>
 
     <div class="gc">

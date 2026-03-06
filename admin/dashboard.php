@@ -1,25 +1,45 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
 
-// KPI stats
+// KPI stats — default values in case any table is missing
 $stats = [
-    'total_leads'      => Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0,
-    'new_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='new'")['c'] ?? 0,
-    'emailed'          => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='emailed'")['c'] ?? 0,
-    'responded'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='responded'")['c'] ?? 0,
-    'converted'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='converted'")['c'] ?? 0,
-    'unsubscribed'     => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0,
-    'total_campaigns'  => Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0,
-    'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0,
+    'total_leads'      => 0,
+    'new_leads'        => 0,
+    'emailed'          => 0,
+    'responded'        => 0,
+    'converted'        => 0,
+    'unsubscribed'     => 0,
+    'total_campaigns'  => 0,
+    'emails_sent'      => 0,
     'unread_responses' => $unreadCount,
-    'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0,
-    'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
-    'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE response_type='interested'")['c'] ?? 0,
-    'followups_sent'   => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0,
-    'week_sends'       => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0,
-    'month_sends'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0,
-    'opened'           => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0,
+    'delivered'        => 0,
+    'bounced'          => 0,
+    'hot_leads'        => 0,
+    'followups_sent'   => 0,
+    'week_sends'       => 0,
+    'month_sends'      => 0,
+    'opened'           => 0,
 ];
+try {
+    $stats = [
+        'total_leads'      => Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0,
+        'new_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='new'")['c'] ?? 0,
+        'emailed'          => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='emailed'")['c'] ?? 0,
+        'responded'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='responded'")['c'] ?? 0,
+        'converted'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='converted'")['c'] ?? 0,
+        'unsubscribed'     => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0,
+        'total_campaigns'  => Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0,
+        'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0,
+        'unread_responses' => $unreadCount,
+        'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0,
+        'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
+        'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE response_type='interested'")['c'] ?? 0,
+        'followups_sent'   => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0,
+        'week_sends'       => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0,
+        'month_sends'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0,
+        'opened'           => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0,
+    ];
+} catch (Exception $e) {}
 
 // Open rate calculation
 $openRateStr = 'N/A';
@@ -28,63 +48,84 @@ if ($stats['emails_sent'] > 0 && $stats['opened'] > 0) {
 }
 
 // Daily email chart (last 14 days)
-$daily = Database::fetchAll(
-    "SELECT DATE(sent_at) AS d, COUNT(*) AS cnt FROM email_logs
-     WHERE status='sent' AND sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
-     GROUP BY DATE(sent_at) ORDER BY d ASC"
-);
+$daily = [];
+try {
+    $daily = Database::fetchAll(
+        "SELECT DATE(sent_at) AS d, COUNT(*) AS cnt FROM email_logs
+         WHERE status='sent' AND sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+         GROUP BY DATE(sent_at) ORDER BY d ASC"
+    );
+} catch (Exception $e) {}
 $chartDates  = json_encode(array_column($daily, 'd'));
 $chartCounts = json_encode(array_map('intval', array_column($daily, 'cnt')));
 
 // Segments donut
-$segments = Database::fetchAll(
-    "SELECT segment, COUNT(*) AS cnt FROM leads GROUP BY segment ORDER BY cnt DESC"
-);
+$segments = [];
+try {
+    $segments = Database::fetchAll(
+        "SELECT segment, COUNT(*) AS cnt FROM leads GROUP BY segment ORDER BY cnt DESC"
+    );
+} catch (Exception $e) {}
 $segLabels = json_encode(array_column($segments, 'segment'));
 $segCounts = json_encode(array_map('intval', array_column($segments, 'cnt')));
 
 // Province bars
-$provinces = Database::fetchAll(
-    "SELECT province, COUNT(*) AS cnt FROM leads WHERE province != ''
-     GROUP BY province ORDER BY cnt DESC LIMIT 8"
-);
+$provinces = [];
+try {
+    $provinces = Database::fetchAll(
+        "SELECT province, COUNT(*) AS cnt FROM leads WHERE province != ''
+         GROUP BY province ORDER BY cnt DESC LIMIT 8"
+    );
+} catch (Exception $e) {}
 $maxProv = $provinces ? max(array_column($provinces, 'cnt')) : 1;
 
 // Campaign performance (last 5)
-$campPerf = Database::fetchAll(
-    "SELECT c.name, c.sent_count, c.failed_count,
-            COUNT(DISTINCT r.id) AS reply_count
-     FROM campaigns c
-     LEFT JOIN responses r ON r.campaign_id = c.id
-     GROUP BY c.id ORDER BY c.created_at DESC LIMIT 5"
-);
+$campPerf = [];
+try {
+    $campPerf = Database::fetchAll(
+        "SELECT c.name, c.sent_count, c.failed_count,
+                COUNT(DISTINCT r.id) AS reply_count
+         FROM campaigns c
+         LEFT JOIN responses r ON r.campaign_id = c.id
+         GROUP BY c.id ORDER BY c.created_at DESC LIMIT 5"
+    );
+} catch (Exception $e) {}
 $campNames    = json_encode(array_column($campPerf, 'name'));
 $campSent     = json_encode(array_map('intval', array_column($campPerf, 'sent_count')));
 $campFailed   = json_encode(array_map('intval', array_column($campPerf, 'failed_count')));
 $campReplied  = json_encode(array_map('intval', array_column($campPerf, 'reply_count')));
 
 // Hot leads
-$hotLeads = Database::fetchAll(
-    "SELECT r.id, r.from_name, r.from_email, r.subject, r.body_text, r.received_at,
-            l.company
-     FROM responses r
-     LEFT JOIN leads l ON r.lead_id = l.id
-     WHERE r.response_type='interested'
-     ORDER BY r.received_at DESC LIMIT 10"
-);
+$hotLeads = [];
+try {
+    $hotLeads = Database::fetchAll(
+        "SELECT r.id, r.from_name, r.from_email, r.subject, r.body_text, r.received_at,
+                l.company
+         FROM responses r
+         LEFT JOIN leads l ON r.lead_id = l.id
+         WHERE r.response_type='interested'
+         ORDER BY r.received_at DESC LIMIT 10"
+    );
+} catch (Exception $e) {}
 
 // Activity feed
-$activity = Database::fetchAll(
-    "SELECT 'email' AS type, recipient_email AS info, sent_at AS ts FROM email_logs WHERE status='sent'
-     UNION ALL
-     SELECT 'response', from_email, received_at FROM responses
-     ORDER BY ts DESC LIMIT 10"
-);
+$activity = [];
+try {
+    $activity = Database::fetchAll(
+        "SELECT 'email' AS type, recipient_email AS info, sent_at AS ts FROM email_logs WHERE status='sent'
+         UNION ALL
+         SELECT 'response', from_email, received_at FROM responses
+         ORDER BY ts DESC LIMIT 10"
+    );
+} catch (Exception $e) {}
 
 // Recent leads
-$recentLeads = Database::fetchAll(
-    "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
-);
+$recentLeads = [];
+try {
+    $recentLeads = Database::fetchAll(
+        "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
+    );
+} catch (Exception $e) {}
 ?>
 
 <div class="kpi-grid">

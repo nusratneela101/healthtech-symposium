@@ -1,14 +1,17 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
 
-$campaigns = Database::fetchAll(
-    "SELECT c.*, t.name AS tpl_name,
-            u.name AS created_by_name
-     FROM campaigns c
-     LEFT JOIN email_templates t ON c.template_id = t.id
-     LEFT JOIN users u ON c.created_by = u.id
-     ORDER BY c.created_at DESC"
-);
+$campaigns = [];
+try {
+    $campaigns = Database::fetchAll(
+        "SELECT c.*, t.name AS tpl_name,
+                u.name AS created_by_name
+         FROM campaigns c
+         LEFT JOIN email_templates t ON c.template_id = t.id
+         LEFT JOIN users u ON c.created_by = u.id
+         ORDER BY c.created_at DESC"
+    );
+} catch (Exception $e) {}
 ?>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">

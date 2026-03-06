@@ -6,12 +6,22 @@ require_once __DIR__ . '/../includes/auth.php';
 header('Content-Type: application/json');
 Auth::check();
 
+function safeGet(string $key, string $default = ''): string {
+    try {
+        return getSetting($key) ?: $default;
+    } catch (Exception $e) {
+        return $default;
+    }
+}
+
 $service = $_GET['service'] ?? '';
+
+try {
 
 switch ($service) {
 
     case 'brevo':
-        $key = getSetting('brevo_api_key') ?: BREVO_API_KEY;
+        $key = safeGet('brevo_api_key') ?: BREVO_API_KEY;
         if (!$key) { echo json_encode(['success'=>false,'error'=>'No Brevo API key configured']); exit; }
         $ch = curl_init('https://api.brevo.com/v3/account');
         curl_setopt_array($ch, [
@@ -32,8 +42,8 @@ switch ($service) {
         break;
 
     case 'n8n':
-        $key = getSetting('n8n_api_key') ?: N8N_API_KEY;
-        $url = getSetting('n8n_url') ?: 'https://smnurnobi.app.n8n.cloud';
+        $key = safeGet('n8n_api_key') ?: N8N_API_KEY;
+        $url = safeGet('n8n_url') ?: 'https://smnurnobi.app.n8n.cloud';
         if (!$key) { echo json_encode(['success'=>false,'error'=>'No n8n API key configured']); exit; }
         $ch = curl_init(rtrim($url,'/').'/api/v1/workflows?limit=1');
         curl_setopt_array($ch, [
@@ -54,7 +64,7 @@ switch ($service) {
         break;
 
     case 'apollo':
-        $key = getSetting('apollo_api_key') ?: APOLLO_API_KEY;
+        $key = safeGet('apollo_api_key') ?: APOLLO_API_KEY;
         if (!$key) { echo json_encode(['success'=>false,'error'=>'No Apollo API key configured']); exit; }
         $ch = curl_init('https://api.apollo.io/v1/auth/health');
         curl_setopt_array($ch, [
@@ -77,7 +87,7 @@ switch ($service) {
         break;
 
     case 'brevo_info':
-        $key = getSetting('brevo_api_key') ?: BREVO_API_KEY;
+        $key = safeGet('brevo_api_key') ?: BREVO_API_KEY;
         if (!$key) { echo json_encode(['success'=>false,'error'=>'No Brevo API key configured']); exit; }
         $ch = curl_init('https://api.brevo.com/v3/account');
         curl_setopt_array($ch, [
@@ -105,4 +115,9 @@ switch ($service) {
     default:
         http_response_code(400);
         echo json_encode(['success'=>false,'error'=>'Unknown service']);
+}
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Server error: ' . $e->getMessage()]);
 }

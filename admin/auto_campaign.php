@@ -112,7 +112,7 @@ try {
             <div id="statusMsg" style="font-size:13px;color:#10b981;margin-bottom:12px"></div>
         </div>
         <div id="noProgressMsg" style="padding:24px 0;text-align:center;color:#8a9ab5;font-size:13px">No campaign running. Launch a campaign to see live progress.</div>
-        <div id="logTerminal" style="background:#0a0f1a;border:1px solid #1e3355;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font-family:monospace;font-size:12px;color:#4ade80"></div>
+        <div id="logTerminal" style="background:#0a0f1a;border:1px solid #1e3355;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font-family:monospace;font-size:12px;color:#4ade80"><span style="color:#8a9ab5">▶ Waiting for campaign launch…</span></div>
     </div>
 </div>
 
@@ -158,6 +158,7 @@ async function launchCampaign() {
     const data = new FormData(form);
     data.append('create_campaign', '1');
     document.getElementById('launchBtn').disabled = true;
+    document.getElementById('logTerminal').innerHTML = '';
     log('Creating campaign...');
 
     const res = await fetch(window.location.href, {method:'POST', body: data});

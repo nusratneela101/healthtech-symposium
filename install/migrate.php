@@ -3,17 +3,23 @@
  * Migration script for existing installations.
  * Creates any tables that may be missing from an older install.
  *
- * Protection: requires the N8N_API_KEY (or MIGRATE_SECRET env var) to be
- * supplied as a Bearer token or as a ?secret= query-string parameter.
+ * Protection: requires the MIGRATE_SECRET env var, the N8N_API_KEY, or the
+ * built-in token "migrate2026" to be supplied as:
+ *   - ?token=<secret>  or  ?secret=<secret>  query parameters
+ *   - Authorization: Bearer <secret> header
+ *
+ * Example: /install/migrate.php?token=migrate2026
  */
 
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 
-header('Content-Type: text/plain; charset=utf-8');
-
 // ── Auth ──────────────────────────────────────────────────────────────────────
 $expectedSecret = $_ENV['MIGRATE_SECRET'] ?? (defined('N8N_API_KEY') ? N8N_API_KEY : '');
+// Only fall back to the built-in token when no custom secret is configured
+if ($expectedSecret === '') {
+    $expectedSecret = 'migrate2026';
+}
 $providedSecret = '';
 
 // Accept Bearer token header
@@ -21,14 +27,24 @@ $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 if (str_starts_with($authHeader, 'Bearer ')) {
     $providedSecret = substr($authHeader, 7);
 }
-// Or accept ?secret= query param
+// Accept ?token= or ?secret= query param
+if ($providedSecret === '' && isset($_GET['token'])) {
+    $providedSecret = $_GET['token'];
+}
 if ($providedSecret === '' && isset($_GET['secret'])) {
     $providedSecret = $_GET['secret'];
 }
 
-if ($expectedSecret === '' || !hash_equals($expectedSecret, $providedSecret)) {
+$authorized = hash_equals($expectedSecret, $providedSecret);
+
+if (!$authorized) {
     http_response_code(403);
-    echo "403 Forbidden — supply the correct secret via ?secret= or Authorization: Bearer <secret>\n";
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body>';
+    echo '<h2 style="color:red">403 Forbidden</h2>';
+    echo '<p>Supply the correct secret via <code>?token=</code> or <code>Authorization: Bearer</code>.</p>';
+    echo '<p>Example: <code>migrate.php?token=migrate2026</code></p>';
+    echo '</body></html>';
     exit;
 }
 
@@ -170,17 +186,50 @@ $migrations[] = [
 // ── Run ───────────────────────────────────────────────────────────────────────
 $ok = 0;
 $fail = 0;
-echo "Running migrations...\n\n";
+$results = [];
 
 foreach ($migrations as $m) {
     try {
         Database::query($m['sql']);
-        echo "[OK]   {$m['name']}\n";
+        $results[] = ['status' => 'ok', 'name' => $m['name'], 'msg' => ''];
         $ok++;
     } catch (Exception $e) {
-        echo "[FAIL] {$m['name']}: " . $e->getMessage() . "\n";
+        $results[] = ['status' => 'fail', 'name' => $m['name'], 'msg' => $e->getMessage()];
         $fail++;
     }
 }
-
-echo "\nDone. $ok succeeded, $fail failed.\n";
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Database Migration</title>
+<style>
+  body { font-family: monospace; background: #0a0f1a; color: #e2e8f0; padding: 32px; }
+  h1   { color: #0d6efd; margin-bottom: 24px; }
+  .step { padding: 8px 12px; margin: 4px 0; border-radius: 6px; font-size: 14px; }
+  .ok   { background: #0d2e1a; color: #4ade80; }
+  .fail { background: #2e0d0d; color: #f87171; }
+  .summary { margin-top: 24px; font-size: 16px; font-weight: bold; }
+  .ok-sum  { color: #4ade80; }
+  .fail-sum{ color: #f87171; }
+</style>
+</head>
+<body>
+<h1>🗄️ Database Migration</h1>
+<?php foreach ($results as $r): ?>
+<div class="step <?php echo $r['status']; ?>">
+  <?php echo $r['status'] === 'ok' ? '✅' : '❌'; ?>
+  <strong><?php echo htmlspecialchars($r['name']); ?></strong>
+  <?php if ($r['msg']): ?>
+    — <span style="opacity:.8"><?php echo htmlspecialchars($r['msg']); ?></span>
+  <?php endif; ?>
+</div>
+<?php endforeach; ?>
+<div class="summary">
+  Done.
+  <span class="ok-sum"><?php echo $ok; ?> succeeded</span>,
+  <span class="fail-sum"><?php echo $fail; ?> failed</span>.
+</div>
+</body>
+</html>

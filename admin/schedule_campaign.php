@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['schedule_campaign']))
     if ($campaignId && $scheduledAt) {
         // Server-side validation: ensure scheduled time is not in the past
         if (strtotime($scheduledAt) <= time()) {
-            setFlash('error', 'Scheduled time must be in the future.');
+            flash('error', 'Scheduled time must be in the future.');
             header('Location: ' . APP_URL . '/admin/schedule_campaign.php');
             exit;
         }
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['schedule_campaign']))
             "UPDATE campaigns SET scheduled_at=?, scheduled_by=?, status='scheduled' WHERE id=? AND status IN ('draft','scheduled')",
             [$scheduledAt, Auth::user()['id'], $campaignId]
         );
-        setFlash('success', 'Campaign scheduled for ' . $scheduledAt);
+        flash('success', 'Campaign scheduled for ' . $scheduledAt);
     }
     header('Location: ' . APP_URL . '/admin/schedule_campaign.php');
     exit;
@@ -35,7 +35,7 @@ if (isset($_GET['cancel']) && (int)$_GET['cancel'] > 0) {
         "UPDATE campaigns SET scheduled_at=NULL, scheduled_by=NULL, status='draft' WHERE id=? AND status='scheduled'",
         [(int)$_GET['cancel']]
     );
-    setFlash('success', 'Schedule cancelled.');
+    flash('success', 'Schedule cancelled.');
     header('Location: ' . APP_URL . '/admin/schedule_campaign.php');
     exit;
 }

@@ -94,6 +94,27 @@ SESSION_NAME=fts_session
 
 ---
 
+## Step 4b — Run Database Migrations (Existing Installs Only)
+
+If you are **upgrading** an existing installation (not a fresh install), run the migration script to add any missing tables and columns:
+
+```
+https://yourdomain.com/install/migrate.php?token=migrate2026
+```
+
+The migration script will:
+- Add `site_settings`, `lead_tags`, `lead_tag_map`, `notifications`, `rate_limits`, `lead_collections`, and `lead_collection_items` tables if they are missing
+- Add `score` column to `leads` if missing
+- Add `hot_alert_sent` column to `responses` if missing
+- Add `scheduled_at` and `scheduled_by` columns to `campaigns` if missing
+- Update `campaigns.status` enum to include `scheduled`
+
+The page displays a colour-coded HTML result for each step (✅ success / ❌ failure).
+
+> **Security note:** The default token is `migrate2026`. You can override it by setting `MIGRATE_SECRET` in your `.env` file. Delete or protect `install/migrate.php` after running it.
+
+---
+
 ## Step 5 — Delete the Install Folder
 
 **Important:** Remove the `install/` folder immediately after setup to prevent unauthorized re-installation.

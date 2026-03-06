@@ -98,14 +98,21 @@ function getSetting(string $key, string $default = ''): string {
  * Save a setting to the site_settings table.
  */
 function saveSetting(string $key, string $value, string $group = 'general', ?int $userId = null): void {
-    require_once __DIR__ . '/../config/database.php';
-    Database::query(
-        "INSERT INTO site_settings (setting_key, setting_value, setting_group, updated_by)
-         VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value),
-                                 setting_group  = VALUES(setting_group),
-                                 updated_by     = VALUES(updated_by),
-                                 updated_at     = NOW()",
-        [$key, $value, $group, $userId]
-    );
+    try {
+        require_once __DIR__ . '/../config/database.php';
+        Database::query(
+            "INSERT INTO site_settings (setting_key, setting_value, setting_group, updated_by)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value),
+                                     setting_group  = VALUES(setting_group),
+                                     updated_by     = VALUES(updated_by),
+                                     updated_at     = NOW()",
+            [$key, $value, $group, $userId]
+        );
+    } catch (Exception $e) {
+        // Only suppress "table not found" errors (SQLSTATE 42S02 / MySQL 1146)
+        if (strpos($e->getMessage(), '42S02') === false && strpos($e->getMessage(), '1146') === false) {
+            throw $e;
+        }
+    }
 }

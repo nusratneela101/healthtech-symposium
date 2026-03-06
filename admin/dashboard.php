@@ -1,4 +1,5 @@
 <?php
+$unreadCount = 0;
 require_once __DIR__ . '/../includes/layout.php';
 
 // KPI stats — default values in case any table is missing

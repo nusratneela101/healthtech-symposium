@@ -215,6 +215,10 @@ function s(string $key, string $fallback = ''): string {
     <div class="gc">
         <div class="gc-title">📧 SMTP Configuration</div>
         <div class="gc-sub">Outgoing email server settings</div>
+        <div style="margin-bottom:16px;padding:10px 14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;font-size:13px;color:#8a9ab5">
+            ℹ️ <strong style="color:#e2e8f0">Advanced settings.</strong>
+            For most users, configure email from the <button type="button" aria-label="Navigate to Email Setup tab" onclick="showTab('email_setup')" style="background:none;border:none;color:#0d6efd;cursor:pointer;font-size:13px;padding:0">📮 Email Setup</button> tab.
+        </div>
         <div class="settings-grid">
             <div class="sf-row">
                 <label>SMTP Host</label>
@@ -268,6 +272,11 @@ function s(string $key, string $fallback = ''): string {
     <div class="gc">
         <div class="gc-title">📥 IMAP Configuration</div>
         <div class="gc-sub">Incoming email / inbox polling settings</div>
+        <div style="margin-bottom:16px;padding:10px 14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;font-size:13px;color:#8a9ab5">
+            ℹ️ <strong style="color:#e2e8f0">Advanced settings.</strong>
+            For most users, configure email from the <button type="button" aria-label="Navigate to Email Setup tab" onclick="showTab('email_setup')" style="background:none;border:none;color:#0d6efd;cursor:pointer;font-size:13px;padding:0">📮 Email Setup</button> tab.
+            IMAP is required for Microsoft 365 inbox polling.
+        </div>
         <div class="settings-grid">
             <div class="sf-row">
                 <label>IMAP Host</label>

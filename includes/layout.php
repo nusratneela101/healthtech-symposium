@@ -135,6 +135,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='settings.php'?' active':''; ?>">
             ⚙️ Settings
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/email_health.php"
+           class="nav-item<?php echo $currentPage==='email_health.php'?' active':''; ?>">
+            📬 Email Health
+        </a>
         <?php endif; ?>
     </nav>
     <div class="sb-user">

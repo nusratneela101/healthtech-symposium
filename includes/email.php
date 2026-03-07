@@ -32,6 +32,56 @@ class EmailService {
         return $mail;
     }
 
+    /**
+     * Add anti-spam headers and List-Unsubscribe to a PHPMailer instance.
+     * Extracts the unsubscribe URL from the HTML body if present.
+     */
+    private static function addAntiSpamHeaders(object $mail, string $htmlBody): void {
+        // Precedence: bulk signals to ISPs this is a bulk/campaign message
+        $mail->addCustomHeader('Precedence', 'bulk');
+
+        // X-Mailer: identify the sending application
+        $appName = defined('APP_NAME') ? APP_NAME : 'EmailApp';
+        $mail->addCustomHeader('X-Mailer', $appName . ' Mailer');
+
+        // List-Unsubscribe header (one-click unsubscribe per RFC 8058 / Gmail requirements)
+        $unsubUrl = '';
+        if (preg_match('/href=["\']([^"\']*unsubscribe[^"\']*)["\']/', $htmlBody, $m)) {
+            $unsubUrl = $m[1];
+        }
+        if ($unsubUrl) {
+            $mail->addCustomHeader('List-Unsubscribe', '<' . $unsubUrl . '>');
+            $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
+        }
+
+        // X-Auto-Response-Suppress: avoid out-of-office loops for bulk sends
+        $mail->addCustomHeader('X-Auto-Response-Suppress', 'OOF, DR, RN, NRN, AutoReply');
+    }
+
+    /**
+     * Convert HTML to a readable plain-text alternative.
+     * Preserves links in the form "text <url>" and cleans whitespace.
+     */
+    public static function htmlToText(string $html): string {
+        // Replace links with "text <url>"
+        $text = preg_replace('/<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/si', '$2 <$1>', $html);
+        if ($text === null) {
+            $text = $html;
+        }
+        // Replace block-level tags with newlines
+        $text = preg_replace('/<(br|p|div|h[1-6]|li|tr)[^>]*>/i', "\n", $text);
+        if ($text === null) {
+            $text = strip_tags($html);
+        }
+        // Strip remaining tags
+        $text = strip_tags($text);
+        // Decode HTML entities
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        // Collapse excessive blank lines
+        $collapsed = preg_replace('/(\n\s*){3,}/', "\n\n", $text);
+        return trim($collapsed ?? $text);
+    }
+
     public static function send(
         string $toEmail,
         string $toName,
@@ -57,7 +107,8 @@ class EmailService {
             $mail->Subject  = $subject;
             $mail->isHTML(true);
             $mail->Body     = $htmlBody;
-            $mail->AltBody  = $textBody ?: strip_tags($htmlBody);
+            $mail->AltBody  = $textBody ?: self::htmlToText($htmlBody);
+            self::addAntiSpamHeaders($mail, $htmlBody);
             $mail->send();
             return ['success' => true, 'message_id' => $mail->getLastMessageID(), 'via' => 'smtp'];
         } catch (Exception $e) {
@@ -78,7 +129,7 @@ class EmailService {
             $mail->Subject  = $subject;
             $mail->isHTML(true);
             $mail->Body     = $htmlBody;
-            $mail->AltBody  = strip_tags($htmlBody);
+            $mail->AltBody  = self::htmlToText($htmlBody);
             if ($inReplyTo) {
                 $mail->addCustomHeader('In-Reply-To', $inReplyTo);
                 $mail->addCustomHeader('References',  $inReplyTo);

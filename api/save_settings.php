@@ -63,6 +63,10 @@ $allowedKeys = [
         'email_daily_limit','email_weekly_limit','email_monthly_limit',
         'followup_daily_limit','followup_weekly_limit','followup_monthly_limit',
     ],
+    'warmup' => [
+        'warmup_enabled','warmup_start_date','warmup_days',
+        'warmup_start_volume','warmup_max_volume',
+    ],
 ];
 
 if (!isset($allowedKeys[$group])) {

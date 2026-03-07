@@ -59,6 +59,7 @@ function s(string $key, string $fallback = ''): string {
         'brevo'         => '📧 Brevo',
         'email_defaults'=> '⚙️ Email Defaults',
         'sending_limits'=> '📊 Sending Limits',
+        'warmup'        => '🔥 Warm-up',
     ];
     $firstTab = true;
     foreach ($tabs as $id => $label):
@@ -728,6 +729,77 @@ function s(string $key, string $fallback = ''): string {
             <span style="font-size:12px;color:#8a9ab5;margin-left:12px">0 = Unlimited (no restriction applied)</span>
         </div>
         <div id="sending_limits-result" style="margin-top:10px;font-size:13px"></div>
+    </div>
+</div>
+
+<!-- ─── Warm-up ──────────────────────────────────────────────────────────── -->
+<?php
+require_once __DIR__ . '/../includes/warmup.php';
+$wuProgress = WarmupManager::getProgress();
+?>
+<div class="tab-panel" id="tab-warmup" style="display:none">
+    <div class="gc">
+        <div class="gc-title">🔥 Email Warm-up</div>
+        <div class="gc-sub">Gradually increase daily sending volume to build sender reputation. Warm-up overrides the daily campaign limit when enabled.</div>
+
+        <div class="settings-grid" style="margin-top:16px">
+            <div class="sf-row">
+                <label>Enable Warm-up</label>
+                <select class="fi" id="warmup_enabled">
+                    <option value="0" <?php echo s('warmup_enabled','0')==='0'?'selected':''; ?>>Disabled</option>
+                    <option value="1" <?php echo s('warmup_enabled','0')==='1'?'selected':''; ?>>Enabled</option>
+                </select>
+            </div>
+            <div class="sf-row">
+                <label>Warm-up Start Date</label>
+                <input class="fi" id="warmup_start_date" type="date"
+                       value="<?php echo s('warmup_start_date', date('Y-m-d')); ?>"
+                       placeholder="YYYY-MM-DD">
+            </div>
+            <div class="sf-row">
+                <label>Warm-up Duration (days)</label>
+                <input class="fi" id="warmup_days" type="number" min="7" max="90"
+                       value="<?php echo s('warmup_days','21'); ?>" placeholder="21">
+                <div style="font-size:11px;color:#8a9ab5;margin-top:2px">Recommended: 21 days</div>
+            </div>
+            <div class="sf-row">
+                <label>Starting Volume (Day 1)</label>
+                <input class="fi" id="warmup_start_volume" type="number" min="1"
+                       value="<?php echo s('warmup_start_volume','20'); ?>" placeholder="20">
+            </div>
+            <div class="sf-row">
+                <label>Maximum Volume (final day)</label>
+                <input class="fi" id="warmup_max_volume" type="number" min="1"
+                       value="<?php echo s('warmup_max_volume','500'); ?>" placeholder="500">
+            </div>
+        </div>
+
+        <?php if ($wuProgress['enabled']): ?>
+        <div style="margin-top:20px;padding:14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px">
+            <div style="font-size:13px;color:#e2e8f0;margin-bottom:6px">
+                <?php if ($wuProgress['completed']): ?>
+                    ✅ Warm-up completed. Disable warm-up mode and use standard sending limits.
+                <?php else: ?>
+                    Day <?php echo $wuProgress['current_day']; ?> of <?php echo $wuProgress['days']; ?> —
+                    Today's limit: <strong style="color:#10b981"><?php echo $wuProgress['daily_limit']; ?> emails</strong>
+                <?php endif; ?>
+            </div>
+            <div style="background:#1e3a5f;border-radius:4px;height:8px;overflow:hidden">
+                <div style="width:<?php echo min(100, round($wuProgress['current_day']/$wuProgress['days']*100)); ?>%;height:100%;background:#f59e0b;border-radius:4px"></div>
+            </div>
+            <div style="margin-top:6px;font-size:11px;color:#8a9ab5">
+                <a href="<?php echo APP_URL; ?>/admin/email_health.php" style="color:#3b82f6">View full warm-up schedule →</a>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div style="margin-top:20px">
+            <button class="btn-launch"
+                onclick="saveSection('warmup',['warmup_enabled','warmup_start_date','warmup_days','warmup_start_volume','warmup_max_volume'])">
+                💾 Save Warm-up Settings
+            </button>
+        </div>
+        <div id="warmup-result" style="margin-top:10px;font-size:13px"></div>
     </div>
 </div>
 

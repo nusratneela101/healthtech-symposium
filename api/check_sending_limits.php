@@ -8,6 +8,13 @@
 function checkSendingLimits(int $followUpSeq = 1): array {
     $isFollowup = ($followUpSeq > 1);
 
+    // ── Warm-up check (applies to all sequences) ─────────────────────────
+    require_once __DIR__ . '/../includes/warmup.php';
+    $warmupCheck = WarmupManager::checkLimit();
+    if (!$warmupCheck['allowed']) {
+        return ['allowed' => false, 'reason' => $warmupCheck['reason']];
+    }
+
     // Read limits from site_settings / config (0 = unlimited)
     $dailyLimit   = (int)getSetting($isFollowup ? 'followup_daily_limit'   : 'email_daily_limit',   '0');
     $weeklyLimit  = (int)getSetting($isFollowup ? 'followup_weekly_limit'  : 'email_weekly_limit',  '0');

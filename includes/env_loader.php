@@ -9,9 +9,9 @@ function loadEnv(string $path): void {
         [$key, $value] = explode('=', $line, 2);
         $key   = trim($key);
         $value = trim($value);
-        // Remove surrounding quotes
-        if ((str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-            (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+        // Remove surrounding quotes (PHP 7.4 compatible)
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
             $value = substr($value, 1, -1);
         }
         $_ENV[$key] = $value;

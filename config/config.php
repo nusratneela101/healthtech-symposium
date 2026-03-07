@@ -28,6 +28,8 @@ define('MS_OAUTH_TENANT_ID',    $_ENV['MS_OAUTH_TENANT_ID']    ?? 'common');
 define('MS_OAUTH_REDIRECT_URI', $_ENV['MS_OAUTH_REDIRECT_URI'] ?? '');
 
 define('N8N_API_KEY',     $_ENV['N8N_API_KEY']      ?? '');
+define('N8N_URL',         $_ENV['N8N_URL']           ?? 'https://smnurnobi.app.n8n.cloud');
+define('N8N_WEBHOOK_URL', $_ENV['N8N_WEBHOOK_URL']   ?? '');
 define('SESSION_NAME',    $_ENV['SESSION_NAME']     ?? 'fts_session');
 
 define('APOLLO_API_KEY',  $_ENV['APOLLO_API_KEY']   ?? '');
@@ -79,6 +81,8 @@ function getSetting(string $key, string $default = ''): string {
         'imap_pass'        => IMAP_PASS,
         'brevo_api_key'    => BREVO_API_KEY,
         'n8n_api_key'      => N8N_API_KEY,
+        'n8n_url'          => N8N_URL,
+        'n8n_webhook_url'  => N8N_WEBHOOK_URL,
         'ms_oauth_client_id'     => MS_OAUTH_CLIENT_ID,
         'ms_oauth_client_secret' => MS_OAUTH_CLIENT_SECRET,
         'ms_oauth_tenant_id'     => MS_OAUTH_TENANT_ID,

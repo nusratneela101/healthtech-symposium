@@ -1,0 +1,25 @@
+# Restrict direct access to step files; only index.php may be accessed
+<Files "*.php">
+    Order deny,allow
+    Deny from all
+</Files>
+
+<Files "index.php">
+    Order allow,deny
+    Allow from all
+</Files>
+
+# Allow CSS, JS, and SQL assets
+<FilesMatch "\.(css|js|sql)$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Prevent access to the lock file
+<Files "install.lock">
+    Order deny,allow
+    Deny from all
+</Files>
+
+# Disable directory listing
+Options -Indexes

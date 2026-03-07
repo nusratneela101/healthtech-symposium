@@ -59,11 +59,15 @@ $migrations = [
           `total_fetched` int(11) DEFAULT 0,
           `total_saved` int(11) DEFAULT 0,
           `total_skipped` int(11) DEFAULT 0,
-          `status` enum('running','done','failed') DEFAULT 'running',
+          `total_duplicates` int(11) DEFAULT 0,
+          `status` enum('running','done','failed','completed','pending') DEFAULT 'running',
           `search_params` text,
           `started_at` datetime DEFAULT NULL,
           `completed_at` datetime DEFAULT NULL,
-          PRIMARY KEY (`id`)
+          `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `status` (`status`),
+          KEY `started_at` (`started_at`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ],
     [

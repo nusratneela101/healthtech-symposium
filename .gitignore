@@ -9,10 +9,12 @@ node_modules/
 # Logs
 *.log
 
-# Installation files (if recreated)
-/install/
+# Utility / one-off scripts
 check_installation.php
 create_env.php
+
+# Lock file created by the installer after successful setup
+/install/install.lock
 
 # OS files
 .DS_Store

@@ -102,7 +102,7 @@ if (!isset($_SESSION['install_step'])) {
 $currentStep = (int)$_SESSION['install_step'];
 
 // ─── Handle form submission ───────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !isset($_POST['action'])) {
     $stepAction = $_POST['step_action'] ?? 'next';
 
     if ($stepAction === 'prev') {

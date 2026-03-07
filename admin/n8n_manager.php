@@ -9,7 +9,6 @@ $workflowMeta = [
     'lead_collector.json'          => ['name'=>'Lead Collector (Apollo)','schedule'=>'Daily 8 AM','active'=>true],
     'followup_sender.json'         => ['name'=>'Follow-up Sender','schedule'=>'Daily 10 AM','active'=>true],
     'response_tracker.json'        => ['name'=>'Response Tracker (IMAP)','schedule'=>'Every 10 min','active'=>true],
-    'thursday_campaign.json'       => ['name'=>'Thursday Campaign (DEPRECATED)','schedule'=>'—','active'=>false],
 ];
 $coreWorkflows = array_keys($workflowMeta);
 $wfDir = realpath(__DIR__ . '/../n8n_workflows') ?: (__DIR__ . '/../n8n_workflows');

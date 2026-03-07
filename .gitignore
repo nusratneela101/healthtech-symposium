@@ -1,4 +1,19 @@
+# Environment files
 .env
+.env.local
+.env.*.local
+
 vendor/
 node_modules/
+
+# Logs
 *.log
+
+# Installation files (if recreated)
+/install/
+check_installation.php
+create_env.php
+
+# OS files
+.DS_Store
+Thumbs.db

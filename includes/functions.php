@@ -124,22 +124,6 @@ function audit_log(string $action, string $entityType = '', ?int $entityId = nul
 }
 
 /**
- * Retrieve a setting value from the `settings` table.
- *
- * @param string $key     The setting key to look up.
- * @param mixed  $default Value returned when the key is not found.
- * @return mixed
- */
-function getSetting(string $key, $default = null) {
-    try {
-        $row = Database::fetchOne("SELECT value FROM settings WHERE `key` = ? LIMIT 1", [$key]);
-        return $row ? $row['value'] : $default;
-    } catch (Exception $e) {
-        return $default;
-    }
-}
-
-/**
  * Strip dangerous HTML tags while keeping safe formatting tags.
  *
  * @param string $html Raw HTML input.

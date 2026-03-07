@@ -11,13 +11,15 @@ ob_clean();
 
 header('Content-Type: application/json');
 
-try {
-    Auth::check();
-} catch (Exception $e) {
-    ob_clean();
-    http_response_code(401);
-    echo json_encode(['success' => false, 'error' => 'Unauthorized: ' . $e->getMessage()]);
-    exit;
+// Accept session auth (admin panel) OR API key (n8n / direct calls)
+$apiKey = $_GET['api_key'] ?? '';
+if (empty($_SESSION['user_id'])) {
+    if ($apiKey === '' || N8N_API_KEY === '' || !hash_equals(N8N_API_KEY, $apiKey)) {
+        ob_clean();
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+        exit;
+    }
 }
 
 function safeGet(string $key, string $default = ''): string {
@@ -72,7 +74,7 @@ switch ($service) {
 
     case 'n8n':
         $key = safeGet('n8n_api_key') ?: N8N_API_KEY;
-        $url = safeGet('n8n_url') ?: 'https://smnurnobi.app.n8n.cloud';
+        $url = safeGet('n8n_url') ?: N8N_URL;
         if (!$key) {
             ob_clean();
             echo json_encode(['success'=>false,'error'=>'No n8n API key configured']);

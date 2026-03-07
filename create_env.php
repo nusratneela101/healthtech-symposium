@@ -1,117 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>.env Creator</title>
-    <style>
-        body {
-            background: linear-gradient(to right, #a4508b, #5d3f7e);
-            font-family: Arial, sans-serif;
-            color: white;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        form {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
-            width: 400px;
-        }
-        input, select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 5px;
-        }
-        button {
-            background: #5d3f7e;
-            color: white;
-            border: none;
-            padding: 10px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #4b2f5e;
-        }
-        #countdown {
-            margin-top: 20px;
-            font-size: 20px;
-        }
-    </style>
-</head>
-<body>
-    <form id="envForm">
-        <h1>Create .env File</h1>
-        <label for="db_host">Database Host:</label>
-        <input type="text" id="db_host" required>
-        <label for="db_name">Database Name:</label>
-        <input type="text" id="db_name" required>
-        <label for="db_user">Database User:</label>
-        <input type="text" id="db_user" required>
-        <label for="db_password">Database Password:</label>
-        <input type="password" id="db_password" required>
+<?php
 
-        <h2>SMTP Configuration</h2>
-        <label for="smtp_host">SMTP Host:</label>
-        <input type="text" id="smtp_host" required>
-        <label for="smtp_port">SMTP Port:</label>
-        <input type="number" id="smtp_port" required>
-        <label for="smtp_user">SMTP User:</label>
-        <input type="text" id="smtp_user" required>
-        <label for="smtp_password">SMTP Password:</label>
-        <input type="password" id="smtp_password" required>
-        <label for="api_key">API Key:</label>
-        <input type="text" id="api_key" required>
+function createEnvFile($data) {
+    $filename = '.env';
+    $backupFilename = '.env.bak';
 
-        <h2>Optional Fields</h2>
-        <label for="imap">IMAP:</label>
-        <input type="text" id="imap">
-        <label for="apollo">Apollo:</label>
-        <input type="text" id="apollo">
-        <label for="n8n">n8n Key:</label>
-        <input type="text" id="n8n">
-        <label for="oauth">Microsoft OAuth:</label>
-        <input type="text" id="oauth">
+    // Create a backup of the existing .env file
+    if (file_exists($filename)) {
+        copy($filename, $backupFilename);
+    }
 
-        <button type="button" id="createEnv">Create .env</button>
-        <div id="countdown">10 seconds until auto-delete</div>
-    </form>
-    <script>
-        document.getElementById('createEnv').addEventListener('click', function() {
-            // Submit the form and create .env file logic goes here.
-            const dbHost = document.getElementById('db_host').value;
-            const dbName = document.getElementById('db_name').value;
-            const dbUser = document.getElementById('db_user').value;
-            const dbPassword = document.getElementById('db_password').value;
-            const smtpHost = document.getElementById('smtp_host').value;
-            const smtpPort = document.getElementById('smtp_port').value;
-            const smtpUser = document.getElementById('smtp_user').value;
-            const smtpPassword = document.getElementById('smtp_password').value;
-            const apiKey = document.getElementById('api_key').value;
-            const imap = document.getElementById('imap').value;
-            const apollo = document.getElementById('apollo').value;
-            const n8n = document.getElementById('n8n').value;
-            const oauth = document.getElementById('oauth').value;
+    // Create a new .env file with the provided data
+    file_put_contents($filename, http_build_query($data, '', '\n'));
+    chmod($filename, 0600); // Set permissions to read/write for owner only
+}
 
-            const envContent = `DB_HOST=${dbHost}\nDB_NAME=${dbName}\nDB_USER=${dbUser}\nDB_PASSWORD=${dbPassword}\nSMTP_HOST=${smtpHost}\nSMTP_PORT=${smtpPort}\nSMTP_USER=${smtpUser}\nSMTP_PASSWORD=${smtpPassword}\nAPI_KEY=${apiKey}\nIMAP=${imap}\nAPOLLO=${apollo}\nN8N=${n8n}\nOAUTH=${oauth}`;
+// Function to validate form data
+function validateFormData($data) {
+    $errors = [];
+    if (empty($data['db_host'])) { $errors[] = 'Database host is required.'; }
+    if (empty($data['db_name'])) { $errors[] = 'Database name is required.'; }
+    if (empty($data['db_user'])) { $errors[] = 'Database user is required.'; }
+    if (empty($data['db_pass'])) { $errors[] = 'Database password is required.'; }
+    // Add more validation as needed
+    return $errors;
+}
 
-            // Logic to save envContent to .env file on server
-            alert('Creating .env file...');
-            // Delete logic after 10 seconds
-            setTimeout(() => {
-                alert('.env file will be deleted now.');
-                // Delete the .env file logic here
-            }, 10000);
-        });
-    </script>
-</body>
-</html>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $formData = $_POST;
+    $validationErrors = validateFormData($formData);
+    
+    if (empty($validationErrors)) {
+        createEnvFile($formData);
+        echo '<div>Success! Your .env file has been created.</div>';
+        echo '<div>Your n8n key: ' . $formData['n8n_key'] . '</div>';
+        echo '<div id="countdown">10</div>';
+        echo '<script>
+            let countdown = 10;
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                document.getElementById("countdown").innerText = countdown;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = "installer.php";
+                }
+            }, 1000);
+        </script>';
+    } else {
+        foreach ($validationErrors as $error) {
+            echo '<div>' . $error . '</div>';
+        }
+    }
+}
+?>
+<style>
+    body { background: linear-gradient(to right, #6a11cb, #2575fc); color: white; font-family: Arial, sans-serif; }
+    /* Add other styles as needed for UI */
+</style>
+<form id="config-form" method="POST" action="" onsubmit="return validateForm();">
+    <label for="db_host">Database Host <span>*</span></label>
+    <input type="text" name="db_host" required>
+
+    <label for="db_name">Database Name <span>*</span></label>
+    <input type="text" name="db_name" required>
+
+    <label for="db_user">Database User <span>*</span></label>
+    <input type="text" name="db_user" required>
+
+    <label for="db_pass">Database Password <span>*</span></label>
+    <input type="password" name="db_pass" required>
+
+    <label for="smtp_host">SMTP Host</label>
+    <input type="text" name="smtp_host">
+
+    <label for="smtp_port">SMTP Port</label>
+    <input type="text" name="smtp_port">
+
+    <label for="smtp_user">SMTP User</label>
+    <input type="text" name="smtp_user">
+
+    <label for="smtp_pass">SMTP Password</label>
+    <input type="password" name="smtp_pass">
+
+    <label for="api_key">API Key</label>
+    <input type="text" name="api_key">
+
+    <label for="from_email">From Email</label>
+    <input type="email" name="from_email">
+
+    <label for="n8n_key">n8n Key</label>
+    <input type="text" name="n8n_key">
+
+    <input type="submit" value="Submit">
+</form>
+<script>
+    function validateForm() {
+        // Add your form validation logic here
+        return true;
+    }
+</script>

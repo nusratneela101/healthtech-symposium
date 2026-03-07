@@ -1,7 +1,9 @@
 <?php
+ob_start();
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 
+ob_clean();
 header('Content-Type: application/json');
 
 $apiKey = $_GET['api_key'] ?? (json_decode(file_get_contents('php://input'), true)['api_key'] ?? '');

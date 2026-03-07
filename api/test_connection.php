@@ -12,9 +12,10 @@ ob_clean();
 header('Content-Type: application/json');
 
 // Accept session auth (admin panel) OR API key (n8n / direct calls)
-$apiKey = $_GET['api_key'] ?? '';
+$apiKey = $_GET['api_key'] ?? $_POST['api_key'] ?? '';
 if (empty($_SESSION['user_id'])) {
-    if ($apiKey === '' || N8N_API_KEY === '' || !hash_equals(N8N_API_KEY, $apiKey)) {
+    $validApiKey = !empty(N8N_API_KEY) ? N8N_API_KEY : getSetting('n8n_api_key');
+    if ($apiKey === '' || $validApiKey === '' || !hash_equals($validApiKey, $apiKey)) {
         ob_clean();
         http_response_code(401);
         echo json_encode(['success' => false, 'error' => 'Unauthorized']);

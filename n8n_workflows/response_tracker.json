@@ -20,13 +20,13 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/poll_inbox.php",
+        "url": "https://fintech.softandpix.com/api/poll_inbox.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "api_key",
-              "value": "YOUR_N8N_API_KEY"
+              "value": "fts2026secure"
             }
           ]
         },
@@ -50,14 +50,14 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/save_response.php",
+        "url": "https://fintech.softandpix.com/api/save_response.php",
         "sendBody": true,
         "contentType": "json",
         "bodyParameters": {
           "parameters": [
             {
               "name": "api_key",
-              "value": "YOUR_N8N_API_KEY"
+              "value": "fts2026secure"
             },
             {
               "name": "saved",

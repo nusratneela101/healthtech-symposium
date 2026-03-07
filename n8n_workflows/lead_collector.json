@@ -56,11 +56,11 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/collect_leads.php",
+        "url": "https://fintech.softandpix.com/api/collect_leads.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key", "value": "YOUR_N8N_API_KEY" },
+            { "name": "api_key", "value": "fts2026secure" },
             { "name": "leads",   "value": "={{ JSON.stringify($input.all().map(i => i.json)) }}" },
             { "name": "source",  "value": "Apollo" },
             { "name": "search_params", "value": "person_locations=Canada, person_titles=CTO,VP,Director,CEO,Founder,Head of,Managing Partner" }

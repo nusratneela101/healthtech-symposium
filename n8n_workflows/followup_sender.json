@@ -14,11 +14,11 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/get_followup_leads.php",
+        "url": "https://fintech.softandpix.com/api/get_followup_leads.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "api_key", "value": "YOUR_N8N_API_KEY" },
+            { "name": "api_key", "value": "fts2026secure" },
             { "name": "limit",   "value": "500" }
           ]
         },
@@ -41,11 +41,11 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/send_one_email.php",
+        "url": "https://fintech.softandpix.com/api/send_one_email.php",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
-            { "name": "api_key",            "value": "YOUR_N8N_API_KEY" },
+            { "name": "api_key",            "value": "fts2026secure" },
             { "name": "campaign_id",        "value": "={{ $json.campaign_id }}" },
             { "name": "follow_up_sequence", "value": "2" }
           ]

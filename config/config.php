@@ -29,7 +29,7 @@ define('MS_OAUTH_REDIRECT_URI', $_ENV['MS_OAUTH_REDIRECT_URI'] ?? '');
 
 define('N8N_API_KEY',     $_ENV['N8N_API_KEY']      ?? '');
 define('N8N_URL',         $_ENV['N8N_URL']           ?? 'https://smnurnobi.app.n8n.cloud');
-define('N8N_WEBHOOK_URL', $_ENV['N8N_WEBHOOK_URL']   ?? '');
+define('N8N_WEBHOOK_URL', $_ENV['N8N_WEBHOOK_URL']   ?? 'https://smnurnobi.app.n8n.cloud/webhook/fintech');
 define('SESSION_NAME',    $_ENV['SESSION_NAME']     ?? 'fts_session');
 
 define('APOLLO_API_KEY',  $_ENV['APOLLO_API_KEY']   ?? '');

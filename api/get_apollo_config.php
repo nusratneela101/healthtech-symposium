@@ -1,8 +1,10 @@
 <?php
+ob_start();
 // Public endpoint for n8n to read Apollo search configuration
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 
+ob_clean();
 header('Content-Type: application/json');
 
 $apiKey = $_GET['api_key'] ?? '';

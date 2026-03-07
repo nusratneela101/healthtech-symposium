@@ -18,23 +18,29 @@ function s(string $key, string $fallback = ''): string {
     if (isset($settingsRows[$key]) && $settingsRows[$key] !== '') {
         return htmlspecialchars($settingsRows[$key]);
     }
-    $consts = [
-        'smtp_host'       => SMTP_HOST,
-        'smtp_port'       => (string)SMTP_PORT,
-        'smtp_secure'     => SMTP_SECURE,
-        'smtp_user'       => SMTP_USER,
-        'smtp_from_email' => SMTP_FROM_EMAIL,
-        'smtp_from_name'  => SMTP_FROM_NAME,
-        'imap_host'       => IMAP_HOST,
-        'imap_user'       => IMAP_USER,
-        'n8n_api_key'     => N8N_API_KEY,
-        'brevo_api_key'   => BREVO_API_KEY,
-        'ms_oauth_client_id'     => MS_OAUTH_CLIENT_ID,
-        'ms_oauth_tenant_id'     => MS_OAUTH_TENANT_ID,
-        'site_name'       => APP_NAME,
-        'email_provider'  => '',
-    ];
-    return htmlspecialchars($consts[$key] ?? $fallback);
+    try {
+        $consts = [
+            'smtp_host'       => SMTP_HOST,
+            'smtp_port'       => (string)SMTP_PORT,
+            'smtp_secure'     => SMTP_SECURE,
+            'smtp_user'       => SMTP_USER,
+            'smtp_from_email' => SMTP_FROM_EMAIL,
+            'smtp_from_name'  => SMTP_FROM_NAME,
+            'imap_host'       => IMAP_HOST,
+            'imap_user'       => IMAP_USER,
+            'n8n_api_key'     => N8N_API_KEY,
+            'n8n_url'         => N8N_URL,
+            'n8n_webhook_url' => N8N_WEBHOOK_URL,
+            'brevo_api_key'   => BREVO_API_KEY,
+            'ms_oauth_client_id'     => MS_OAUTH_CLIENT_ID,
+            'ms_oauth_tenant_id'     => MS_OAUTH_TENANT_ID,
+            'site_name'       => APP_NAME,
+            'email_provider'  => '',
+        ];
+        return htmlspecialchars($consts[$key] ?? $fallback);
+    } catch (Exception $e) {
+        return htmlspecialchars($fallback);
+    }
 }
 ?>
 

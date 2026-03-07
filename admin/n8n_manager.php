@@ -20,10 +20,10 @@ foreach ($allFiles as $f) {
 }
 
 // Check configured status
-try { $n8nUrlOk    = getSetting('n8n_url') !== ''; }    catch (Exception $e) { $n8nUrlOk = false; }
-try { $n8nKeyOk    = getSetting('n8n_api_key') !== ''; } catch (Exception $e) { $n8nKeyOk = false; }
-try { $apolloKeyOk = getSetting('apollo_api_key') !== ''; } catch (Exception $e) { $apolloKeyOk = false; }
-try { $brevoKeyOk  = getSetting('brevo_api_key') !== ''; } catch (Exception $e) { $brevoKeyOk = false; }
+$n8nUrlOk    = getSetting('n8n_url') !== '';
+$n8nKeyOk    = getSetting('n8n_api_key') !== '';
+$apolloKeyOk = getSetting('apollo_api_key') !== '';
+$brevoKeyOk  = getSetting('brevo_api_key') !== '';
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">🤖 n8n Manager</h2>

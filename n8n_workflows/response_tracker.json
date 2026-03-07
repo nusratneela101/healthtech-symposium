@@ -108,7 +108,7 @@
         "toEmail": "sm@101bdtech.com",
         "subject": "Fintech: {{ $json.saved }} New Response(s) Received",
         "emailType": "html",
-        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://YOURSITE.com/fintech/admin/responses.php\">View Responses →</a></p>",
+        "message": "<h2>New Inbox Responses</h2><p><strong>{{ $json.saved }}</strong> new response(s) have been received and saved.</p><p><a href=\"https://fintech.softandpix.com/admin/responses.php\">View Responses →</a></p>",
         "options": {}
       },
       "id": "alert-email",
@@ -119,7 +119,7 @@
     },
     {
       "parameters": {
-        "url": "https://YOURSITE.com/fintech/api/check_hot_leads.php",
+        "url": "https://fintech.softandpix.com/api/check_hot_leads.php",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -172,7 +172,7 @@
         "toEmail": "sm@101bdtech.com",
         "subject": "🔥 Fintech Hot Lead Alert: {{ $json.count }} Interested Response(s)",
         "emailType": "html",
-        "message": "<h2>🔥 Hot Lead Alert!</h2><p><strong>{{ $json.count }}</strong> interested response(s) detected.</p><p>These leads have shown interest and require immediate follow-up.</p><pre>{{ JSON.stringify($json.leads, null, 2) }}</pre><p><a href=\"https://YOURSITE.com/fintech/admin/responses.php\">View All Responses →</a></p>",
+        "message": "<h2>🔥 Hot Lead Alert!</h2><p><strong>{{ $json.count }}</strong> interested response(s) detected.</p><p>These leads have shown interest and require immediate follow-up.</p><pre>{{ JSON.stringify($json.leads, null, 2) }}</pre><p><a href=\"https://fintech.softandpix.com/admin/responses.php\">View All Responses →</a></p>",
         "options": {}
       },
       "id": "hot-lead-alert",

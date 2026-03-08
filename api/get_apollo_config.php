@@ -7,7 +7,7 @@ require_once __DIR__ . '/../config/database.php';
 ob_clean();
 header('Content-Type: application/json');
 
-$apiKey = $_GET['api_key'] ?? '';
+$apiKey = $_SERVER['HTTP_X_API_KEY'] ?? $_GET['api_key'] ?? '';
 if ($apiKey === '' || $apiKey !== N8N_API_KEY) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);

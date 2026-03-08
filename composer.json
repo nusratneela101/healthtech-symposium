@@ -1,0 +1,18 @@
+{
+    "name": "nusratneela101/healthtech-symposium",
+    "description": "Canada HealthTech 2026 Campaign Management Platform",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0",
+        "phpmailer/phpmailer": "^6.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

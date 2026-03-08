@@ -107,15 +107,12 @@ function return_bytes(string $val): int
 function testDatabaseConnection(string $host, string $dbname, string $user, string $pass, int $port = 3306): array
 {
     try {
-        $dsn = "mysql:host={$host};port={$port};charset=utf8mb4";
+        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
         $pdo = new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_CONNECT_TIMEOUT    => 5,
         ]);
-        // Check if target database exists (it's OK if it doesn't yet)
-        $stmt  = $pdo->query("SHOW DATABASES LIKE " . $pdo->quote($dbname));
-        $exists = $stmt->rowCount() > 0;
-        return ['success' => true, 'db_exists' => $exists, 'version' => getServerVersion($pdo)];
+        return ['success' => true, 'db_exists' => true, 'version' => getServerVersion($pdo)];
     } catch (PDOException $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
@@ -133,9 +130,8 @@ function getServerVersion(PDO $pdo): string
 function createDatabase(string $host, string $dbname, string $user, string $pass, int $port = 3306): array
 {
     try {
-        $dsn = "mysql:host={$host};port={$port};charset=utf8mb4";
+        $dsn = "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4";
         $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-        $pdo->exec("CREATE DATABASE IF NOT EXISTS `" . str_replace('`', '', $dbname) . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
         return ['success' => true];
     } catch (PDOException $e) {
         return ['success' => false, 'error' => $e->getMessage()];

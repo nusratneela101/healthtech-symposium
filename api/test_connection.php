@@ -117,13 +117,16 @@ switch ($service) {
             echo json_encode(['success'=>false,'error'=>'No Apollo API key configured']);
             exit;
         }
-        $ch = curl_init('https://api.apollo.io/v1/auth/health');
+        $ch = curl_init('https://api.apollo.io/api/v1/auth/health');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode(['api_key'=>$key]),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPGET        => true,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'X-Api-Key: ' . $key,
+            ],
+            CURLOPT_TIMEOUT        => 10,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => true,
         ]);

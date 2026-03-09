@@ -1,8 +1,12 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+
 Auth::requireSuperAdmin();
 
-// Handle actions
+// Handle actions BEFORE loading layout (which outputs HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -49,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+require_once __DIR__ . '/../includes/layout.php';
 
 $users = Database::fetchAll("SELECT * FROM users ORDER BY created_at DESC");
 ?>

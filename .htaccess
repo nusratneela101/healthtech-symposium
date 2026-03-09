@@ -48,11 +48,45 @@ Options -Indexes
     RewriteRule (^\.|/\.) - [F,L]
 </IfModule>
 
-# ── PHP settings (if using mod_php) ──────────────────────────
+# ── PHP settings (mod_php, mod_php7, mod_php8) ───────────────
+# NOTE: display_errors is enabled here to help diagnose HTTP 500 errors
+# during initial deployment. Once the site is running correctly, set
+# php_flag display_errors to Off (or remove these blocks) for security.
 <IfModule mod_php.c>
-    php_flag display_errors Off
-    php_flag log_errors On
+    php_flag  display_errors      On
+    php_value error_reporting     32767
+    php_flag  log_errors          On
+    php_value memory_limit        256M
+    php_value max_execution_time  300
+    php_value upload_max_filesize 20M
+    php_value post_max_size       20M
     php_value session.cookie_httponly 1
     php_value session.use_only_cookies 1
-    php_value session.use_strict_mode 1
+    php_value session.use_strict_mode  1
+</IfModule>
+
+<IfModule mod_php7.c>
+    php_flag  display_errors      On
+    php_value error_reporting     32767
+    php_flag  log_errors          On
+    php_value memory_limit        256M
+    php_value max_execution_time  300
+    php_value upload_max_filesize 20M
+    php_value post_max_size       20M
+    php_value session.cookie_httponly 1
+    php_value session.use_only_cookies 1
+    php_value session.use_strict_mode  1
+</IfModule>
+
+<IfModule mod_php8.c>
+    php_flag  display_errors      On
+    php_value error_reporting     32767
+    php_flag  log_errors          On
+    php_value memory_limit        256M
+    php_value max_execution_time  300
+    php_value upload_max_filesize 20M
+    php_value post_max_size       20M
+    php_value session.cookie_httponly 1
+    php_value session.use_only_cookies 1
+    php_value session.use_strict_mode  1
 </IfModule>

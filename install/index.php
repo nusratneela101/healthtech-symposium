@@ -229,6 +229,12 @@ function processStep(int $step, array $data): bool
                     return false;
                 }
             }
+            // Write .env immediately so the app can connect for remaining steps
+            $envWrite = writeEnvFromDbStep($data);
+            if (!$envWrite['success']) {
+                $_SESSION['install_errors'] = ['db_general' => 'DB connected but could not write .env file: ' . $envWrite['error'] . '. Please check folder write permissions.'];
+                return false;
+            }
             return true;
 
         case 3:

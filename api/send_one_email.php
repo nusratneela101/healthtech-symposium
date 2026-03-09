@@ -108,6 +108,17 @@ $body = str_replace(
     $tpl['html_body']
 );
 
+// Prepend header image if set
+if (!empty($tpl['header_image_url'])) {
+    $headerHtml = '<div style="text-align:center;margin-bottom:20px"><img src="' . htmlspecialchars($tpl['header_image_url'], ENT_QUOTES) . '" style="max-width:100%;max-height:200px;border-radius:8px" alt="Header Image"></div>';
+    $body = $headerHtml . $body;
+}
+
+// Append signature if set
+if (!empty($tpl['signature_html'])) {
+    $body .= '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">' . $tpl['signature_html'];
+}
+
 $subject = str_replace(
     ['{{first_name}}','{{company}}'],
     [$lead['first_name'], $lead['company']],
@@ -126,7 +137,8 @@ if ($campaign['test_mode']) {
     $sentVia = 'test';
 } else {
     $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
-    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags);
+    $attachmentPath = !empty($tpl['attachment_path']) ? __DIR__ . '/../' . $tpl['attachment_path'] : '';
+    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags, $attachmentPath);
     if ($result['success']) {
         $status  = 'sent';
         $msgId   = $result['message_id'] ?? '';

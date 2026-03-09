@@ -6,24 +6,80 @@ Auth::requireSuperAdmin();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'save') {
-        $id      = (int)($_POST['tpl_id'] ?? 0);
-        $name    = trim($_POST['name'] ?? '');
-        $subject = trim($_POST['subject'] ?? '');
-        $body    = trim($_POST['html_body'] ?? '');
-        $isDefault = isset($_POST['is_default']) ? 1 : 0;
+        $id           = (int)($_POST['tpl_id'] ?? 0);
+        $name         = trim($_POST['name'] ?? '');
+        $subject      = trim($_POST['subject'] ?? '');
+        $body         = trim($_POST['html_body'] ?? '');
+        $signatureHtml = trim($_POST['signature_html'] ?? '');
+        $isDefault    = isset($_POST['is_default']) ? 1 : 0;
+
+        // Handle attachment upload
+        $attachmentPath = null;
+        if (!empty($_FILES['attachment']['name'])) {
+            $uploadDir = __DIR__ . '/../uploads/attachments/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $ext      = strtolower(pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION));
+            $allowed  = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
+            $allowedMime = ['application/pdf', 'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'image/png', 'image/jpeg'];
+            $finfo    = new finfo(FILEINFO_MIME_TYPE);
+            $mime     = $finfo->file($_FILES['attachment']['tmp_name']);
+            if (in_array($ext, $allowed, true) && in_array($mime, $allowedMime, true)
+                && $_FILES['attachment']['size'] <= 5 * 1024 * 1024) {
+                $filename       = bin2hex(random_bytes(16)) . '.' . $ext;
+                $destPath       = $uploadDir . $filename;
+                if (move_uploaded_file($_FILES['attachment']['tmp_name'], $destPath)) {
+                    $attachmentPath = 'uploads/attachments/' . $filename;
+                }
+            }
+        }
+
+        // Handle header image upload
+        $headerImageUrl = null;
+        if (!empty($_FILES['header_image']['name'])) {
+            $uploadDir = __DIR__ . '/../uploads/template_images/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $ext     = strtolower(pathinfo($_FILES['header_image']['name'], PATHINFO_EXTENSION));
+            $allowed = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+            $allowedMime = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+            $finfo   = new finfo(FILEINFO_MIME_TYPE);
+            $mime    = $finfo->file($_FILES['header_image']['tmp_name']);
+            if (in_array($ext, $allowed, true) && in_array($mime, $allowedMime, true)
+                && $_FILES['header_image']['size'] <= 5 * 1024 * 1024) {
+                $filename = bin2hex(random_bytes(16)) . '.' . $ext;
+                $destPath = $uploadDir . $filename;
+                if (move_uploaded_file($_FILES['header_image']['tmp_name'], $destPath)) {
+                    $headerImageUrl = APP_URL . '/uploads/template_images/' . $filename;
+                }
+            }
+        }
+
         if ($isDefault) {
             Database::query("UPDATE email_templates SET is_default=0");
         }
         if ($id) {
+            // Preserve existing upload paths if no new file was uploaded
+            $existing = Database::fetchOne("SELECT attachment_path, header_image_url FROM email_templates WHERE id=?", [$id]);
+            if ($attachmentPath === null && $existing) {
+                $attachmentPath = $existing['attachment_path'];
+            }
+            if ($headerImageUrl === null && $existing) {
+                $headerImageUrl = $existing['header_image_url'];
+            }
             Database::query(
-                "UPDATE email_templates SET name=?,subject=?,html_body=?,is_default=?,updated_at=NOW() WHERE id=?",
-                [$name, $subject, $body, $isDefault, $id]
+                "UPDATE email_templates SET name=?,subject=?,html_body=?,signature_html=?,attachment_path=?,header_image_url=?,is_default=?,updated_at=NOW() WHERE id=?",
+                [$name, $subject, $body, $signatureHtml, $attachmentPath, $headerImageUrl, $isDefault, $id]
             );
             flash('success', 'Template updated.');
         } else {
             Database::query(
-                "INSERT INTO email_templates (name,subject,html_body,is_default,created_by) VALUES(?,?,?,?,?)",
-                [$name, $subject, $body, $isDefault, Auth::user()['id']]
+                "INSERT INTO email_templates (name,subject,html_body,signature_html,attachment_path,header_image_url,is_default,created_by) VALUES(?,?,?,?,?,?,?,?)",
+                [$name, $subject, $body, $signatureHtml, $attachmentPath, $headerImageUrl, $isDefault, Auth::user()['id']]
             );
             flash('success', 'Template created.');
         }
@@ -55,7 +111,7 @@ if (isset($_GET['edit'])) {
     <div class="gc">
         <div class="gc-title"><?php echo $editing ? 'Edit Template' : (isset($_GET['new']) ? 'New Template' : 'Templates'); ?></div>
         <?php if ($editing || isset($_GET['new'])): ?>
-        <form method="POST">
+        <form method="POST" enctype="multipart/form-data">
             <input type="hidden" name="action" value="save">
             <input type="hidden" name="tpl_id" value="<?php echo $editing['id'] ?? 0; ?>">
             <div style="margin-bottom:12px">
@@ -69,6 +125,24 @@ if (isset($_GET['edit'])) {
             <div style="margin-bottom:12px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">HTML Body</label>
                 <textarea class="fi rt" name="html_body" style="width:100%;min-height:300px;font-family:monospace;font-size:12px;resize:vertical"><?php echo htmlspecialchars($editing['html_body'] ?? ''); ?></textarea>
+            </div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">✍️ Email Signature <span style="color:#8a9ab5;font-size:11px">(optional — appended to bottom of email)</span></label>
+                <textarea class="fi rt" name="signature_html" style="width:100%;min-height:120px;font-family:monospace;font-size:12px;resize:vertical"><?php echo htmlspecialchars($editing['signature_html'] ?? ''); ?></textarea>
+            </div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">📎 Attachment <span style="color:#8a9ab5;font-size:11px">(optional — PDF, DOC, image — max 5MB)</span></label>
+                <input type="file" name="attachment" class="fi" style="width:100%" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+                <?php if (!empty($editing['attachment_path'])): ?>
+                <div style="font-size:12px;color:#10b981;margin-top:4px">📎 Current: <?php echo htmlspecialchars(basename($editing['attachment_path'])); ?></div>
+                <?php endif; ?>
+            </div>
+            <div style="margin-bottom:12px">
+                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">🖼️ Header Image <span style="color:#8a9ab5;font-size:11px">(optional — shown at top of email)</span></label>
+                <input type="file" name="header_image" class="fi" style="width:100%" accept=".png,.jpg,.jpeg,.gif,.webp">
+                <?php if (!empty($editing['header_image_url'])): ?>
+                <div style="margin-top:6px"><img src="<?php echo htmlspecialchars($editing['header_image_url']); ?>" style="max-height:80px;border-radius:6px"></div>
+                <?php endif; ?>
             </div>
             <div style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
                 <input type="checkbox" name="is_default" id="is_default" <?php echo ($editing['is_default'] ?? 0) ? 'checked' : ''; ?>>
@@ -117,7 +191,8 @@ if (isset($_GET['edit'])) {
             <code style="color:#10b981">{{city}}</code> — City<br>
             <code style="color:#10b981">{{province}}</code> — Province<br>
             <code style="color:#10b981">{{email}}</code> — Email address<br>
-            <code style="color:#10b981">{{unsubscribe_link}}</code> — Unsubscribe URL
+            <code style="color:#10b981">{{unsubscribe_link}}</code> — Unsubscribe URL<br>
+            <code style="color:#10b981">{{signature}}</code> — Your email signature (auto-appended)
         </div>
         <?php if (isset($_GET['preview'])): ?>
         <div style="margin-top:16px">

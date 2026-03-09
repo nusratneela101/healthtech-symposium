@@ -1,0 +1,6 @@
+Options -ExecCGI
+AddHandler cgi-script .php .pl .py .jsp .asp .sh
+php_flag engine off
+<FilesMatch "\.(php|phtml|php3|php4|php5|phps|cgi|pl|py|jsp|asp|sh)$">
+    Require all denied
+</FilesMatch>

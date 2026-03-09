@@ -136,6 +136,18 @@ $migrations = [
         'name' => 'leads.score',
         'sql'  => "ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `score` int DEFAULT 0",
     ],
+    [
+        'name' => 'email_templates.signature_html',
+        'sql'  => "ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS signature_html LONGTEXT",
+    ],
+    [
+        'name' => 'email_templates.attachment_path',
+        'sql'  => "ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS attachment_path VARCHAR(500) DEFAULT NULL",
+    ],
+    [
+        'name' => 'email_templates.header_image_url',
+        'sql'  => "ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS header_image_url VARCHAR(500) DEFAULT NULL",
+    ],
 ];
 
 $ok   = 0;

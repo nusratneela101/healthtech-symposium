@@ -1202,7 +1202,6 @@ function loadBrevoInfo() {
         if (d.success) {
             el.innerHTML = '<table style="font-size:13px;color:#e2e8f0;border-collapse:collapse;width:100%">'
                 + '<tr><td style="color:#8a9ab5;padding:4px 0">Email</td><td>'+d.email+'</td></tr>'
-                + '<tr><td style="color:#8a9ab5;padding:4px 0">Plan</td><td>'+d.plan+'</td></tr>'
                 + '<tr><td style="color:#8a9ab5;padding:4px 0">Credits</td><td>'+d.credits+'</td></tr>'
                 + '<tr><td style="color:#8a9ab5;padding:4px 0">Remaining</td><td>'+d.creditsRemaining+'</td></tr>'
                 + '</table>';

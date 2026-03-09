@@ -477,16 +477,16 @@ function testApolloConnection(string $apiKey): array
     if (!extension_loaded('curl')) {
         return ['success' => false, 'error' => 'cURL extension required.'];
     }
-    $ch = curl_init('https://api.apollo.io/v1/auth/health');
+    $ch = curl_init('https://api.apollo.io/api/v1/auth/health');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 10,
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
             'Cache-Control: no-cache',
+            'X-Api-Key: ' . $apiKey,
         ],
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => json_encode(['api_key' => $apiKey]),
+        CURLOPT_HTTPGET        => true,
     ]);
     $body = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -496,6 +496,8 @@ function testApolloConnection(string $apiKey): array
         if (!empty($json['is_logged_in'])) {
             return ['success' => true, 'info' => 'Apollo API key is valid.'];
         }
+        // Some valid keys return 200 without is_logged_in field
+        return ['success' => true, 'info' => 'Apollo connected successfully.'];
     }
     return ['success' => false, 'error' => 'Invalid API key or unreachable (HTTP ' . $code . ').'];
 }

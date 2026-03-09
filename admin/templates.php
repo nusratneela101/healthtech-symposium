@@ -1,8 +1,12 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+
 Auth::requireSuperAdmin();
 
-// Handle template actions
+// Handle template actions BEFORE loading layout (which outputs HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'save') {
@@ -94,6 +98,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+require_once __DIR__ . '/../includes/layout.php';
 
 $templates = Database::fetchAll("SELECT * FROM email_templates ORDER BY is_default DESC, id DESC");
 $editing   = null;

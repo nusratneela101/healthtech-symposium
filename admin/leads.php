@@ -1,5 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+Auth::check();
 
 $perPage = 20;
 $page    = max(1, (int)($_GET['page'] ?? 1));
@@ -28,7 +33,7 @@ if (!empty($_GET['q'])) {
     $params[] = $q;
 }
 
-// Delete action (superadmin only)
+// Delete action (superadmin only) — must run BEFORE layout outputs HTML
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth::isSuperAdmin()) {
     $did = (int)$_POST['delete_id'];
     Database::query("DELETE FROM leads WHERE id = ?", [$did]);
@@ -37,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id']) && Auth:
     exit;
 }
 
-// CSV export (superadmin only)
+// CSV export (superadmin only) — must run BEFORE layout outputs HTML
 if (isset($_GET['export_csv']) && Auth::isSuperAdmin()) {
     $exportLeads = Database::fetchAll(
         "SELECT * FROM leads WHERE $where ORDER BY created_at DESC",
@@ -58,6 +63,8 @@ if (isset($_GET['export_csv']) && Auth::isSuperAdmin()) {
     fclose($out);
     exit;
 }
+
+require_once __DIR__ . '/../includes/layout.php';
 
 $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 $leads = Database::fetchAll(

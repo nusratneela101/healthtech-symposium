@@ -1,17 +1,12 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
-$templates = [];
-$segments  = [];
-$provinces = [];
-try {
-    $templates   = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-    $segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
-    $segments    = array_merge([''], array_column($segmentRows, 'segment'));
-    $provinces   = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
-} catch (Exception $e) {}
+Auth::check();
 
-// Create campaign
+// Create campaign — handle BEFORE loading layout (which outputs HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     $tplId   = (int)$_POST['template_id'];
     $name    = trim($_POST['campaign_name'] ?? 'Campaign ' . date('Y-m-d H:i'));
@@ -42,6 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     }
     exit;
 }
+
+require_once __DIR__ . '/../includes/layout.php';
+
+$templates = [];
+$segments  = [];
+$provinces = [];
+try {
+    $templates   = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
+    $segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
+    $segments    = array_merge([''], array_column($segmentRows, 'segment'));
+    $provinces   = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
+} catch (Exception $e) {}
 
 $recentCampaigns = [];
 try {

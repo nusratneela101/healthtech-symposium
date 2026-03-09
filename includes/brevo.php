@@ -29,7 +29,8 @@ class Brevo {
         string $toName,
         string $subject,
         string $htmlBody,
-        array  $tags = []
+        array  $tags = [],
+        string $attachmentPath = ''
     ): array {
         $payload = [
             'sender'      => ['email' => SMTP_FROM_EMAIL, 'name' => SMTP_FROM_NAME],
@@ -39,6 +40,14 @@ class Brevo {
         ];
         if ($tags) {
             $payload['tags'] = $tags;
+        }
+        if ($attachmentPath !== '' && file_exists($attachmentPath)) {
+            $payload['attachment'] = [
+                [
+                    'name'    => basename($attachmentPath),
+                    'content' => base64_encode(file_get_contents($attachmentPath)),
+                ],
+            ];
         }
 
         $res = self::request('POST', '/smtp/email', $payload);

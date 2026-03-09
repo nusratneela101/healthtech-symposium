@@ -88,12 +88,13 @@ class EmailService {
         string $subject,
         string $htmlBody,
         string $textBody = '',
-        array  $tags = []
+        array  $tags = [],
+        string $attachmentPath = ''
     ): array {
         // Use Brevo API if key is configured
         if (defined('BREVO_API_KEY') && BREVO_API_KEY !== '') {
             require_once __DIR__ . '/brevo.php';
-            $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags);
+            $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags, $attachmentPath);
             if ($result['success']) {
                 return ['success' => true, 'message_id' => $result['message_id'], 'via' => 'brevo'];
             }
@@ -109,6 +110,9 @@ class EmailService {
             $mail->Body     = $htmlBody;
             $mail->AltBody  = $textBody ?: self::htmlToText($htmlBody);
             self::addAntiSpamHeaders($mail, $htmlBody);
+            if ($attachmentPath !== '' && file_exists($attachmentPath)) {
+                $mail->addAttachment($attachmentPath);
+            }
             $mail->send();
             return ['success' => true, 'message_id' => $mail->getLastMessageID(), 'via' => 'smtp'];
         } catch (Exception $e) {

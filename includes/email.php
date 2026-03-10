@@ -1,5 +1,30 @@
 <?php
 class EmailService {
+
+    /**
+     * Read a setting from the site_settings DB table.
+     * Falls back to $fallback if the key is missing, empty, or the DB is unavailable.
+     */
+    private static function getDbSetting(string $key, string $fallback): string {
+        try {
+            if (!class_exists('Database')) {
+                $dbFile = __DIR__ . '/../config/database.php';
+                if (!file_exists($dbFile)) {
+                    return $fallback;
+                }
+                require_once $dbFile;
+            }
+            $row = Database::fetchOne(
+                "SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1",
+                [$key]
+            );
+            $val = $row['setting_value'] ?? '';
+            return ($val !== '') ? $val : $fallback;
+        } catch (Exception $e) {
+            return $fallback;
+        }
+    }
+
     private static function getMailer(): object {
         $autoload = __DIR__ . '/../vendor/autoload.php';
         $src      = __DIR__ . '/../phpmailer/src/PHPMailer.php';
@@ -14,12 +39,13 @@ class EmailService {
         }
         $mail = new PHPMailer\PHPMailer\PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host       = SMTP_HOST;
+        $mail->Host       = self::getDbSetting('smtp_host',   SMTP_HOST);
         $mail->SMTPAuth   = true;
-        $mail->Username   = SMTP_USER;
-        $mail->Password   = SMTP_PASS;
-        $mail->SMTPSecure = SMTP_SECURE;
-        $mail->Port       = SMTP_PORT;
+        $mail->Username   = self::getDbSetting('smtp_user',   SMTP_USER);
+        $mail->Password   = self::getDbSetting('smtp_pass',   SMTP_PASS);
+        $mail->SMTPSecure = self::getDbSetting('smtp_secure', SMTP_SECURE);
+        $rawPort = self::getDbSetting('smtp_port', (string) SMTP_PORT);
+        $mail->Port       = is_numeric($rawPort) ? (int) $rawPort : SMTP_PORT;
         $mail->CharSet    = 'UTF-8';
         $mail->SMTPOptions = [
             'ssl' => [
@@ -28,7 +54,10 @@ class EmailService {
                 'allow_self_signed' => true,
             ],
         ];
-        $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+        $mail->setFrom(
+            self::getDbSetting('smtp_from_email', SMTP_FROM_EMAIL),
+            self::getDbSetting('smtp_from_name',  SMTP_FROM_NAME)
+        );
         return $mail;
     }
 
@@ -87,23 +116,10 @@ class EmailService {
      * Returns an empty string if the setting is not found or the DB is unavailable.
      */
     private static function getActiveProvider(): string {
-        try {
-            if (function_exists('getSetting')) {
-                return getSetting('email_provider', '');
-            }
-            $dbFile = __DIR__ . '/../config/database.php';
-            if (!file_exists($dbFile)) {
-                return '';
-            }
-            require_once $dbFile;
-            $row = Database::fetchOne(
-                "SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1",
-                ['email_provider']
-            );
-            return $row['setting_value'] ?? '';
-        } catch (Exception $e) {
-            return '';
+        if (function_exists('getSetting')) {
+            return getSetting('email_provider', '');
         }
+        return self::getDbSetting('email_provider', '');
     }
 
     public static function send(

@@ -82,6 +82,30 @@ class EmailService {
         return trim($collapsed ?? $text);
     }
 
+    /**
+     * Read the active email provider from site_settings.
+     * Returns an empty string if the setting is not found or the DB is unavailable.
+     */
+    private static function getActiveProvider(): string {
+        try {
+            if (function_exists('getSetting')) {
+                return getSetting('email_provider', '');
+            }
+            $dbFile = __DIR__ . '/../config/database.php';
+            if (!file_exists($dbFile)) {
+                return '';
+            }
+            require_once $dbFile;
+            $row = Database::fetchOne(
+                "SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1",
+                ['email_provider']
+            );
+            return $row['setting_value'] ?? '';
+        } catch (Exception $e) {
+            return '';
+        }
+    }
+
     public static function send(
         string $toEmail,
         string $toName,
@@ -91,8 +115,10 @@ class EmailService {
         array  $tags = [],
         string $attachmentPath = ''
     ): array {
-        // Use Brevo API if key is configured
-        if (defined('BREVO_API_KEY') && BREVO_API_KEY !== '') {
+        $provider = self::getActiveProvider();
+
+        // Use Brevo API only when explicitly selected as the email provider
+        if ($provider === 'brevo' && defined('BREVO_API_KEY') && BREVO_API_KEY !== '') {
             require_once __DIR__ . '/brevo.php';
             $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags, $attachmentPath);
             if ($result['success']) {
@@ -101,7 +127,7 @@ class EmailService {
             return ['success' => false, 'error' => $result['error'], 'via' => 'brevo'];
         }
 
-        // Fallback to PHPMailer SMTP
+        // Use PHPMailer SMTP for all other providers (ms365, cpanel, smtp, etc.)
         try {
             $mail = self::getMailer();
             $mail->addAddress($toEmail, $toName);

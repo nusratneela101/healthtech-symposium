@@ -1,13 +1,37 @@
 <?php
 class Brevo {
 
+    /**
+     * Read a setting from the site_settings DB table.
+     * Falls back to the provided constant value if the DB value is absent or the DB is unavailable.
+     */
+    private static function getDbSetting(string $key, string $fallback): string {
+        try {
+            if (!class_exists('Database')) {
+                $dbFile = __DIR__ . '/../config/database.php';
+                if (!file_exists($dbFile)) {
+                    return $fallback;
+                }
+                require_once $dbFile;
+            }
+            $row = Database::fetchOne(
+                "SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1",
+                [$key]
+            );
+            $value = $row['setting_value'] ?? '';
+            return ($value !== '') ? $value : $fallback;
+        } catch (Exception $e) {
+            return $fallback;
+        }
+    }
+
     private static function request(string $method, string $endpoint, array $payload = []): array {
         $url = 'https://api.brevo.com/v3' . $endpoint;
         $ch  = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER     => [
-                'api-key: ' . BREVO_API_KEY,
+                'api-key: ' . self::getDbSetting('brevo_api_key', BREVO_API_KEY),
                 'Content-Type: application/json',
                 'Accept: application/json',
             ],
@@ -33,7 +57,10 @@ class Brevo {
         string $attachmentPath = ''
     ): array {
         $payload = [
-            'sender'      => ['email' => SMTP_FROM_EMAIL, 'name' => SMTP_FROM_NAME],
+            'sender'      => [
+                'email' => self::getDbSetting('brevo_sender_email', SMTP_FROM_EMAIL),
+                'name'  => self::getDbSetting('brevo_sender_name',  SMTP_FROM_NAME),
+            ],
             'to'          => [['email' => $to, 'name' => $toName]],
             'subject'     => $subject,
             'htmlContent' => $htmlBody,

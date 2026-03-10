@@ -1,5 +1,29 @@
 <?php
 class EmailService {
+    /**
+     * Read an SMTP setting from the site_settings DB table.
+     * Falls back to the provided constant value if the DB value is absent or the DB is unavailable.
+     */
+    private static function getSmtpSetting(string $key, string $fallback): string {
+        try {
+            if (!class_exists('Database')) {
+                $dbFile = __DIR__ . '/../config/database.php';
+                if (!file_exists($dbFile)) {
+                    return $fallback;
+                }
+                require_once $dbFile;
+            }
+            $row = Database::fetchOne(
+                "SELECT setting_value FROM site_settings WHERE setting_key = ? LIMIT 1",
+                [$key]
+            );
+            $value = $row['setting_value'] ?? '';
+            return ($value !== '') ? $value : $fallback;
+        } catch (Exception $e) {
+            return $fallback;
+        }
+    }
+
     private static function getMailer(): object {
         $autoload = __DIR__ . '/../vendor/autoload.php';
         $src      = __DIR__ . '/../phpmailer/src/PHPMailer.php';
@@ -14,12 +38,12 @@ class EmailService {
         }
         $mail = new PHPMailer\PHPMailer\PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host       = SMTP_HOST;
+        $mail->Host       = self::getSmtpSetting('smtp_host',      SMTP_HOST);
         $mail->SMTPAuth   = true;
-        $mail->Username   = SMTP_USER;
-        $mail->Password   = SMTP_PASS;
-        $mail->SMTPSecure = SMTP_SECURE;
-        $mail->Port       = SMTP_PORT;
+        $mail->Username   = self::getSmtpSetting('smtp_user',      SMTP_USER);
+        $mail->Password   = self::getSmtpSetting('smtp_pass',      SMTP_PASS);
+        $mail->SMTPSecure = self::getSmtpSetting('smtp_secure',    SMTP_SECURE);
+        $mail->Port       = (int) self::getSmtpSetting('smtp_port', (string) SMTP_PORT);
         $mail->CharSet    = 'UTF-8';
         $mail->SMTPOptions = [
             'ssl' => [
@@ -28,7 +52,10 @@ class EmailService {
                 'allow_self_signed' => true,
             ],
         ];
-        $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+        $mail->setFrom(
+            self::getSmtpSetting('smtp_from_email', SMTP_FROM_EMAIL),
+            self::getSmtpSetting('smtp_from_name',  SMTP_FROM_NAME)
+        );
         return $mail;
     }
 

@@ -963,6 +963,17 @@ var providerDefaults = {
 
 var currentSelectedProvider = '<?php echo htmlspecialchars($settingsRows['email_provider'] ?? ''); ?>';
 
+var savedProviderConfig = {
+    smtp_host:       <?php echo json_encode(s('smtp_host'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    smtp_port:       <?php echo json_encode(s('smtp_port', '587'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    smtp_secure:     <?php echo json_encode(s('smtp_secure', 'tls'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    smtp_user:       <?php echo json_encode(s('smtp_user'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    smtp_from_email: <?php echo json_encode(s('smtp_from_email'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    smtp_from_name:  <?php echo json_encode(s('smtp_from_name'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    imap_host:       <?php echo json_encode(s('imap_host'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
+    imap_user:       <?php echo json_encode(s('imap_user'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+};
+
 function selectProvider(provider) {
     // Update card styles
     ['microsoft365','cpanel','business','gmail'].forEach(function(p) {
@@ -1095,7 +1106,26 @@ function testConnection(service, resultId) {
 
 // On load, if a provider was already saved, populate the config fields
 if (currentSelectedProvider && providerDefaults[currentSelectedProvider]) {
+    // Step 1: set up card UI (highlights selected card, shows/hides IMAP rows)
     selectProvider(currentSelectedProvider);
+
+    // Step 2: override with actual DB-saved values (not hardcoded defaults)
+    if (savedProviderConfig.smtp_host !== '') {
+        document.getElementById('ep_smtp_host').value       = savedProviderConfig.smtp_host;
+        document.getElementById('ep_smtp_port').value       = savedProviderConfig.smtp_port;
+        document.getElementById('ep_smtp_user').value       = savedProviderConfig.smtp_user;
+        document.getElementById('ep_smtp_from_email').value = savedProviderConfig.smtp_from_email;
+        document.getElementById('ep_smtp_from_name').value  = savedProviderConfig.smtp_from_name;
+        // Set the encryption dropdown
+        document.getElementById('ep_smtp_secure').value = savedProviderConfig.smtp_secure;
+        // Override IMAP fields if visible
+        const imapHostEl = document.getElementById('ep_imap_host');
+        const imapHostRow = document.getElementById('ep_imap_host_row');
+        if (imapHostEl && imapHostRow && imapHostRow.style.display !== 'none') {
+            imapHostEl.value = savedProviderConfig.imap_host;
+            document.getElementById('ep_imap_user').value = savedProviderConfig.imap_user;
+        }
+    }
 }
 
 async function loadLimitStats() {

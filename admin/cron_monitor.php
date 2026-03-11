@@ -5,7 +5,6 @@ Auth::requireSuperAdmin();
 
 $automationMode = getSetting('automation_mode', 'cron');
 
-// Try to load cron job log data
 $cronJobs = [
     'campaign_sender' => ['label' => '📧 Campaign Sender',  'schedule' => 'Every 5 min',  'icon' => '📧'],
     'inbox_poller'    => ['label' => '📥 Inbox Poller',     'schedule' => 'Every 10 min', 'icon' => '📥'],
@@ -20,36 +19,28 @@ foreach ($cronJobs as $jobName => $meta) {
 
 try {
     $rows = Database::fetchAll(
-        "SELECT job_name, status, message, duration_ms, last_run
-         FROM cron_log
-         ORDER BY last_run DESC"
+        "SELECT job_name, status, message, duration_ms, last_run FROM cron_log ORDER BY last_run DESC"
     );
     foreach ($rows as $row) {
         if (isset($cronStatus[$row['job_name']])) {
             $cronStatus[$row['job_name']] = $row;
         }
     }
-} catch (Exception $e) {
-    // cron_log table may not exist yet
-}
+} catch (Exception $e) {}
 
-// Recent logs
 $recentLogs = [];
 try {
     $recentLogs = Database::fetchAll(
-        "SELECT job_name, status, message, duration_ms, last_run
-         FROM cron_log
-         ORDER BY last_run DESC
-         LIMIT 20"
+        "SELECT job_name, status, message, duration_ms, last_run FROM cron_log ORDER BY last_run DESC LIMIT 20"
     );
-} catch (Exception $e) { /* table may not exist */ }
+} catch (Exception $e) {}
 
 function formatTimeAgo(?string $dateStr): string {
     if (!$dateStr) return '—';
     $diff = time() - strtotime($dateStr);
-    if ($diff < 60)       return $diff . 's ago';
-    if ($diff < 3600)     return (int)($diff / 60) . ' min ago';
-    if ($diff < 86400)    return (int)($diff / 3600) . 'h ago';
+    if ($diff < 60)    return $diff . 's ago';
+    if ($diff < 3600)  return (int)($diff / 60) . ' min ago';
+    if ($diff < 86400) return (int)($diff / 3600) . 'h ago';
     return (int)($diff / 86400) . 'd ago';
 }
 
@@ -65,13 +56,10 @@ function statusDot(string $status): string {
 
 <h2 style="font-size:20px;margin-bottom:20px">⏱️ Cron Job Monitor</h2>
 
-<!-- ─── Automation Mode Toggle ─────────────────────────────────────────── -->
 <div class="gc" style="margin-bottom:24px">
     <div class="gc-title">🤖 Automation Mode</div>
     <div class="gc-sub">Switch between Cron Job automation and n8n workflow automation. Only one can be active at a time.</div>
-
     <div style="display:flex;gap:16px;margin-top:20px;align-items:center;flex-wrap:wrap">
-        <!-- Cron Card -->
         <div id="mode-card-cron" onclick="setAutomationMode('cron')"
              style="flex:1;min-width:220px;cursor:pointer;border-radius:12px;padding:20px;border:2px solid <?php echo $automationMode==='cron' ? '#10b981' : '#1e3a5f'; ?>;background:<?php echo $automationMode==='cron' ? 'rgba(16,185,129,0.08)' : '#0d1b2e'; ?>;transition:all 0.2s">
             <div style="display:flex;align-items:center;gap:10px">
@@ -87,11 +75,7 @@ function statusDot(string $status): string {
                 <?php endif; ?>
             </div>
         </div>
-
-        <!-- Arrow -->
         <div style="font-size:24px;color:#8a9ab5;flex-shrink:0">⇄</div>
-
-        <!-- n8n Card -->
         <div id="mode-card-n8n" onclick="setAutomationMode('n8n')"
              style="flex:1;min-width:220px;cursor:pointer;border-radius:12px;padding:20px;border:2px solid <?php echo $automationMode==='n8n' ? '#6366f1' : '#1e3a5f'; ?>;background:<?php echo $automationMode==='n8n' ? 'rgba(99,102,241,0.08)' : '#0d1b2e'; ?>;transition:all 0.2s">
             <div style="display:flex;align-items:center;gap:10px">
@@ -108,44 +92,15 @@ function statusDot(string $status): string {
             </div>
         </div>
     </div>
-
-    <!-- Status Banner -->
-    <div id="mode-status-banner" style="margin-top:16px;padding:12px 16px;border-radius:8px;font-size:13px;
-         background:<?php echo $automationMode==='cron' ? 'rgba(16,185,129,0.1)' : 'rgba(99,102,241,0.1)'; ?>;
-         border:1px solid <?php echo $automationMode==='cron' ? '#10b981' : '#6366f1'; ?>;
-         color:#e2e8f0">
-        <?php if($automationMode==='cron'): ?>
-        🕐 <strong>Cron Job Mode is ACTIVE</strong> — PHP cron jobs are running all automation. n8n workflows should be paused/inactive in your n8n dashboard.
-        <?php else: ?>
-        🤖 <strong>n8n Mode is ACTIVE</strong> — n8n workflows are handling all automation. Cron jobs below are informational only and should be disabled in cPanel.
-        <?php endif; ?>
-    </div>
-
     <div id="mode-save-result" style="margin-top:8px;font-size:13px"></div>
 </div>
 
-<!-- ─── Cron Job Status Table ──────────────────────────────────────────── -->
 <div class="gc" style="margin-bottom:24px">
     <div class="gc-title">📊 Cron Job Status</div>
     <div class="gc-sub">Live status of all scheduled cron jobs</div>
-
-    <?php if($automationMode === 'n8n'): ?>
-    <div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-top:16px;margin-bottom:16px;font-size:13px;color:#fbbf24">
-        ⚠️ <strong>n8n Mode is active.</strong> These cron jobs are shown for reference only. Disable them in cPanel to avoid duplicate sending.
-    </div>
-    <?php endif; ?>
-
     <div class="tbl-wrap" style="margin-top:16px;overflow-x:auto">
         <table class="dt" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Job</th>
-                    <th>Schedule</th>
-                    <th>Status</th>
-                    <th>Last Run</th>
-                    <th>Duration</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Job</th><th>Schedule</th><th>Status</th><th>Last Run</th><th>Duration</th></tr></thead>
             <tbody>
                 <?php foreach ($cronJobs as $jobName => $meta):
                     $s = $cronStatus[$jobName];
@@ -166,25 +121,15 @@ function statusDot(string $status): string {
     </div>
 </div>
 
-<!-- ─── Recent Logs ────────────────────────────────────────────────────── -->
 <div class="gc" style="margin-bottom:24px">
     <div class="gc-title">📋 Recent Logs</div>
     <div class="gc-sub">Last 20 cron job runs</div>
-
     <?php if (empty($recentLogs)): ?>
     <div style="margin-top:16px;color:#8a9ab5;font-size:13px">No logs yet. Cron jobs will appear here once they run.</div>
     <?php else: ?>
     <div class="tbl-wrap" style="margin-top:16px;overflow-x:auto">
         <table class="dt" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Job</th>
-                    <th>Status</th>
-                    <th>Message</th>
-                    <th>Duration</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Job</th><th>Status</th><th>Message</th><th>Duration</th><th>Time</th></tr></thead>
             <tbody>
                 <?php foreach ($recentLogs as $log): ?>
                 <tr>
@@ -201,38 +146,19 @@ function statusDot(string $status): string {
     <?php endif; ?>
 </div>
 
-<!-- ─── cPanel Cron Commands ───────────────────────────────────────────── -->
 <div class="gc">
     <div class="gc-title">📋 cPanel Cron Commands</div>
     <div class="gc-sub">Copy these commands into your cPanel Cron Jobs manager</div>
-
     <?php
     $baseUrl = APP_URL;
     $apiKey  = defined('N8N_API_KEY') ? N8N_API_KEY : '';
     $cronCommands = [
-        'campaign_sender' => [
-            'label'    => '📧 Campaign Sender (every 5 min)',
-            'schedule' => '*/5 * * * *',
-            'command'  => "curl -s \"{$baseUrl}/api/run_campaign_cron.php?api_key={$apiKey}\"",
-        ],
-        'inbox_poller' => [
-            'label'    => '📥 Inbox Poller (every 10 min)',
-            'schedule' => '*/10 * * * *',
-            'command'  => "curl -s \"{$baseUrl}/api/poll_inbox.php?api_key={$apiKey}\"",
-        ],
-        'lead_collector' => [
-            'label'    => '👥 Lead Collector (daily 8 AM)',
-            'schedule' => '0 8 * * *',
-            'command'  => "curl -s \"{$baseUrl}/api/collect_leads.php?api_key={$apiKey}\"",
-        ],
-        'followup_sender' => [
-            'label'    => '🔁 Follow-up Sender (daily 10 AM)',
-            'schedule' => '0 10 * * *',
-            'command'  => "curl -s \"{$baseUrl}/api/run_followup_cron.php?api_key={$apiKey}\"",
-        ],
+        'campaign_sender' => ['label'=>'📧 Campaign Sender (every 5 min)','schedule'=>'*/5 * * * *','command'=>"curl -s \"{$baseUrl}/api/run_campaign_cron.php?api_key={$apiKey}\""]
+        ,'inbox_poller'    => ['label'=>'📥 Inbox Poller (every 10 min)','schedule'=>'*/10 * * * *','command'=>"curl -s \"{$baseUrl}/api/poll_inbox.php?api_key={$apiKey}\""]
+        ,'lead_collector'  => ['label'=>'👥 Lead Collector (daily 8 AM)','schedule'=>'0 8 * * *','command'=>"curl -s \"{$baseUrl}/api/collect_leads.php?api_key={$apiKey}\""]
+        ,'followup_sender' => ['label'=>'🔁 Follow-up Sender (daily 10 AM)','schedule'=>'0 10 * * *','command'=>"curl -s \"{$baseUrl}/api/run_followup_cron.php?api_key={$apiKey}\""]
     ];
     ?>
-
     <div style="display:grid;gap:16px;margin-top:16px">
         <?php foreach ($cronCommands as $id => $cmd): ?>
         <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:16px">
@@ -252,10 +178,8 @@ var currentAutomationMode = <?php echo json_encode(getSetting('automation_mode',
 
 function setAutomationMode(mode) {
     if (mode === currentAutomationMode) return;
-
     var label = mode === 'cron' ? '🕐 Cron Job' : '🤖 n8n';
     if (!confirm('Switch to ' + label + ' mode?\n\nThe other automation will be marked as inactive.')) return;
-
     fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -263,12 +187,8 @@ function setAutomationMode(mode) {
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (d.success) {
-            currentAutomationMode = mode;
-            window.location.reload();
-        } else {
-            alert('❌ Failed to save: ' + (d.error || 'Unknown error'));
-        }
+        if (d.success) { currentAutomationMode = mode; window.location.reload(); }
+        else { alert('❌ Failed to save: ' + (d.error || 'Unknown error')); }
     })
     .catch(function(e){ alert('❌ Network error: ' + e.message); });
 }

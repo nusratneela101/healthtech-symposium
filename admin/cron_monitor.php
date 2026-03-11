@@ -74,7 +74,7 @@ function statusDot(string $status): string {
         <!-- Cron Card -->
         <div id="mode-card-cron" onclick="setAutomationMode('cron')"
              style="flex:1;min-width:220px;cursor:pointer;border-radius:12px;padding:20px;border:2px solid <?php echo $automationMode==='cron' ? '#10b981' : '#1e3a5f'; ?>;background:<?php echo $automationMode==='cron' ? 'rgba(16,185,129,0.08)' : '#0d1b2e'; ?>;transition:all 0.2s">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px">
                 <span style="font-size:28px">🕐</span>
                 <div>
                     <div style="font-size:15px;font-weight:700;color:#e2e8f0">Cron Job</div>
@@ -86,12 +86,6 @@ function statusDot(string $status): string {
                 <span style="margin-left:auto;background:#1e3a5f;color:#8a9ab5;font-size:11px;padding:3px 10px;border-radius:20px">⏸ OFF</span>
                 <?php endif; ?>
             </div>
-            <div style="font-size:12px;color:#8a9ab5;line-height:1.6">
-                ✔ Works without n8n<br>
-                ✔ Runs on cPanel server<br>
-                ✔ Free &amp; simple<br>
-                ✔ Good for &lt;500 emails/day
-            </div>
         </div>
 
         <!-- Arrow -->
@@ -100,7 +94,7 @@ function statusDot(string $status): string {
         <!-- n8n Card -->
         <div id="mode-card-n8n" onclick="setAutomationMode('n8n')"
              style="flex:1;min-width:220px;cursor:pointer;border-radius:12px;padding:20px;border:2px solid <?php echo $automationMode==='n8n' ? '#6366f1' : '#1e3a5f'; ?>;background:<?php echo $automationMode==='n8n' ? 'rgba(99,102,241,0.08)' : '#0d1b2e'; ?>;transition:all 0.2s">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px">
                 <span style="font-size:28px">🤖</span>
                 <div>
                     <div style="font-size:15px;font-weight:700;color:#e2e8f0">n8n Workflow</div>
@@ -111,12 +105,6 @@ function statusDot(string $status): string {
                 <?php else: ?>
                 <span style="margin-left:auto;background:#1e3a5f;color:#8a9ab5;font-size:11px;padding:3px 10px;border-radius:20px">⏸ OFF</span>
                 <?php endif; ?>
-            </div>
-            <div style="font-size:12px;color:#8a9ab5;line-height:1.6">
-                ✔ Advanced automation<br>
-                ✔ AI-powered workflows<br>
-                ✔ Better for 500+ emails/day<br>
-                ✔ Apollo lead collection
             </div>
         </div>
     </div>

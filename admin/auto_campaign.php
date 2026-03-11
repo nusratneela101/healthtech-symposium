@@ -105,6 +105,7 @@ try {
                 <label for="test_mode" style="font-size:13px;color:#8a9ab5">Test Mode (log only, don't send real emails)</label>
             </div>
             <button type="button" class="btn-launch" id="launchBtn" onclick="launchCampaign()">🚀 Launch Campaign</button>
+            <button type="button" class="btn-stop" id="stopBtn" onclick="stopCampaign()" style="display:none; background:#ef4444; color:#fff; border:none; padding:10px 24px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; margin-top:8px; width:100%">🛑 Stop Campaign</button>
         </form>
     </div>
 
@@ -127,7 +128,7 @@ try {
     <div class="gc-title">📋 Recent Campaigns</div>
     <div class="tbl-wrap">
         <table class="dt">
-            <thead><tr><th>ID</th><th>Name</th><th>Template</th><th>Total</th><th>Sent</th><th>Failed</th><th>Status</th><th>Created</th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Template</th><th>Total</th><th>Sent</th><th>Failed</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
             <tbody>
             <?php foreach ($recentCampaigns as $c): ?>
             <tr>
@@ -139,6 +140,12 @@ try {
                 <td><?php echo $c['failed_count']; ?></td>
                 <td><?php echo pill($c['status']); ?></td>
                 <td style="font-size:12px"><?php echo timeAgo($c['created_at']); ?></td>
+                <td>
+                    <button onclick="deleteCampaign(<?php echo $c['id']; ?>)"
+                            style="background:none;border:1px solid #ef4444;color:#ef4444;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer">
+                        🗑 Delete
+                    </button>
+                </td>
             </tr>
             <?php endforeach; ?>
             </tbody>
@@ -157,6 +164,39 @@ function log(msg, cls='') {
     const t = document.getElementById('logTerminal');
     t.innerHTML += `<div style="margin-bottom:2px">${new Date().toLocaleTimeString()} — ${msg}</div>`;
     t.scrollTop = t.scrollHeight;
+}
+
+async function stopCampaign() {
+    running = false;
+    log('⛔ Campaign stopped by user.');
+    document.getElementById('stopBtn').style.display = 'none';
+    document.getElementById('launchBtn').disabled = false;
+    if (campaignId) {
+        await fetch('<?php echo APP_URL; ?>/api/update_campaign.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                campaign_id: campaignId,
+                status: 'paused',
+                api_key: '<?php echo N8N_API_KEY; ?>'
+            })
+        });
+    }
+}
+
+async function deleteCampaign(id) {
+    if (!confirm('Delete this campaign and all its email logs?')) return;
+    const res = await fetch('<?php echo APP_URL; ?>/api/delete_campaign.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({campaign_id: id, api_key: '<?php echo N8N_API_KEY; ?>'})
+    });
+    const json = await res.json();
+    if (json.success) {
+        location.reload();
+    } else {
+        alert('Error: ' + (json.error || 'Could not delete'));
+    }
 }
 
 async function launchCampaign() {
@@ -184,6 +224,7 @@ async function launchCampaign() {
     if (totalCount === 0) { log('No eligible leads found.'); document.getElementById('launchBtn').disabled = false; return; }
 
     running = true;
+    document.getElementById('stopBtn').style.display = 'block';
     await sendNext();
 }
 
@@ -200,6 +241,7 @@ async function sendNext() {
             running = false;
             log(`✅ Campaign complete! Sent: ${json.sent}, Failed: ${json.failed}`);
             document.getElementById('statusMsg').textContent = '✅ All emails sent!';
+            document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('launchBtn').disabled = false;
             return;
         }

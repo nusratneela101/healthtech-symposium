@@ -12,7 +12,13 @@ try {
     }
 } catch (Exception $e) {}
 
-// Helper: get setting value, falling back to constant or default
+// Helper: get setting value (raw, no HTML escaping) — use with json_encode() or explicit escaping
+function getSetting(string $key, string $fallback = ''): string {
+    global $settingsRows;
+    return (isset($settingsRows[$key]) && $settingsRows[$key] !== '') ? $settingsRows[$key] : $fallback;
+}
+
+// Helper: get setting value, falling back to constant or default (HTML-escaped for direct output)
 function s(string $key, string $fallback = ''): string {
     global $settingsRows;
     if (isset($settingsRows[$key]) && $settingsRows[$key] !== '') {
@@ -139,13 +145,28 @@ function s(string $key, string $fallback = ''): string {
                 <?php endif; ?>
             </div>
 
+            <!-- Brevo -->
+            <div class="provider-card<?php echo $currentProvider==='brevo'?' provider-selected':''; ?>"
+                 onclick="selectProvider('brevo')" id="card-brevo">
+                <div class="provider-card-header">
+                    <span class="provider-icon">📬</span>
+                    <span class="provider-name">Brevo SMTP</span>
+                    <span class="provider-badge provider-badge-good">✅ Good</span>
+                </div>
+                <div class="provider-email">smtp-relay.brevo.com</div>
+                <div class="provider-meta">Delivery: ⭐⭐⭐⭐ &nbsp;|&nbsp; Setup: Easy</div>
+                <?php if($currentProvider==='brevo'): ?>
+                <div class="provider-selected-label">✓ Selected</div>
+                <?php endif; ?>
+            </div>
+
         </div><!-- /.provider-grid -->
 
         <!-- Config section (shown after selection) -->
         <div id="provider-config" style="display:<?php echo $currentProvider?'block':'none'; ?>;margin-top:24px">
             <div class="gc-title" id="provider-config-title" style="font-size:15px;margin-bottom:14px">
                 <?php
-                $titles = ['microsoft365'=>'🏢 Microsoft 365 Configuration','cpanel'=>'🌐 cPanel Email Configuration','business'=>'📧 Business Email Configuration','gmail'=>'📮 Gmail Configuration'];
+                $titles = ['microsoft365'=>'🏢 Microsoft 365 Configuration','cpanel'=>'🌐 cPanel Email Configuration','business'=>'📧 Business Email Configuration','gmail'=>'📮 Gmail Configuration','brevo'=>'📬 Brevo SMTP Configuration'];
                 echo htmlspecialchars($titles[$currentProvider] ?? 'Configuration');
                 ?>
             </div>
@@ -958,25 +979,71 @@ var providerDefaults = {
         smtp_from_name: 'Canada Fintech Symposium',
         hasImap: false,
         title: '📮 Gmail Configuration'
+    },
+    brevo: {
+        smtp_host: 'smtp-relay.brevo.com',
+        smtp_port: '587',
+        smtp_secure: 'tls',
+        smtp_user: '',
+        smtp_from_email: '',
+        smtp_from_name: 'Canada Fintech Symposium',
+        hasImap: false,
+        title: '📬 Brevo SMTP Configuration'
     }
 };
 
 var currentSelectedProvider = '<?php echo htmlspecialchars($settingsRows['email_provider'] ?? ''); ?>';
 
-var savedProviderConfig = {
-    smtp_host:       <?php echo json_encode(s('smtp_host'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    smtp_port:       <?php echo json_encode(s('smtp_port', '587'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    smtp_secure:     <?php echo json_encode(s('smtp_secure', 'tls'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    smtp_user:       <?php echo json_encode(s('smtp_user'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    smtp_from_email: <?php echo json_encode(s('smtp_from_email'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    smtp_from_name:  <?php echo json_encode(s('smtp_from_name'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    imap_host:       <?php echo json_encode(s('imap_host'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>,
-    imap_user:       <?php echo json_encode(s('imap_user'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>
+var allProviderConfigs = {
+    cpanel: {
+        smtp_host:       <?php echo json_encode(getSetting('cpanel_smtp_host', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_port:       <?php echo json_encode(getSetting('cpanel_smtp_port', '465'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_secure:     <?php echo json_encode(getSetting('cpanel_smtp_secure', 'ssl'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_user:       <?php echo json_encode(getSetting('cpanel_smtp_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_email: <?php echo json_encode(getSetting('cpanel_smtp_from_email', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_name:  <?php echo json_encode(getSetting('cpanel_smtp_from_name', 'Canada Fintech Symposium'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        imap_host:       <?php echo json_encode(getSetting('cpanel_imap_host', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        imap_user:       <?php echo json_encode(getSetting('cpanel_imap_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+    },
+    business: {
+        smtp_host:       <?php echo json_encode(getSetting('business_smtp_host', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_port:       <?php echo json_encode(getSetting('business_smtp_port', '587'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_secure:     <?php echo json_encode(getSetting('business_smtp_secure', 'tls'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_user:       <?php echo json_encode(getSetting('business_smtp_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_email: <?php echo json_encode(getSetting('business_smtp_from_email', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_name:  <?php echo json_encode(getSetting('business_smtp_from_name', 'Canada Fintech Symposium'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+    },
+    microsoft365: {
+        smtp_host:       <?php echo json_encode(getSetting('ms365_smtp_host', 'smtp-mail.outlook.com'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_port:       <?php echo json_encode(getSetting('ms365_smtp_port', '587'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_secure:     <?php echo json_encode(getSetting('ms365_smtp_secure', 'tls'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_user:       <?php echo json_encode(getSetting('ms365_smtp_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_email: <?php echo json_encode(getSetting('ms365_smtp_from_email', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_name:  <?php echo json_encode(getSetting('ms365_smtp_from_name', 'Canada Fintech Symposium'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        imap_host:       <?php echo json_encode(getSetting('ms365_imap_host', '{outlook.office365.com:993/imap/ssl}INBOX'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        imap_user:       <?php echo json_encode(getSetting('ms365_imap_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+    },
+    gmail: {
+        smtp_host:       <?php echo json_encode(getSetting('gmail_smtp_host', 'smtp.gmail.com'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_port:       <?php echo json_encode(getSetting('gmail_smtp_port', '587'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_secure:     <?php echo json_encode(getSetting('gmail_smtp_secure', 'tls'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_user:       <?php echo json_encode(getSetting('gmail_smtp_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_email: <?php echo json_encode(getSetting('gmail_smtp_from_email', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_name:  <?php echo json_encode(getSetting('gmail_smtp_from_name', 'Canada Fintech Symposium'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+    },
+    brevo: {
+        smtp_host:       <?php echo json_encode(getSetting('brevo_smtp_host', 'smtp-relay.brevo.com'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_port:       <?php echo json_encode(getSetting('brevo_smtp_port', '587'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_secure:     <?php echo json_encode(getSetting('brevo_smtp_secure', 'tls'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_user:       <?php echo json_encode(getSetting('brevo_smtp_user', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_email: <?php echo json_encode(getSetting('brevo_smtp_from_email', ''), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>,
+        smtp_from_name:  <?php echo json_encode(getSetting('brevo_smtp_from_name', 'Canada Fintech Symposium'), JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT); ?>
+    }
 };
 
 function selectProvider(provider) {
     // Update card styles
-    ['microsoft365','cpanel','business','gmail'].forEach(function(p) {
+    ['microsoft365','cpanel','business','gmail','brevo'].forEach(function(p) {
         var card = document.getElementById('card-'+p);
         if (!card) return;
         card.classList.remove('provider-selected');
@@ -997,24 +1064,36 @@ function selectProvider(provider) {
     var d = providerDefaults[provider];
     if (!d) return;
     document.getElementById('provider-config-title').textContent = d.title;
-    document.getElementById('ep_smtp_host').value = d.smtp_host || '';
-    document.getElementById('ep_smtp_port').value = d.smtp_port || '587';
+
+    // Load saved config for this provider (fall back to providerDefaults if not yet saved)
+    var saved = allProviderConfigs[provider] || {};
+    var cfg = (saved.smtp_host !== '' || saved.smtp_user !== '') ? saved : d;
+
+    document.getElementById('ep_smtp_host').value       = cfg.smtp_host || '';
+    document.getElementById('ep_smtp_port').value       = cfg.smtp_port || '587';
+    document.getElementById('ep_smtp_user').value       = cfg.smtp_user || '';
+    document.getElementById('ep_smtp_from_email').value = cfg.smtp_from_email || '';
+    document.getElementById('ep_smtp_from_name').value  = cfg.smtp_from_name || '';
+    document.getElementById('ep_smtp_pass').value       = '';
+    document.getElementById('ep_smtp_pass').placeholder = 'Leave blank to keep current';
+
+    // Set encryption dropdown
     var secEl = document.getElementById('ep_smtp_secure');
-    for (var i=0; i<secEl.options.length; i++) {
-        secEl.options[i].selected = (secEl.options[i].value === (d.smtp_secure || 'tls'));
+    for (var i = 0; i < secEl.options.length; i++) {
+        secEl.options[i].selected = (secEl.options[i].value === (cfg.smtp_secure || 'tls'));
     }
-    document.getElementById('ep_smtp_user').value = d.smtp_user || '';
-    document.getElementById('ep_smtp_from_email').value = d.smtp_from_email || '';
-    document.getElementById('ep_smtp_from_name').value = d.smtp_from_name || '';
 
     // IMAP fields
     var imapRows = ['ep_imap_host_row','ep_imap_user_row','ep_imap_pass_row'];
     imapRows.forEach(function(id) {
-        document.getElementById(id).style.display = d.hasImap ? '' : 'none';
+        var el = document.getElementById(id);
+        if (el) el.style.display = d.hasImap ? '' : 'none';
     });
     if (d.hasImap) {
-        document.getElementById('ep_imap_host').value = d.imap_host || '';
-        document.getElementById('ep_imap_user').value = d.imap_user || '';
+        document.getElementById('ep_imap_host').value = cfg.imap_host || '';
+        document.getElementById('ep_imap_user').value = cfg.imap_user || '';
+        document.getElementById('ep_imap_pass').value = '';
+        document.getElementById('ep_imap_pass').placeholder = 'Leave blank to keep current';
     }
 
     // Gmail note
@@ -1025,41 +1104,51 @@ function selectProvider(provider) {
 
 function applyProviderSettings() {
     if (!currentSelectedProvider) { showToast('Please select a provider first','warning'); return; }
-    var smtpSettings = {
-        smtp_host: document.getElementById('ep_smtp_host').value,
-        smtp_port: document.getElementById('ep_smtp_port').value,
-        smtp_secure: document.getElementById('ep_smtp_secure').value,
-        smtp_user: document.getElementById('ep_smtp_user').value,
-        smtp_pass: document.getElementById('ep_smtp_pass').value,
-        smtp_from_email: document.getElementById('ep_smtp_from_email').value,
-        smtp_from_name: document.getElementById('ep_smtp_from_name').value
-    };
-    var d = providerDefaults[currentSelectedProvider];
+    var p = currentSelectedProvider;
+    var prefix = p + '_';  // e.g. 'cpanel_', 'business_', 'ms365_', 'gmail_', 'brevo_'
+    // Map provider name to DB key prefix (microsoft365 uses ms365_ prefix)
+    var prefixMap = {microsoft365: 'ms365_'};
+    if (prefixMap[p]) { prefix = prefixMap[p]; }
+
+    var smtpSettings = {};
+    smtpSettings[prefix+'smtp_host']       = document.getElementById('ep_smtp_host').value;
+    smtpSettings[prefix+'smtp_port']       = document.getElementById('ep_smtp_port').value;
+    smtpSettings[prefix+'smtp_secure']     = document.getElementById('ep_smtp_secure').value;
+    smtpSettings[prefix+'smtp_user']       = document.getElementById('ep_smtp_user').value;
+    smtpSettings[prefix+'smtp_pass']       = document.getElementById('ep_smtp_pass').value;
+    smtpSettings[prefix+'smtp_from_email'] = document.getElementById('ep_smtp_from_email').value;
+    smtpSettings[prefix+'smtp_from_name']  = document.getElementById('ep_smtp_from_name').value;
+
+    var groupName = 'smtp_' + p;  // e.g. 'smtp_cpanel', 'smtp_microsoft365'
+
     var saves = [
         fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({group:'smtp', settings: smtpSettings})
+            body: JSON.stringify({group: groupName, settings: smtpSettings})
         }).then(function(r){ return r.json(); })
     ];
+
+    var d = providerDefaults[p];
     if (d && d.hasImap) {
-        var imapSettings = {
-            imap_host: document.getElementById('ep_imap_host').value,
-            imap_user: document.getElementById('ep_imap_user').value,
-            imap_pass: document.getElementById('ep_imap_pass').value
-        };
+        var imapSettings = {};
+        imapSettings[prefix+'imap_host'] = document.getElementById('ep_imap_host').value;
+        imapSettings[prefix+'imap_user'] = document.getElementById('ep_imap_user').value;
+        imapSettings[prefix+'imap_pass'] = document.getElementById('ep_imap_pass').value;
         saves.push(
             fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
                 method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({group:'imap', settings: imapSettings})
+                body: JSON.stringify({group: groupName, settings: imapSettings})
             }).then(function(r){ return r.json(); })
         );
     }
+
     saves.push(
         fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({group:'email_setup', settings: {email_provider: currentSelectedProvider}})
+            body: JSON.stringify({group:'email_setup', settings: {email_provider: p}})
         }).then(function(r){ return r.json(); })
     );
+
     Promise.all(saves).then(function(results) {
         var allOk = results.every(function(d){ return d.success; });
         if (allOk) { showToast('✅ Provider settings saved','success'); }
@@ -1106,26 +1195,7 @@ function testConnection(service, resultId) {
 
 // On load, if a provider was already saved, populate the config fields
 if (currentSelectedProvider && providerDefaults[currentSelectedProvider]) {
-    // Step 1: set up card UI (highlights selected card, shows/hides IMAP rows)
     selectProvider(currentSelectedProvider);
-
-    // Step 2: override with actual DB-saved values (not hardcoded defaults)
-    if (savedProviderConfig.smtp_host !== '') {
-        document.getElementById('ep_smtp_host').value       = savedProviderConfig.smtp_host;
-        document.getElementById('ep_smtp_port').value       = savedProviderConfig.smtp_port;
-        document.getElementById('ep_smtp_user').value       = savedProviderConfig.smtp_user;
-        document.getElementById('ep_smtp_from_email').value = savedProviderConfig.smtp_from_email;
-        document.getElementById('ep_smtp_from_name').value  = savedProviderConfig.smtp_from_name;
-        // Set the encryption dropdown
-        document.getElementById('ep_smtp_secure').value = savedProviderConfig.smtp_secure;
-        // Override IMAP fields if visible
-        const imapHostEl = document.getElementById('ep_imap_host');
-        const imapHostRow = document.getElementById('ep_imap_host_row');
-        if (imapHostEl && imapHostRow && imapHostRow.style.display !== 'none') {
-            imapHostEl.value = savedProviderConfig.imap_host;
-            document.getElementById('ep_imap_user').value = savedProviderConfig.imap_user;
-        }
-    }
 }
 
 async function loadLimitStats() {

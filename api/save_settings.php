@@ -73,6 +73,7 @@ $allowedKeys = [
     'smtp_microsoft365' => ['ms365_smtp_host','ms365_smtp_port','ms365_smtp_secure','ms365_smtp_user','ms365_smtp_pass','ms365_smtp_from_email','ms365_smtp_from_name','ms365_imap_host','ms365_imap_user','ms365_imap_pass'],
     'smtp_gmail'        => ['gmail_smtp_host','gmail_smtp_port','gmail_smtp_secure','gmail_smtp_user','gmail_smtp_pass','gmail_smtp_from_email','gmail_smtp_from_name'],
     'smtp_brevo'        => ['brevo_smtp_host','brevo_smtp_port','brevo_smtp_secure','brevo_smtp_user','brevo_smtp_pass','brevo_smtp_from_email','brevo_smtp_from_name'],
+    'automation'        => ['automation_mode'],
 ];
 
 if (!isset($allowedKeys[$group])) {

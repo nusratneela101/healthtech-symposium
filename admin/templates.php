@@ -579,7 +579,7 @@ if (isset($_GET['edit'])) {
                 /* -- Contact grid -- */
                 var emailRow  = email  ? '<a href="mailto:' + email + '" style="color:#333;text-decoration:none;font-size:12px">' + email + '</a>' : '';
                 var phoneRow  = phone  ? '<span style="font-size:12px;color:#333">' + phone + '</span>' : '';
-                var addrRow   = (addr1 || addr2) ? '<span style="font-size:12px;color:#333">' + [addr1, addr2].filter(Boolean).join('<br>') + '</span>' : '';
+                var addrRow   = (addr1 || addr2) ? '<span style="font-size:12px;color:#333">' + [addr1, addr2].filter(Boolean).join(', ') + '</span>' : '';
 
                 var contactGrid = '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:8px">'
                     + '<tr>'

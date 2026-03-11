@@ -12,12 +12,6 @@ try {
     }
 } catch (Exception $e) {}
 
-// Helper: get setting value (raw, no HTML escaping) — use with json_encode() or explicit escaping
-function getSetting(string $key, string $fallback = ''): string {
-    global $settingsRows;
-    return (isset($settingsRows[$key]) && $settingsRows[$key] !== '') ? $settingsRows[$key] : $fallback;
-}
-
 // Helper: get setting value, falling back to constant or default (HTML-escaped for direct output)
 function s(string $key, string $fallback = ''): string {
     global $settingsRows;

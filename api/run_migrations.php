@@ -148,6 +148,26 @@ $migrations = [
         'name' => 'email_templates.header_image_url',
         'sql'  => "ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS header_image_url VARCHAR(500) DEFAULT NULL",
     ],
+    [
+        'name' => 'email_logs.follow_up_sequence',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `follow_up_sequence` INT DEFAULT 1",
+    ],
+    [
+        'name' => 'email_logs.opened_at',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `opened_at` DATETIME NULL",
+    ],
+    [
+        'name' => 'email_logs.message_id',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `message_id` VARCHAR(255) NULL",
+    ],
+    [
+        'name' => 'email_logs.error_message',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `error_message` TEXT NULL",
+    ],
+    [
+        'name' => 'email_logs.sent_at',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `sent_at` DATETIME NULL",
+    ],
 ];
 
 $ok   = 0;

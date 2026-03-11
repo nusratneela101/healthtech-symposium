@@ -561,7 +561,7 @@ if (isset($_GET['edit'])) {
                 if (!/^#[0-9a-fA-F]{6}$/.test(primaryColor)) { primaryColor = '#1a3a6b'; }
                 if (!/^#[0-9a-fA-F]{6}$/.test(nameColor))    { nameColor    = '#1a6bbf'; }
 
-                var fullName = (fname + ' ' + lname).trim();
+                var fullName = [fname, lname].filter(Boolean).join(' | ');
 
                 /* -- Logo cell -- */
                 var logoCell = '';
@@ -572,25 +572,23 @@ if (isset($_GET['edit'])) {
                 }
 
                 /* -- Name/job cell -- */
-                var nameBlock  = fullName  ? '<div style="font-size:16px;font-weight:700;color:' + primaryColor + ';line-height:1.2">' + fullName + '</div>' : '';
-                var titleBlock = jobtitle  ? '<div style="font-size:12px;color:' + nameColor + ';margin-top:2px">' + jobtitle + '</div>' : '';
+                var nameBlock  = fullName  ? '<div style="font-size:15px;font-weight:700;color:' + nameColor + ';line-height:1.2">' + fullName + '</div>' : '';
+                var titleBlock = jobtitle  ? '<div style="font-size:12px;color:#444;margin-top:2px">' + jobtitle + '</div>' : '';
                 var nameCell   = '<td style="vertical-align:top">' + nameBlock + titleBlock + '</td>';
 
                 /* -- Contact grid -- */
-                var emailRow  = email  ? '<span style="color:#555;font-size:11px">&#9993; </span><a href="mailto:' + email + '" style="color:#333;text-decoration:none;font-size:12px">' + email + '</a>' : '';
-                var mobileRow = mobile ? '<span style="color:#555;font-size:11px">&#128241; </span><span style="font-size:12px;color:#333">' + mobile + '</span>' : '';
-                var addrRow   = (addr1 || addr2) ? '<span style="color:#555;font-size:11px">&#128205; </span><span style="font-size:12px;color:#333">' + [addr1, addr2].filter(Boolean).join(', ') + '</span>' : '';
-                var phoneRow  = phone  ? '<span style="color:#555;font-size:11px">&#128222; </span><span style="font-size:12px;color:#333">' + phone + '</span>' : '';
+                var emailRow  = email  ? '<a href="mailto:' + email + '" style="color:#333;text-decoration:none;font-size:12px">' + email + '</a>' : '';
+                var phoneRow  = phone  ? '<span style="font-size:12px;color:#333">' + phone + '</span>' : '';
+                var addrRow   = (addr1 || addr2) ? '<span style="font-size:12px;color:#333">' + [addr1, addr2].filter(Boolean).join('<br>') + '</span>' : '';
 
                 var contactGrid = '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:8px">'
                     + '<tr>'
-                    + '<td style="width:50%;vertical-align:top;padding-right:8px">'
-                    + (emailRow  ? '<div style="margin-bottom:4px">' + emailRow  + '</div>' : '')
-                    + (mobileRow ? '<div style="margin-bottom:4px">' + mobileRow + '</div>' : '')
+                    + '<td style="vertical-align:top;padding-right:16px">'
+                    + (emailRow  ? '<div style="margin-bottom:4px"><strong style="font-size:12px;color:#333;min-width:80px;display:inline-block">Email:</strong> ' + emailRow  + '</div>' : '')
+                    + (phoneRow  ? '<div style="margin-bottom:4px"><strong style="font-size:12px;color:#333;min-width:80px;display:inline-block">Telephone:</strong> ' + phoneRow  + '</div>' : '')
                     + '</td>'
-                    + '<td style="width:50%;vertical-align:top">'
-                    + (addrRow  ? '<div style="margin-bottom:4px">' + addrRow  + '</div>' : '')
-                    + (phoneRow ? '<div style="margin-bottom:4px">' + phoneRow + '</div>' : '')
+                    + '<td style="vertical-align:top">'
+                    + (addrRow  ? '<div style="margin-bottom:4px"><strong style="font-size:12px;color:#333;min-width:60px;display:inline-block">Address:</strong> ' + addrRow  + '</div>' : '')
                     + '</td>'
                     + '</tr></table>';
 
@@ -641,7 +639,7 @@ if (isset($_GET['edit'])) {
 
                 /* -- Company name divider -- */
                 var companyBlock = company
-                    ? '<div style="font-size:12px;font-weight:600;color:' + primaryColor + ';margin-top:6px;padding-top:6px;border-top:1px solid #dde4ef">' + company + '</div>'
+                    ? '<div style="font-size:12px;color:#333;margin-top:2px">' + company + '</div>'
                     : '';
 
                 /* Assemble full table */

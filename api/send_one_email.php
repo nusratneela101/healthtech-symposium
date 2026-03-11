@@ -106,12 +106,13 @@ if ($campaign['status'] === 'draft') {
 }
 
 // Personalize template (no escaping — lead data is used inside HTML template)
-$unsubLink = APP_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
+$unsubLink     = APP_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
+$signatureHtml = $tpl['signature_html'] ?? '';
 $body = str_replace(
-    ['{{first_name}}','{{last_name}}','{{full_name}}','{{role}}','{{company}}','{{city}}','{{province}}','{{email}}','{{unsubscribe_link}}'],
+    ['{{first_name}}','{{last_name}}','{{full_name}}','{{role}}','{{company}}','{{city}}','{{province}}','{{email}}','{{unsubscribe_link}}','{{signature}}'],
     [$lead['first_name'], $lead['last_name'], $lead['full_name'],
      $lead['role'], $lead['company'], $lead['city'],
-     $lead['province'], $lead['email'], $unsubLink],
+     $lead['province'], $lead['email'], $unsubLink, $signatureHtml],
     $tpl['html_body']
 );
 
@@ -121,8 +122,8 @@ if (!empty($tpl['header_image_url'])) {
     $body = $headerHtml . $body;
 }
 
-// Append signature if set
-if (!empty($tpl['signature_html'])) {
+// Append signature if set AND template did not use {{signature}} placeholder
+if (!empty($tpl['signature_html']) && strpos($tpl['html_body'], '{{signature}}') === false) {
     $body .= '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">' . $tpl['signature_html'];
 }
 
@@ -131,6 +132,32 @@ $subject = str_replace(
     [$lead['first_name'], $lead['company']],
     $tpl['subject']
 );
+
+// Wrap in professional email shell
+$body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>' . htmlspecialchars($subject, ENT_QUOTES) . '</title>
+<style type="text/css">
+body { margin:0; padding:0; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #222222; background-color: #ffffff; }
+a { color: #1a6bbf; }
+p { margin: 0 0 12px 0; }
+</style>
+</head>
+<body>
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#ffffff;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" border="0" width="680" style="max-width:680px;">
+<tr><td style="padding: 24px 32px;">
+' . $body . '
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>';
 
 // Send or log (test mode)
 $status    = 'failed';

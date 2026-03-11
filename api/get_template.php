@@ -48,13 +48,15 @@ try {
         // Replace common placeholders with sample data for preview
         $html = $tpl['html_body'];
         $placeholders = [
-            '{{first_name}}'   => 'Jane',
-            '{{last_name}}'    => 'Doe',
-            '{{full_name}}'    => 'Jane Doe',
-            '{{email}}'        => 'jane.doe@example.com',
-            '{{company}}'      => 'Example Corp',
-            '{{job_title}}'    => 'Chief Medical Officer',
+            '{{first_name}}'      => 'Jane',
+            '{{last_name}}'       => 'Doe',
+            '{{full_name}}'       => 'Jane Doe',
+            '{{email}}'           => 'jane.doe@example.com',
+            '{{company}}'         => 'Example Corp',
+            '{{job_title}}'       => 'Chief Medical Officer',
             '{{unsubscribe_url}}' => '#',
+            '{{unsubscribe_link}}' => '#',
+            '{{signature}}'       => '<em style="color:#888">[Signature block]</em>',
         ];
         echo str_replace(array_keys($placeholders), array_values($placeholders), $html);
         exit;

@@ -1,5 +1,9 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+
 Auth::requireSuperAdmin();
 
 $message = '';
@@ -84,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['manual_email'])) {
         }
     }
 }
+
+require_once __DIR__ . '/../includes/layout.php';
 
 $segStats = Database::fetchAll("SELECT segment, COUNT(*) AS cnt FROM leads GROUP BY segment ORDER BY cnt DESC");
 $totalLeads = Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0;

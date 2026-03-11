@@ -17,26 +17,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $signatureHtml = trim($_POST['signature_html'] ?? '');
         $isDefault    = isset($_POST['is_default']) ? 1 : 0;
 
-        // Handle attachment upload
-        $attachmentPath = null;
-        if (!empty($_FILES['attachment']['name'])) {
-            $uploadDir = __DIR__ . '/../uploads/attachments/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
-            }
-            $ext      = strtolower(pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION));
-            $allowed  = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'];
-            $allowedMime = ['application/pdf', 'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'image/png', 'image/jpeg'];
-            $finfo    = new finfo(FILEINFO_MIME_TYPE);
-            $mime     = $finfo->file($_FILES['attachment']['tmp_name']);
-            if (in_array($ext, $allowed, true) && in_array($mime, $allowedMime, true)
-                && $_FILES['attachment']['size'] <= 5 * 1024 * 1024) {
-                $filename       = bin2hex(random_bytes(16)) . '.' . $ext;
-                $destPath       = $uploadDir . $filename;
-                if (move_uploaded_file($_FILES['attachment']['tmp_name'], $destPath)) {
-                    $attachmentPath = 'uploads/attachments/' . $filename;
+        // Handle multiple attachment uploads
+        $attachmentsJson = null;
+        $uploadDir = __DIR__ . '/../uploads/attachments/';
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0755, true); }
+
+        $newPaths = [];
+        if (!empty($_FILES['attachments']['name'][0])) {
+            $maxFiles = 5;
+            $fileCount = 0;
+            foreach ($_FILES['attachments']['name'] as $i => $origName) {
+                if ($fileCount >= $maxFiles) break;
+                if ($_FILES['attachments']['error'][$i] !== UPLOAD_ERR_OK) continue;
+                if ($_FILES['attachments']['size'][$i] > 10 * 1024 * 1024) continue; // 10MB limit
+                $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+                $filename = bin2hex(random_bytes(16)) . ($ext ? '.' . $ext : '');
+                $destPath = $uploadDir . $filename;
+                if (move_uploaded_file($_FILES['attachments']['tmp_name'][$i], $destPath)) {
+                    $newPaths[] = [
+                        'path'     => 'uploads/attachments/' . $filename,
+                        'original' => $origName,
+                    ];
+                    $fileCount++;
                 }
             }
         }
@@ -68,22 +70,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($id) {
             // Preserve existing upload paths if no new file was uploaded
-            $existing = Database::fetchOne("SELECT attachment_path, header_image_url FROM email_templates WHERE id=?", [$id]);
-            if ($attachmentPath === null && $existing) {
-                $attachmentPath = $existing['attachment_path'];
+            $existing = Database::fetchOne(
+                "SELECT attachments_json, attachment_path, header_image_url FROM email_templates WHERE id=?",
+                [$id]
+            );
+            // Merge with existing attachments
+            $existingAtts = [];
+            if (!empty($existing['attachments_json'])) {
+                $existingAtts = json_decode($existing['attachments_json'], true) ?: [];
+            } elseif (!empty($existing['attachment_path'])) {
+                // Migrate legacy single attachment
+                $existingAtts = [['path' => $existing['attachment_path'], 'original' => basename($existing['attachment_path'])]];
             }
+            // Handle removal: $_POST['remove_attachment'] contains paths to remove
+            $toRemove = $_POST['remove_attachment'] ?? [];
+            $existingAtts = array_values(array_filter($existingAtts, fn($a) => !in_array($a['path'], $toRemove)));
+            $allAtts = array_slice(array_merge($existingAtts, $newPaths), 0, 5);
+            $attachmentsJson = !empty($allAtts) ? json_encode($allAtts) : null;
+
             if ($headerImageUrl === null && $existing) {
                 $headerImageUrl = $existing['header_image_url'];
             }
             Database::query(
-                "UPDATE email_templates SET name=?,subject=?,html_body=?,signature_html=?,attachment_path=?,header_image_url=?,is_default=?,updated_at=NOW() WHERE id=?",
-                [$name, $subject, $body, $signatureHtml, $attachmentPath, $headerImageUrl, $isDefault, $id]
+                "UPDATE email_templates SET name=?,subject=?,html_body=?,signature_html=?,attachments_json=?,header_image_url=?,is_default=?,updated_at=NOW() WHERE id=?",
+                [$name, $subject, $body, $signatureHtml, $attachmentsJson, $headerImageUrl, $isDefault, $id]
             );
             flash('success', 'Template updated.');
         } else {
+            $attachmentsJson = !empty($newPaths) ? json_encode($newPaths) : null;
             Database::query(
-                "INSERT INTO email_templates (name,subject,html_body,signature_html,attachment_path,header_image_url,is_default,created_by) VALUES(?,?,?,?,?,?,?,?)",
-                [$name, $subject, $body, $signatureHtml, $attachmentPath, $headerImageUrl, $isDefault, Auth::user()['id']]
+                "INSERT INTO email_templates (name,subject,html_body,signature_html,attachments_json,header_image_url,is_default,created_by) VALUES(?,?,?,?,?,?,?,?)",
+                [$name, $subject, $body, $signatureHtml, $attachmentsJson, $headerImageUrl, $isDefault, Auth::user()['id']]
             );
             flash('success', 'Template created.');
         }
@@ -116,14 +133,21 @@ if (isset($_GET['edit'])) {
     </div>
     <?php
     $tpl = Database::fetchOne(
-        "SELECT name, subject, html_body, signature_html, header_image_url, attachment_path FROM email_templates WHERE id=?",
+        "SELECT name, subject, html_body, signature_html, header_image_url, attachment_path, attachments_json FROM email_templates WHERE id=?",
         [(int)$_GET['preview']]
     );
     if ($tpl):
         $previewBody = $tpl['html_body'] ?? '';
         $sig         = $tpl['signature_html'] ?? '';
         $headerImg   = $tpl['header_image_url'] ?? '';
-        $attPath     = $tpl['attachment_path'] ?? '';
+
+        // Build attachment list — support both new JSON and legacy single path
+        $attList = [];
+        if (!empty($tpl['attachments_json'])) {
+            $attList = json_decode($tpl['attachments_json'], true) ?: [];
+        } elseif (!empty($tpl['attachment_path'])) {
+            $attList = [['path' => $tpl['attachment_path'], 'original' => basename($tpl['attachment_path'])]];
+        }
 
         // Inject signature — replace placeholder or append
         if ($sig) {
@@ -139,14 +163,15 @@ if (isset($_GET['edit'])) {
             ? '<div><img src="' . htmlspecialchars($headerImg) . '" style="width:100%;max-width:100%;display:block" alt="Header"></div>'
             : '';
 
-        // Attachment block
+        // Attachment blocks
         $attachBlock = '';
-        if ($attPath && str_starts_with($attPath, 'uploads/')) {
-            $attName = basename($attPath);
-            $attUrl  = htmlspecialchars(APP_URL . '/' . $attPath);
+        foreach ($attList as $att) {
+            if (!str_starts_with($att['path'], 'uploads/')) continue;
+            $attName = $att['original'] ?? basename($att['path']);
+            $attUrl  = htmlspecialchars(APP_URL . '/' . $att['path']);
             $ext     = strtolower(pathinfo($attName, PATHINFO_EXTENSION));
-            $icon    = ($ext === 'pdf') ? '📄' : (in_array($ext, ['png','jpg','jpeg','gif']) ? '🖼️' : '📎');
-            $attachBlock = '<div style="margin-top:20px;padding:12px 16px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-family:Arial,sans-serif;font-size:13px;color:#374151">'
+            $icon    = ($ext === 'pdf') ? '📄' : (in_array($ext, ['png','jpg','jpeg','gif','webp']) ? '🖼️' : '📎');
+            $attachBlock .= '<div style="margin-top:10px;padding:10px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-family:Arial,sans-serif;font-size:13px;color:#374151">'
                 . '<strong>' . $icon . ' Attachment:</strong> '
                 . '<a href="' . $attUrl . '" target="_blank" style="color:#1a6bbf;text-decoration:underline">' . htmlspecialchars($attName) . '</a>'
                 . '</div>';
@@ -169,9 +194,11 @@ if (isset($_GET['edit'])) {
     <div style="background:#0d1b2e;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px">
         <div style="color:#8a9ab5;margin-bottom:2px">Template: <span style="color:#e2e8f0"><?php echo htmlspecialchars($tpl['name']); ?></span></div>
         <div style="color:#8a9ab5">Subject: <span style="color:#e2e8f0"><?php echo htmlspecialchars($tpl['subject']); ?></span></div>
-        <?php if ($attPath && str_starts_with($attPath, 'uploads/')): ?>
-        <div style="color:#8a9ab5;margin-top:4px">📎 Attachment: <a href="<?php echo htmlspecialchars(APP_URL . '/' . $attPath); ?>" target="_blank" style="color:#10b981"><?php echo htmlspecialchars(basename($attPath)); ?></a></div>
+        <?php foreach ($attList as $att): ?>
+        <?php if (str_starts_with($att['path'], 'uploads/')): ?>
+        <div style="color:#8a9ab5;margin-top:4px">📎 Attachment: <a href="<?php echo htmlspecialchars(APP_URL . '/' . $att['path']); ?>" target="_blank" style="color:#10b981"><?php echo htmlspecialchars($att['original'] ?? basename($att['path'])); ?></a></div>
         <?php endif; ?>
+        <?php endforeach; ?>
     </div>
     <iframe srcdoc="<?php echo htmlspecialchars($fullHtml); ?>"
             style="width:100%;min-height:650px;border:1px solid #1e3355;border-radius:8px;background:#fff"
@@ -657,11 +684,26 @@ if (isset($_GET['edit'])) {
             }
             </script>
             <div style="margin-bottom:12px">
-                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">📎 Attachment <span style="color:#8a9ab5;font-size:11px">(optional — PDF, DOC, image — max 5MB)</span></label>
-                <input type="file" name="attachment" class="fi" style="width:100%" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
-                <?php if (!empty($editing['attachment_path'])): ?>
-                <div style="font-size:12px;color:#10b981;margin-top:4px">📎 Current: <?php echo htmlspecialchars(basename($editing['attachment_path'])); ?></div>
-                <?php endif; ?>
+                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">📎 Attachments <span style="color:#8a9ab5;font-size:11px">(optional — any file type — max 10MB each, up to 5 files)</span></label>
+                <input type="file" name="attachments[]" class="fi" style="width:100%" multiple>
+                <?php
+                // Show existing attachments with remove buttons
+                $existingAtts = [];
+                if (!empty($editing['attachments_json'])) {
+                    $existingAtts = json_decode($editing['attachments_json'], true) ?: [];
+                } elseif (!empty($editing['attachment_path'])) {
+                    $existingAtts = [['path' => $editing['attachment_path'], 'original' => basename($editing['attachment_path'])]];
+                }
+                foreach ($existingAtts as $att):
+                ?>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#10b981;margin-top:6px">
+                    <span>📎 <?php echo htmlspecialchars($att['original'] ?? basename($att['path'])); ?></span>
+                    <label style="display:flex;align-items:center;gap:4px;color:#ef4444;cursor:pointer">
+                        <input type="checkbox" name="remove_attachment[]" value="<?php echo htmlspecialchars($att['path']); ?>">
+                        Remove
+                    </label>
+                </div>
+                <?php endforeach; ?>
             </div>
             <div style="margin-bottom:12px">
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">🖼️ Header Image <span style="color:#8a9ab5;font-size:11px">(optional — shown at top of email)</span></label>

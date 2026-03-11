@@ -144,8 +144,23 @@ if ($campaign['test_mode']) {
     $sentVia = 'test';
 } else {
     $tags   = ['campaign-' . $campaignId, 'seq-' . $followUpSeq];
-    $attachmentPath = !empty($tpl['attachment_path']) ? __DIR__ . '/../' . $tpl['attachment_path'] : '';
-    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags, $attachmentPath);
+    $attachmentPaths = [];
+    if (!empty($tpl['attachments_json'])) {
+        $attList = json_decode($tpl['attachments_json'], true) ?: [];
+        foreach ($attList as $att) {
+            $fullPath = __DIR__ . '/../' . $att['path'];
+            if (file_exists($fullPath)) {
+                $attachmentPaths[] = $fullPath;
+            }
+        }
+    } elseif (!empty($tpl['attachment_path'])) {
+        // Legacy fallback
+        $p = __DIR__ . '/../' . $tpl['attachment_path'];
+        if (file_exists($p)) {
+            $attachmentPaths[] = $p;
+        }
+    }
+    $result = EmailService::send($lead['email'], $lead['full_name'] ?: $lead['email'], $subject, $body, '', $tags, $attachmentPaths);
     if ($result['success']) {
         $status  = 'sent';
         $msgId   = $result['message_id'] ?? '';

@@ -108,6 +108,80 @@ if (isset($_GET['edit'])) {
 }
 ?>
 
+<?php if (isset($_GET['preview'])): ?>
+<div style="max-width:800px;margin:0 auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <h2 style="font-size:18px">📧 Email Preview</h2>
+        <a href="<?php echo APP_URL; ?>/admin/templates.php" class="btn-sec" style="text-decoration:none;font-size:13px">← Back to Templates</a>
+    </div>
+    <?php
+    $tpl = Database::fetchOne(
+        "SELECT name, subject, html_body, signature_html, header_image_url, attachment_path FROM email_templates WHERE id=?",
+        [(int)$_GET['preview']]
+    );
+    if ($tpl):
+        $previewBody = $tpl['html_body'] ?? '';
+        $sig         = $tpl['signature_html'] ?? '';
+        $headerImg   = $tpl['header_image_url'] ?? '';
+        $attPath     = $tpl['attachment_path'] ?? '';
+
+        // Inject signature — replace placeholder or append
+        if ($sig) {
+            if (strpos($previewBody, '{{signature}}') !== false) {
+                $previewBody = str_replace('{{signature}}', $sig, $previewBody);
+            } else {
+                $previewBody .= "\n" . $sig;
+            }
+        }
+
+        // Header image block
+        $headerBlock = $headerImg
+            ? '<div><img src="' . htmlspecialchars($headerImg) . '" style="width:100%;max-width:100%;display:block" alt="Header"></div>'
+            : '';
+
+        // Attachment block
+        $attachBlock = '';
+        if ($attPath && str_starts_with($attPath, 'uploads/')) {
+            $attName = basename($attPath);
+            $attUrl  = htmlspecialchars(APP_URL . '/' . $attPath);
+            $ext     = strtolower(pathinfo($attName, PATHINFO_EXTENSION));
+            $icon    = ($ext === 'pdf') ? '📄' : (in_array($ext, ['png','jpg','jpeg','gif']) ? '🖼️' : '📎');
+            $attachBlock = '<div style="margin-top:20px;padding:12px 16px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;font-family:Arial,sans-serif;font-size:13px;color:#374151">'
+                . '<strong>' . $icon . ' Attachment:</strong> '
+                . '<a href="' . $attUrl . '" target="_blank" style="color:#1a6bbf;text-decoration:underline">' . htmlspecialchars($attName) . '</a>'
+                . '</div>';
+        }
+
+        // Full email HTML for iframe
+        $fullHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+            . '<style>body{margin:0;padding:0;background:#f0f4f8;font-family:Arial,sans-serif}'
+            . '.email-wrap{max-width:680px;margin:24px auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)}'
+            . '.email-body{padding:24px 28px}'
+            . '</style></head><body>'
+            . '<div class="email-wrap">'
+            . $headerBlock
+            . '<div class="email-body">'
+            . $previewBody
+            . $attachBlock
+            . '</div></div>'
+            . '</body></html>';
+    ?>
+    <div style="background:#0d1b2e;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px">
+        <div style="color:#8a9ab5;margin-bottom:2px">Template: <span style="color:#e2e8f0"><?php echo htmlspecialchars($tpl['name']); ?></span></div>
+        <div style="color:#8a9ab5">Subject: <span style="color:#e2e8f0"><?php echo htmlspecialchars($tpl['subject']); ?></span></div>
+        <?php if ($attPath && str_starts_with($attPath, 'uploads/')): ?>
+        <div style="color:#8a9ab5;margin-top:4px">📎 Attachment: <a href="<?php echo htmlspecialchars(APP_URL . '/' . $attPath); ?>" target="_blank" style="color:#10b981"><?php echo htmlspecialchars(basename($attPath)); ?></a></div>
+        <?php endif; ?>
+    </div>
+    <iframe srcdoc="<?php echo htmlspecialchars($fullHtml); ?>"
+            style="width:100%;min-height:650px;border:1px solid #1e3355;border-radius:8px;background:#fff"
+            sandbox="allow-same-origin"></iframe>
+    <?php else: ?>
+    <div style="color:#ef4444">Template not found.</div>
+    <?php endif; ?>
+</div>
+<?php else: ?>
+
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <h2 style="font-size:20px">✉️ Email Templates</h2>
     <a href="?new=1" class="btn-launch" style="text-decoration:none;font-size:13px">+ New Template</a>
@@ -646,16 +720,8 @@ if (isset($_GET['edit'])) {
             <code style="color:#10b981">{{unsubscribe_link}}</code> — Unsubscribe URL<br>
             <code style="color:#10b981">{{signature}}</code> — Your email signature (auto-appended)
         </div>
-        <?php if (isset($_GET['preview'])): ?>
-        <div style="margin-top:16px">
-            <div class="gc-title" style="margin-bottom:8px">Preview</div>
-            <?php $tpl = Database::fetchOne("SELECT html_body FROM email_templates WHERE id=?", [(int)$_GET['preview']]); ?>
-            <?php if ($tpl): ?>
-            <iframe srcdoc="<?php echo htmlspecialchars($tpl['html_body']); ?>" style="width:100%;height:400px;border:1px solid #1e3355;border-radius:8px;background:#fff"></iframe>
-            <?php endif; ?>
-        </div>
-        <?php endif; ?>
     </div>
 </div>
+<?php endif; ?>
 
 <?php require_once __DIR__ . '/../includes/layout_end.php'; ?>

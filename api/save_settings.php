@@ -67,6 +67,7 @@ $allowedKeys = [
         'warmup_enabled','warmup_start_date','warmup_days',
         'warmup_start_volume','warmup_max_volume',
     ],
+    'automation' => ['automation_mode'],
     // Per-provider credential groups
     'smtp_cpanel'       => ['cpanel_smtp_host','cpanel_smtp_port','cpanel_smtp_secure','cpanel_smtp_user','cpanel_smtp_pass','cpanel_smtp_from_email','cpanel_smtp_from_name','cpanel_imap_host','cpanel_imap_user','cpanel_imap_pass'],
     'smtp_business'     => ['business_smtp_host','business_smtp_port','business_smtp_secure','business_smtp_user','business_smtp_pass','business_smtp_from_email','business_smtp_from_name'],

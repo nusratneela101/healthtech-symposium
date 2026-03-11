@@ -100,6 +100,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
            class="nav-item<?php echo $currentPage==='n8n_manager.php'?' active':''; ?>">
             🤖 n8n Manager
         </a>
+        <a href="<?php echo APP_URL; ?>/admin/cron_monitor.php"
+           class="nav-item<?php echo $currentPage==='cron_monitor.php'?' active':''; ?>">
+            ⏱️ Cron Monitor
+        </a>
         <?php endif; ?>
         <a href="<?php echo APP_URL; ?>/admin/audit.php"
            class="nav-item<?php echo $currentPage==='audit.php'?' active':''; ?>">

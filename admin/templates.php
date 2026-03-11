@@ -233,6 +233,36 @@ if (isset($_GET['edit'])) {
                                 <div class="sig-sec-hdr" onclick="toggleSec(this)"><span>📄 Disclaimer Text</span><span class="sig-arr">▲</span></div>
                                 <div class="sig-sec-body">
                                     <textarea class="fi sig-fi" id="sb_disclaimer" rows="4" style="resize:vertical" oninput="buildSignature()">The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this content with any third party, without a written consent of the sender. If you received this message by mistake, please reply to this message and follow with its deletion, so that we can ensure such a mistake does not occur in the future.</textarea>
+                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+                                        <div>
+                                            <label class="sig-lbl">Font Family</label>
+                                            <select class="fi sig-fi" id="sb_disc_font" onchange="buildSignature()">
+                                                <option value="Arial, sans-serif">Arial</option>
+                                                <option value="Calibri, sans-serif">Calibri</option>
+                                                <option value="Georgia, serif">Georgia</option>
+                                                <option value="Verdana, sans-serif">Verdana</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="sig-lbl">Font Size (px)</label>
+                                            <input class="fi sig-fi" type="number" id="sb_disc_size" value="11" min="8" max="18" oninput="buildSignature()">
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:8px">
+                                        <label class="sig-lbl">Text Color</label>
+                                        <div style="display:flex;gap:6px;align-items:center">
+                                            <input type="color" id="sb_disc_color" value="#888888" oninput="buildSignature()" style="width:40px;height:32px;padding:2px;border:1px solid #1e3a5f;border-radius:4px;background:#0d1b2e;cursor:pointer">
+                                            <input class="fi sig-fi" id="sb_disc_color_hex" value="#888888" oninput="syncColor('sb_disc_color','sb_disc_color_hex');buildSignature()" style="flex:1">
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:16px;margin-top:8px;align-items:center">
+                                        <label class="sig-lbl" style="display:flex;align-items:center;gap:4px;margin-bottom:0">
+                                            <input type="checkbox" id="sb_disc_bold" onchange="buildSignature()"> Bold
+                                        </label>
+                                        <label class="sig-lbl" style="display:flex;align-items:center;gap:4px;margin-bottom:0">
+                                            <input type="checkbox" id="sb_disc_italic" checked onchange="buildSignature()"> Italic
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -358,7 +388,8 @@ if (isset($_GET['edit'])) {
             /* Allowed color input IDs to prevent arbitrary element targeting */
             var SIG_COLOR_PAIRS = {
                 'sb_primary_color': 'sb_primary_hex',
-                'sb_name_color':    'sb_name_hex'
+                'sb_name_color':    'sb_name_hex',
+                'sb_disc_color':    'sb_disc_color_hex'
             };
             function syncColor(colorId, hexId) {
                 if (!SIG_COLOR_PAIRS.hasOwnProperty(colorId) || SIG_COLOR_PAIRS[colorId] !== hexId) { return; }
@@ -485,8 +516,26 @@ if (isset($_GET['edit'])) {
                 }
 
                 /* -- Disclaimer -- */
+                var discFontRaw = v('sb_disc_font');
+                var discFontAllowed = ['Arial, sans-serif','Calibri, sans-serif','Georgia, serif','Verdana, sans-serif'];
+                var discFont   = discFontAllowed.indexOf(discFontRaw) !== -1 ? discFontRaw : 'Arial, sans-serif';
+                var discSize   = parseInt(v('sb_disc_size')) || 11;
+                var discColor  = document.getElementById('sb_disc_color').value || '#888888';
+                var discBold   = document.getElementById('sb_disc_bold').checked;
+                var discItalic = document.getElementById('sb_disc_italic').checked;
+
+                if (!/^#[0-9a-fA-F]{6}$/.test(discColor)) { discColor = '#888888'; }
+                if (discSize < 8) discSize = 8;
+                if (discSize > 18) discSize = 18;
+
+                var discStyle = 'padding-top:10px;font-size:' + discSize + 'px;color:' + discColor
+                    + ';font-style:' + (discItalic ? 'italic' : 'normal')
+                    + ';font-weight:' + (discBold ? '700' : '400')
+                    + ';font-family:' + discFont
+                    + ';line-height:1.4';
+
                 var disclaimerBlock = disclaimer
-                    ? '<tr><td colspan="2" style="padding-top:10px;font-size:11px;color:#888;font-style:italic;line-height:1.4">' + disclaimer + '</td></tr>'
+                    ? '<tr><td colspan="2" style="' + discStyle + '">' + disclaimer + '</td></tr>'
                     : '';
 
                 /* -- Company name divider -- */

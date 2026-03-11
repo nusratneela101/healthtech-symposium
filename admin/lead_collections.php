@@ -1,5 +1,9 @@
 <?php
-require_once __DIR__ . '/../includes/layout.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
+
 Auth::requireSuperAdmin();
 
 // Handle CSV export of a single collection's leads
@@ -67,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;
 }
+
+// Stats & pagination queries (no header() calls — safe to run before or after layout)
+require_once __DIR__ . '/../includes/layout.php';
 
 // Stats
 $totalCollections = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM lead_collections")['c'] ?? 0);

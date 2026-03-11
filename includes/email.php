@@ -154,14 +154,19 @@ class EmailService {
         string $htmlBody,
         string $textBody = '',
         array  $tags = [],
-        string $attachmentPath = ''
+        /* string|array */ $attachmentPaths = ''
     ): array {
+        // Normalize to array for consistent handling
+        if (is_string($attachmentPaths)) {
+            $attachmentPaths = $attachmentPaths !== '' ? [$attachmentPaths] : [];
+        }
+
         $provider = self::getActiveProvider();
 
         // Use Brevo API only when explicitly selected as the email provider
         if ($provider === 'brevo' && defined('BREVO_API_KEY') && BREVO_API_KEY !== '') {
             require_once __DIR__ . '/brevo.php';
-            $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags, $attachmentPath);
+            $result = Brevo::sendTransactional($toEmail, $toName, $subject, $htmlBody, $tags, $attachmentPaths);
             if ($result['success']) {
                 return ['success' => true, 'message_id' => $result['message_id'], 'via' => 'brevo'];
             }
@@ -177,8 +182,10 @@ class EmailService {
             $mail->Body     = $htmlBody;
             $mail->AltBody  = $textBody ?: self::htmlToText($htmlBody);
             self::addAntiSpamHeaders($mail, $htmlBody);
-            if ($attachmentPath !== '' && file_exists($attachmentPath)) {
-                $mail->addAttachment($attachmentPath);
+            foreach ($attachmentPaths as $path) {
+                if ($path !== '' && file_exists($path)) {
+                    $mail->addAttachment($path);
+                }
             }
             $mail->send();
             return ['success' => true, 'message_id' => $mail->getLastMessageID(), 'via' => 'smtp'];

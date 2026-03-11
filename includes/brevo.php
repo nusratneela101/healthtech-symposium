@@ -54,8 +54,13 @@ class Brevo {
         string $subject,
         string $htmlBody,
         array  $tags = [],
-        string $attachmentPath = ''
+        /* string|array */ $attachmentPaths = ''
     ): array {
+        // Normalize to array for consistent handling
+        if (is_string($attachmentPaths)) {
+            $attachmentPaths = $attachmentPaths !== '' ? [$attachmentPaths] : [];
+        }
+
         $payload = [
             'sender'      => [
                 'email' => self::getDbSetting('brevo_sender_email', SMTP_FROM_EMAIL),
@@ -68,13 +73,17 @@ class Brevo {
         if ($tags) {
             $payload['tags'] = $tags;
         }
-        if ($attachmentPath !== '' && file_exists($attachmentPath)) {
-            $payload['attachment'] = [
-                [
-                    'name'    => basename($attachmentPath),
-                    'content' => base64_encode(file_get_contents($attachmentPath)),
-                ],
-            ];
+        $brevoAtts = [];
+        foreach ($attachmentPaths as $path) {
+            if ($path !== '' && file_exists($path)) {
+                $brevoAtts[] = [
+                    'name'    => basename($path),
+                    'content' => base64_encode(file_get_contents($path)),
+                ];
+            }
+        }
+        if ($brevoAtts) {
+            $payload['attachment'] = $brevoAtts;
         }
 
         $res = self::request('POST', '/smtp/email', $payload);

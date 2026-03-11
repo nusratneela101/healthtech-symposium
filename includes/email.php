@@ -38,12 +38,26 @@ class EmailService {
         }
         $mail = new PHPMailer\PHPMailer\PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host       = self::getSmtpSetting('smtp_host',      SMTP_HOST);
+
+        $provider = self::getActiveProvider(); // e.g. 'cpanel', 'ms365', 'business', 'gmail', 'brevo'
+
+        // Map provider name to DB key prefix
+        $prefixMap = [
+            'cpanel'       => 'cpanel_',
+            'business'     => 'business_',
+            'microsoft365' => 'ms365_',
+            'gmail'        => 'gmail_',
+            'brevo'        => 'brevo_',
+        ];
+        $prefix = $prefixMap[$provider] ?? '';
+
+        // Try provider-specific keys first, fall back to generic smtp_* keys, then .env constants
+        $mail->Host       = self::getSmtpSetting($prefix.'smtp_host',   self::getSmtpSetting('smtp_host',   SMTP_HOST));
+        $mail->Username   = self::getSmtpSetting($prefix.'smtp_user',   self::getSmtpSetting('smtp_user',   SMTP_USER));
+        $mail->Password   = self::getSmtpSetting($prefix.'smtp_pass',   self::getSmtpSetting('smtp_pass',   SMTP_PASS));
+        $mail->SMTPSecure = self::getSmtpSetting($prefix.'smtp_secure', self::getSmtpSetting('smtp_secure', SMTP_SECURE));
+        $mail->Port       = (int) self::getSmtpSetting($prefix.'smtp_port', self::getSmtpSetting('smtp_port', (string) SMTP_PORT));
         $mail->SMTPAuth   = true;
-        $mail->Username   = self::getSmtpSetting('smtp_user',      SMTP_USER);
-        $mail->Password   = self::getSmtpSetting('smtp_pass',      SMTP_PASS);
-        $mail->SMTPSecure = self::getSmtpSetting('smtp_secure',    SMTP_SECURE);
-        $mail->Port       = (int) self::getSmtpSetting('smtp_port', (string) SMTP_PORT);
         $mail->CharSet    = 'UTF-8';
         $mail->SMTPOptions = [
             'ssl' => [
@@ -53,8 +67,8 @@ class EmailService {
             ],
         ];
         $mail->setFrom(
-            self::getSmtpSetting('smtp_from_email', SMTP_FROM_EMAIL),
-            self::getSmtpSetting('smtp_from_name',  SMTP_FROM_NAME)
+            self::getSmtpSetting($prefix.'smtp_from_email', self::getSmtpSetting('smtp_from_email', SMTP_FROM_EMAIL)),
+            self::getSmtpSetting($prefix.'smtp_from_name',  self::getSmtpSetting('smtp_from_name',  SMTP_FROM_NAME))
         );
         return $mail;
     }

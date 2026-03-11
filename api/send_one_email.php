@@ -3,6 +3,13 @@ require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/rate_limiter.php';
+
+$automationMode = getSetting('automation_mode', 'cron');
+if ($automationMode !== 'cron') {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'error' => 'Cron mode is disabled. automation_mode = ' . $automationMode]);
+    exit;
+}
 require_once __DIR__ . '/check_sending_limits.php';
 
 header('Content-Type: application/json');

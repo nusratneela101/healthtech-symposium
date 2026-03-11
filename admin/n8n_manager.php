@@ -23,9 +23,21 @@ $n8nUrlOk    = getSetting('n8n_url') !== '';
 $n8nKeyOk    = getSetting('n8n_api_key') !== '';
 $apolloKeyOk = getSetting('apollo_api_key') !== '';
 $brevoKeyOk  = getSetting('brevo_api_key') !== '';
+$automationMode = getSetting('automation_mode', 'cron');
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">🤖 n8n Manager</h2>
+
+<?php if($automationMode !== 'n8n'): ?>
+<div style="background:rgba(245,158,11,0.1);border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#fbbf24">
+    ⚠️ <strong>Cron Job Mode is active.</strong> n8n workflows are currently inactive.
+    <a href="<?php echo APP_URL; ?>/admin/cron_monitor.php" style="color:#f59e0b;text-decoration:underline">Switch to n8n mode →</a>
+</div>
+<?php else: ?>
+<div style="background:rgba(99,102,241,0.1);border:1px solid #6366f1;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#a5b4fc">
+    ✅ <strong>n8n Mode is active.</strong> Workflows below are handling all automation.
+</div>
+<?php endif; ?>
 
 <div id="n8n-tabs" style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
     <?php

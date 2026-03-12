@@ -155,7 +155,7 @@ function statusDot(string $status): string {
     $cronCommands = [
         'campaign_sender' => ['label'=>'📧 Campaign Sender (every 5 min)','schedule'=>'*/5 * * * *','command'=>"curl -s \"{$baseUrl}/api/run_campaign_cron.php?api_key={$apiKey}\""]
         ,'inbox_poller'    => ['label'=>'📥 Inbox Poller (every 10 min)','schedule'=>'*/10 * * * *','command'=>"curl -s \"{$baseUrl}/api/poll_inbox.php?api_key={$apiKey}\""]
-        ,'lead_collector'  => ['label'=>'👥 Lead Collector (daily 8 AM)','schedule'=>'0 8 * * *','command'=>"curl -s \"{$baseUrl}/api/collect_leads.php?api_key={$apiKey}\""]
+        ,'lead_collector'  => ['label'=>'👥 Lead Collector (daily 8 AM)','schedule'=>'0 8 * * *','command'=>"curl -s \"{$baseUrl}/api/run_lead_collector_cron.php?api_key={$apiKey}\""]
         ,'followup_sender' => ['label'=>'🔁 Follow-up Sender (daily 10 AM)','schedule'=>'0 10 * * *','command'=>"curl -s \"{$baseUrl}/api/run_followup_cron.php?api_key={$apiKey}\""]
     ];
     ?>

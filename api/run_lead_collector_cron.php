@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 $startTime = microtime(true);
 
 // Auth check
-$apiKey = $_GET['api_key'] ?? '';
+$apiKey = $_GET['api_key'] ?? ''; 
 if ($apiKey !== N8N_API_KEY) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -69,7 +69,6 @@ $debugInfo = [
 
 // Loop through pages and fetch leads from Apollo
 for ($page = 1; $page <= $maxPages; $page++) {
-    // Do NOT include api_key in body — send via header only
     $requestBody = json_encode([
         'q_organization_industry_tag_ids' => [],
         'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
@@ -95,7 +94,6 @@ for ($page = 1; $page <= $maxPages; $page++) {
     $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    // Capture debug info from first page
     if ($page === 1) {
         $debugInfo['apollo_http_code']        = $httpCode;
         $debugInfo['apollo_response_preview'] = substr((string)$response, 0, 500);
@@ -117,7 +115,7 @@ for ($page = 1; $page <= $maxPages; $page++) {
     }
 
     if (empty($people)) {
-        break; // No more results
+        break;
     }
 
     $totalFetched += count($people);
@@ -127,18 +125,15 @@ for ($page = 1; $page <= $maxPages; $page++) {
         $fullName    = trim($person['name'] ?? trim(($person['first_name'] ?? '') . ' ' . ($person['last_name'] ?? '')));
         $linkedinUrl = trim($person['linkedin_url'] ?? '');
 
-        // Skip only if truly useless — no name and no linkedin
         if (empty($fullName) && empty($linkedinUrl)) {
             $skipped++;
             continue;
         }
 
-        // Use placeholder email if none provided (Apollo free plan hides emails)
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $email = 'noemail_' . uniqid() . '@noemail.placeholder';
         }
 
-        // Check for duplicate (skip placeholder email duplicate check)
         if (strpos($email, '@noemail.placeholder') === false) {
             $existing = Database::fetchOne("SELECT id FROM leads WHERE email=?", [$email]);
             if ($existing) {
@@ -183,13 +178,11 @@ for ($page = 1; $page <= $maxPages; $page++) {
     }
 }
 
-// Update collection record with final counts
 Database::query(
     "UPDATE lead_collections SET total_fetched=?, total_saved=?, total_skipped=?, total_duplicates=?, status='completed', completed_at=NOW() WHERE id=?",
     [$totalFetched, $saved, $skipped, $duplicates, $collectionId]
 );
 
-// Log result to cron_log table
 $durationMs = (int)round((microtime(true) - $startTime) * 1000);
 $logStatus  = $apiError ? 'error' : 'ok';
 $message    = "Fetched: {$totalFetched}, Saved: {$saved}, Duplicates: {$duplicates}, Skipped: {$skipped}";

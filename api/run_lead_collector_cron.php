@@ -24,7 +24,7 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);

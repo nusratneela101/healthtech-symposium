@@ -21,10 +21,10 @@ $apolloApiKey = getSetting('apollo_api_key', defined('APOLLO_API_KEY') ? APOLLO_
 $location     = getSetting('apollo_search_location', 'Canada');
 $industry     = getSetting('apollo_search_industry', 'Health Technology');
 $titlesRaw    = getSetting('apollo_search_titles', '');
-$perPage      = max(1, (int)getSetting('apollo_per_page', '100'));
+$perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);
@@ -56,18 +56,29 @@ $duplicates   = 0;
 $totalFetched = 0;
 $apiError     = null;
 
+$debugInfo = [
+    'apollo_key_prefix'       => substr($apolloApiKey, 0, 6),
+    'titles_used'             => !empty($titles) ? $titles : ['CEO'],
+    'location_used'           => $location,
+    'per_page_used'           => $perPage,
+    'apollo_http_code'        => null,
+    'apollo_people_count'     => null,
+    'apollo_response_preview' => null,
+    'api_error'               => null,
+];
+
 // Loop through pages and fetch leads from Apollo
 for ($page = 1; $page <= $maxPages; $page++) {
+    // Do NOT include api_key in body — send via header only
     $requestBody = json_encode([
-        'api_key'                          => $apolloApiKey,
-        'q_organization_industry_tag_ids'  => [],
-        'person_titles'                    => !empty($titles) ? $titles : ['CEO'],
-        'person_locations'                 => [$location],
-        'page'                             => $page,
-        'per_page'                         => $perPage,
+        'q_organization_industry_tag_ids' => [],
+        'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
+        'person_locations'                => [$location],
+        'page'                            => $page,
+        'per_page'                        => $perPage,
     ]);
 
-    $ch = curl_init('https://api.apollo.io/v1/mixed_people/search');
+    $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/search');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
@@ -84,15 +95,26 @@ for ($page = 1; $page <= $maxPages; $page++) {
     $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
+    // Capture debug info from first page
+    if ($page === 1) {
+        $debugInfo['apollo_http_code']        = $httpCode;
+        $debugInfo['apollo_response_preview'] = substr((string)$response, 0, 500);
+    }
+
     if ($response === false || $httpCode !== 200) {
         $apiError = $response === false
             ? 'cURL error on page ' . $page
-            : 'Apollo API returned HTTP ' . $httpCode . ' on page ' . $page;
+            : 'Apollo API returned HTTP ' . $httpCode . ' on page ' . $page . ' | Response: ' . substr((string)$response, 0, 300);
+        $debugInfo['api_error'] = $apiError;
         break;
     }
 
     $data   = json_decode($response, true);
     $people = $data['people'] ?? [];
+
+    if ($page === 1) {
+        $debugInfo['apollo_people_count'] = count($people);
+    }
 
     if (empty($people)) {
         break; // No more results
@@ -101,21 +123,32 @@ for ($page = 1; $page <= $maxPages; $page++) {
     $totalFetched += count($people);
 
     foreach ($people as $person) {
-        $email = strtolower(trim($person['email'] ?? ''));
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $email       = strtolower(trim($person['email'] ?? ''));
+        $fullName    = trim($person['name'] ?? trim(($person['first_name'] ?? '') . ' ' . ($person['last_name'] ?? '')));
+        $linkedinUrl = trim($person['linkedin_url'] ?? '');
+
+        // Skip only if truly useless — no name and no linkedin
+        if (empty($fullName) && empty($linkedinUrl)) {
             $skipped++;
             continue;
         }
 
-        // Check for duplicate
-        $existing = Database::fetchOne("SELECT id FROM leads WHERE email=?", [$email]);
-        if ($existing) {
-            $duplicates++;
-            Database::query(
-                "INSERT INTO lead_collection_items (collection_id, lead_id, action) VALUES(?,?,'duplicate')",
-                [$collectionId, (int)$existing['id']]
-            );
-            continue;
+        // Use placeholder email if none provided (Apollo free plan hides emails)
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $email = 'noemail_' . uniqid() . '@noemail.placeholder';
+        }
+
+        // Check for duplicate (skip placeholder email duplicate check)
+        if (strpos($email, '@noemail.placeholder') === false) {
+            $existing = Database::fetchOne("SELECT id FROM leads WHERE email=?", [$email]);
+            if ($existing) {
+                $duplicates++;
+                Database::query(
+                    "INSERT INTO lead_collection_items (collection_id, lead_id, action) VALUES(?,?,'duplicate')",
+                    [$collectionId, (int)$existing['id']]
+                );
+                continue;
+            }
         }
 
         $fn          = trim($person['first_name'] ?? '');
@@ -129,12 +162,12 @@ for ($page = 1; $page <= $maxPages; $page++) {
                 "INSERT INTO leads (first_name,last_name,full_name,email,company,job_title,role,segment,country,province,city,source,linkedin_url)
                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 [
-                    $fn, $ln, trim($person['name'] ?? "$fn $ln"), $email,
+                    $fn, $ln, $fullName ?: "$fn $ln", $email,
                     $orgName, trim($person['title'] ?? ''),
                     trim($person['title'] ?? ''), $segment,
                     trim($person['country'] ?? 'Canada'), trim($person['state'] ?? ''),
                     trim($person['city'] ?? ''), 'Apollo Cron',
-                    trim($person['linkedin_url'] ?? ''),
+                    $linkedinUrl,
                 ]
             );
             $leadId = (int)Database::lastInsertId();
@@ -171,7 +204,7 @@ try {
                                  duration_ms=VALUES(duration_ms), last_run=NOW()",
         ['lead_collector', $logStatus, $message, $durationMs]
     );
-} catch (Exception $e) { /* ignore — table may not exist yet */ }
+} catch (Exception $e) { /* ignore */ }
 
 echo json_encode([
     'success'       => true,
@@ -180,4 +213,5 @@ echo json_encode([
     'skipped'       => $skipped,
     'duplicates'    => $duplicates,
     'total_fetched' => $totalFetched,
+    'debug'         => $debugInfo,
 ]);

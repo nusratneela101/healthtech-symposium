@@ -98,12 +98,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
       <div style="background:#CC0000;color:white;font-style:italic;font-size:12px;font-weight:600;padding:4px 12px;border-radius:3px;text-align:center;letter-spacing:0.5px;margin-top:4px">Igniting the Future of Finance</div>
     </div>
     <h1>Welcome to the Future of <strong>Fintech</strong></h1>
-    <p>Canada Fintech Symposium 2026</p>
-    <div class="event-badge">📅 April 21–22, 2026 — Toronto, Canada</div>
+    <p>Canada Fintech Symposium</p>
     <div class="stats">
-        <div class="stat"><div class="stat-val" id="c-leads">—</div><div class="stat-lbl">Total Leads</div></div>
-        <div class="stat"><div class="stat-val" id="c-sent">—</div><div class="stat-lbl">Emails Sent</div></div>
-        <div class="stat"><div class="stat-val" id="c-resp">—</div><div class="stat-lbl">Responses</div></div>
+
     </div>
     <div class="trust">
         <div class="trust-item">🔒 Secure Platform</div>
@@ -133,7 +130,6 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--navy);color:var(--
                     <button type="button" class="pw-toggle" onclick="togglePw()">👁️</button>
                 </div>
             </div>
-            <button type="button" class="quick-fill" onclick="quickFill()">⚡ Quick Fill (Demo)</button>
             <button type="submit" class="btn-login" id="loginBtn">
                 <span id="btnText">Sign In →</span>
                 <div class="spin" id="spinner"></div>

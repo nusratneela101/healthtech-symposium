@@ -8,6 +8,7 @@ date_default_timezone_set('America/Toronto');
 define('APP_NAME',        $_ENV['APP_NAME']        ?? 'Canada Fintech Symposium');
 define('APP_URL',         $_ENV['APP_URL']          ?? 'https://fintech.softandpix.com');
 define('APP_VERSION',     $_ENV['APP_VERSION']      ?? '2.0.0');
+define('PUBLIC_URL',      $_ENV['PUBLIC_URL']        ?? APP_URL);
 
 define('SMTP_HOST',       $_ENV['SMTP_HOST']        ?? 'smtp-relay.brevo.com');
 define('SMTP_PORT',       (int)($_ENV['SMTP_PORT']  ?? 587));

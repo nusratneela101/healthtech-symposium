@@ -106,7 +106,7 @@ if ($campaign['status'] === 'draft') {
 }
 
 // Personalize template (no escaping — lead data is used inside HTML template)
-$unsubLink     = APP_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
+$unsubLink     = PUBLIC_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
 $signatureHtml = $tpl['signature_html'] ?? '';
 $body = str_replace(
     ['{{first_name}}','{{last_name}}','{{full_name}}','{{role}}','{{company}}','{{city}}','{{province}}','{{email}}','{{unsubscribe_link}}','{{signature}}'],

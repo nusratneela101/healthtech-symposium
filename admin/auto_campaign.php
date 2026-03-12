@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
         if ($seg)  { $where .= ' AND segment=?';  $params[] = $seg; }
         if ($role) { $where .= ' AND role LIKE ?'; $params[] = "%$role%"; }
         if ($prov) { $where .= ' AND province=?'; $params[] = $prov; }
-        $where .= " AND status NOT IN ('unsubscribed','bounced')";
+        $where .= " AND status NOT IN ('unsubscribed','bounced','emailed')";
         $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 
         Database::query(
@@ -60,6 +60,13 @@ try {
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">🚀 Auto Campaign</h2>
+
+<div style="margin-bottom:16px">
+    <button type="button" onclick="resetEmailedLeads()" style="background:#f59e0b;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        🔄 Reset Emailed Leads
+    </button>
+    <span style="font-size:12px;color:#8a9ab5;margin-left:10px">Reset all <em>emailed</em> leads back to <em>new</em> so they can be targeted in the next campaign.</span>
+</div>
 
 <div class="grid-2">
     <div class="gc">
@@ -159,6 +166,21 @@ let campaignId = null;
 let campaignKey = null;
 let sentCount = 0;
 let totalCount = 0;
+
+async function resetEmailedLeads() {
+    if (!confirm('This will reset all "emailed" leads back to "new" so they can be targeted again. Continue?')) return;
+    const res = await fetch('<?php echo APP_URL; ?>/api/reset_emailed_leads.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({api_key: '<?php echo N8N_API_KEY; ?>'})
+    });
+    const json = await res.json();
+    if (json.success) {
+        alert(`✅ Reset complete! ${json.reset_count} lead(s) reset to "new".`);
+    } else {
+        alert('Error: ' + (json.error || 'Could not reset leads'));
+    }
+}
 
 function log(msg, cls='') {
     const t = document.getElementById('logTerminal');

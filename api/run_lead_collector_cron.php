@@ -24,7 +24,7 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);
@@ -69,7 +69,9 @@ $debugInfo = [
 
 // Loop through pages and fetch leads from Apollo
 for ($page = 1; $page <= $maxPages; $page++) {
+    // Free plan: api_key must go in the JSON body; endpoint has no /api/ prefix
     $requestBody = json_encode([
+        'api_key'                         => $apolloApiKey,
         'q_organization_industry_tag_ids' => [],
         'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
         'person_locations'                => [$location],
@@ -77,7 +79,8 @@ for ($page = 1; $page <= $maxPages; $page++) {
         'per_page'                        => $perPage,
     ]);
 
-    $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/search');
+    // Free plan endpoint: https://api.apollo.io/v1/  (NOT /api/v1/)
+    $ch = curl_init('https://api.apollo.io/v1/mixed_people/search');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST           => true,
@@ -85,7 +88,6 @@ for ($page = 1; $page <= $maxPages; $page++) {
         CURLOPT_HTTPHEADER     => [
             'Content-Type: application/json',
             'Cache-Control: no-cache',
-            'x-api-key: ' . $apolloApiKey,
         ],
         CURLOPT_TIMEOUT        => 30,
     ]);

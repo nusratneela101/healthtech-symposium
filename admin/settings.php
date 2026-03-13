@@ -56,6 +56,7 @@ function s(string $key, string $fallback = ''): string {
         'api_keys'      => '🔑 API Keys',
         'n8n'           => '🤖 n8n',
         'apollo'        => '🔍 Apollo',
+        'enrichment'    => '📧 Enrichment',
         'brevo'         => '📧 Brevo',
         'email_defaults'=> '⚙️ Email Defaults',
         'sending_limits'=> '📊 Sending Limits',
@@ -598,6 +599,109 @@ function s(string $key, string $fallback = ''): string {
                 These settings are read by n8n's lead_collector workflow via<br>
                 <code style="color:#60a5fa">GET <?php echo APP_URL; ?>/api/get_apollo_config.php?api_key=YOUR_KEY</code>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── Email Enrichment ─────────────────────────────────────────── -->
+<div class="tab-panel" id="tab-enrichment" style="display:none">
+    <div class="gc">
+        <div class="gc-title">📧 Email Enrichment Services</div>
+        <div class="gc-sub">Configure email enrichment services. Active services are tried in order: Apollo → Hunter.io → Anymailfinder. First one to return a valid email wins.</div>
+
+        <!-- Apollo Enrichment -->
+        <div style="border:1px solid #1e3a5f;border-radius:10px;padding:20px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                    <div style="font-size:15px;font-weight:600;color:#e2e8f0">🔍 Apollo Professional</div>
+                    <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Uses existing Apollo API key. Requires Professional plan ($99/mo) for email reveal.</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <label style="font-size:13px;color:#8a9ab5">Status:</label>
+                    <select class="fi" id="enrichment_apollo_active" style="width:120px">
+                        <option value="0" <?php echo (($settingsRows['enrichment_apollo_active'] ?? '0') === '0') ? 'selected' : ''; ?>>⏸ Inactive</option>
+                        <option value="1" <?php echo (($settingsRows['enrichment_apollo_active'] ?? '0') === '1') ? 'selected' : ''; ?>>✅ Active</option>
+                    </select>
+                </div>
+            </div>
+            <div style="font-size:12px;color:#8a9ab5;padding:8px 12px;background:#0a1628;border-radius:6px">
+                ℹ️ Apollo API key is configured in the <button type="button" onclick="showTab('apollo')" style="background:none;border:none;color:#0d6efd;cursor:pointer;font-size:12px;padding:0">🔍 Apollo tab</button>. No separate key needed here.
+            </div>
+            <div style="margin-top:12px;display:flex;gap:10px">
+                <button class="btn-launch" onclick="saveEnrichmentSettings()">💾 Save</button>
+                <button class="btn-sec" onclick="testEnrichment('apollo','enrich-apollo-result')">🧪 Test Apollo Enrichment</button>
+            </div>
+            <div id="enrich-apollo-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+
+        <!-- Hunter.io -->
+        <div style="border:1px solid #1e3a5f;border-radius:10px;padding:20px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                    <div style="font-size:15px;font-weight:600;color:#e2e8f0">🎯 Hunter.io</div>
+                    <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Free: 25 emails/mo · Starter: 500/mo ($49) · Growth: 5,000/mo ($99)</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <label style="font-size:13px;color:#8a9ab5">Status:</label>
+                    <select class="fi" id="enrichment_hunter_active" style="width:120px">
+                        <option value="0" <?php echo (($settingsRows['enrichment_hunter_active'] ?? '0') === '0') ? 'selected' : ''; ?>>⏸ Inactive</option>
+                        <option value="1" <?php echo (($settingsRows['enrichment_hunter_active'] ?? '0') === '1') ? 'selected' : ''; ?>>✅ Active</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sf-row" style="margin-bottom:12px">
+                <label>Hunter.io API Key</label>
+                <div style="position:relative">
+                    <input class="fi" id="hunter_api_key" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                    <button type="button" onclick="togglePw('hunter_api_key',this)" class="pw-toggle">Show</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px">
+                <button class="btn-launch" onclick="saveEnrichmentSettings()">💾 Save</button>
+                <button class="btn-sec" onclick="testEnrichment('hunter','enrich-hunter-result')">🧪 Test Hunter.io</button>
+                <a href="https://hunter.io" target="_blank" class="btn-sec" style="text-decoration:none">🔗 Get API Key (Free)</a>
+            </div>
+            <div id="enrich-hunter-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+
+        <!-- Anymailfinder -->
+        <div style="border:1px solid #1e3a5f;border-radius:10px;padding:20px;margin-bottom:20px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                    <div style="font-size:15px;font-weight:600;color:#e2e8f0">🔎 Anymailfinder</div>
+                    <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Free trial available · Starter: 1,000/mo ($49) · Growth: 5,000/mo ($99)</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <label style="font-size:13px;color:#8a9ab5">Status:</label>
+                    <select class="fi" id="enrichment_anymailfinder_active" style="width:120px">
+                        <option value="0" <?php echo (($settingsRows['enrichment_anymailfinder_active'] ?? '0') === '0') ? 'selected' : ''; ?>>⏸ Inactive</option>
+                        <option value="1" <?php echo (($settingsRows['enrichment_anymailfinder_active'] ?? '0') === '1') ? 'selected' : ''; ?>>✅ Active</option>
+                    </select>
+                </div>
+            </div>
+            <div class="sf-row" style="margin-bottom:12px">
+                <label>Anymailfinder API Key</label>
+                <div style="position:relative">
+                    <input class="fi" id="anymailfinder_api_key" type="password" value="" placeholder="Leave blank to keep current" style="width:100%;padding-right:80px">
+                    <button type="button" onclick="togglePw('anymailfinder_api_key',this)" class="pw-toggle">Show</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px">
+                <button class="btn-launch" onclick="saveEnrichmentSettings()">💾 Save</button>
+                <button class="btn-sec" onclick="testEnrichment('anymailfinder','enrich-anymailfinder-result')">🧪 Test Anymailfinder</button>
+                <a href="https://anymailfinder.com" target="_blank" class="btn-sec" style="text-decoration:none">🔗 Get API Key (Free Trial)</a>
+            </div>
+            <div id="enrich-anymailfinder-result" style="margin-top:8px;font-size:13px"></div>
+        </div>
+
+        <!-- Enrichment Order Info -->
+        <div style="padding:14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;font-size:13px;color:#8a9ab5">
+            <strong style="color:#e2e8f0">⚡ How Waterfall Enrichment Works:</strong><br><br>
+            For each lead collected from Apollo search:<br>
+            1. If <strong style="color:#60a5fa">Apollo Professional</strong> is Active → try Apollo /people/match (uses credits)<br>
+            2. If email not found and <strong style="color:#60a5fa">Hunter.io</strong> is Active → try Hunter.io domain search<br>
+            3. If email not found and <strong style="color:#60a5fa">Anymailfinder</strong> is Active → try Anymailfinder<br>
+            4. If no email found from any active service → <strong style="color:#ef4444">lead is skipped</strong> (not saved to database)
         </div>
     </div>
 </div>
@@ -1362,6 +1466,41 @@ function deleteWorkflow(filename) {
         else { showToast('❌ '+(d.error||'Delete failed'),'error'); }
     })
     .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+function saveEnrichmentSettings() {
+    var settings = {
+        enrichment_apollo_active:        document.getElementById('enrichment_apollo_active').value,
+        enrichment_hunter_active:        document.getElementById('enrichment_hunter_active').value,
+        enrichment_anymailfinder_active: document.getElementById('enrichment_anymailfinder_active').value,
+        hunter_api_key:                  document.getElementById('hunter_api_key').value,
+        anymailfinder_api_key:           document.getElementById('anymailfinder_api_key').value,
+    };
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:'enrichment', settings: settings})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){ showToast('✅ Enrichment settings saved','success'); }
+        else { showToast('❌ '+(d.error||'Save failed'),'error'); }
+    })
+    .catch(function(e){ showToast('❌ '+e.message,'error'); });
+}
+
+function testEnrichment(service, resultId) {
+    var res = document.getElementById(resultId);
+    res.innerHTML = '<span style="color:#8a9ab5">Testing…</span>';
+    fetch('<?php echo APP_URL; ?>/api/test_connection.php?service=enrichment_'+encodeURIComponent(service))
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if(d.success){
+            res.innerHTML = '<span style="color:#10b981">✅ '+d.message+'</span>';
+        } else {
+            res.innerHTML = '<span style="color:#ef4444">❌ '+d.error+'</span>';
+        }
+    })
+    .catch(function(e){ res.innerHTML='<span style="color:#ef4444">❌ '+e.message+'</span>'; });
 }
 </script>
 

@@ -45,36 +45,43 @@ function mapSegment(string $ind): string {
 
 /**
  * Make an Apollo people search request.
- *
- * Apollo plan detection:
- *   - Paid plan: POST https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
- *   - Free plan: POST https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
- *
- * Both plans use the X-Api-Key header. The ONLY difference is the URL prefix.
- * Strategy: try paid endpoint first; if 403 API_INACCESSIBLE returned, fall back to free URL.
+ * Tries paid plan first (X-Api-Key header, /api/v1/ URL).
+ * If 403 API_INACCESSIBLE, retries as free plan: api_key in POST body, /v1/ URL.
  */
 function apolloRequest(string $apolloApiKey, array $searchParams, ?string $forcePlanMode = null): array {
     $planModesToTry = $forcePlanMode ? [$forcePlanMode] : ['paid', 'free'];
 
-    $response = false;
-    $httpCode  = 0;
-    $usedMode  = 'free';
+    $lastResponse = false;
+    $lastHttpCode = 0;
+    $usedPlanMode = 'paid';
 
-    foreach ($planModesToTry as $mode) {
-        $url = $mode === 'paid'
-            ? 'https://api.apollo.io/api/v1/mixed_people/search'
-            : 'https://api.apollo.io/v1/mixed_people/search';
+    foreach ($planModesToTry as $planMode) {
+        $usedPlanMode = $planMode;
+
+        if ($planMode === 'paid') {
+            $url  = 'https://api.apollo.io/api/v1/mixed_people/search';
+            $body = json_encode($searchParams);
+            $headers = [
+                'Content-Type: application/json',
+                'Cache-Control: no-cache',
+                'X-Api-Key: ' . $apolloApiKey,
+            ];
+        } else {
+            // Free plan: api_key must be in the POST body
+            $url  = 'https://api.apollo.io/v1/mixed_people/search';
+            $body = json_encode(array_merge($searchParams, ['api_key' => $apolloApiKey]));
+            $headers = [
+                'Content-Type: application/json',
+                'Cache-Control: no-cache',
+            ];
+        }
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($searchParams),
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Cache-Control: no-cache',
-                'X-Api-Key: ' . $apolloApiKey,
-            ],
+            CURLOPT_POSTFIELDS     => $body,
+            CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_TIMEOUT        => 30,
         ]);
 
@@ -82,17 +89,26 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        $usedMode = $mode;
+        $lastResponse = $response;
+        $lastHttpCode = $httpCode;
 
-        // If paid plan returns 403 API_INACCESSIBLE, fall back to free plan URL
-        if ($mode === 'paid' && $httpCode === 403 && strpos((string)$response, 'API_INACCESSIBLE') !== false) {
-            continue;
+        // If paid plan returns 403 API_INACCESSIBLE, try free plan
+        if ($planMode === 'paid' && $httpCode === 403 && is_string($response)) {
+            $decoded = json_decode($response, true);
+            $errCode = $decoded['error_code'] ?? ($decoded['errorCode'] ?? '');
+            if (stripos($errCode, 'API_INACCESSIBLE') !== false || stripos((string)$response, 'API_INACCESSIBLE') !== false) {
+                continue; // try free plan
+            }
         }
 
-        break;
+        break; // success or non-recoverable error
     }
 
-    return ['response' => $response, 'httpCode' => $httpCode, 'planMode' => $usedMode];
+    return [
+        'response' => $lastResponse,
+        'httpCode' => $lastHttpCode,
+        'planMode' => $usedPlanMode,
+    ];
 }
 
 // Create collection record

@@ -124,6 +124,8 @@ $searchParams = [
     'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
     'person_locations'                => [$location],
     'per_page'                        => $perPage,
+    'reveal_personal_emails'          => true,
+    'reveal_phone_number'             => false,
 ];
 
 $debugInfo = [

@@ -84,6 +84,7 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
 
         $usedMode = $mode;
 
+        // If paid plan returns 403 API_INACCESSIBLE, fall back to free plan URL
         if ($mode === 'paid' && $httpCode === 403 && strpos((string)$response, 'API_INACCESSIBLE') !== false) {
             continue;
         }

@@ -49,11 +49,17 @@ function mapSegment(string $ind): string {
  * Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
  * Putting api_key in the POST body causes HTTP 422 INVALID_API_KEY_LOCATION error.
  *
- * URL : https://api.apollo.io/api/v1/mixed_people/api_search  (X-Api-Key header)
+ * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
+ * Free plan URL : https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
  *
- * The key goes in the X-Api-Key header ONLY — never in the POST body.
+ * Strategy: try paid URL first; if 403 API_INACCESSIBLE returned, fall back to free URL.
+ * In BOTH cases the key goes in the X-Api-Key header ONLY — never in the POST body.
  *
- * reveal_personal_emails=true is included so Apollo returns real personal emails.
+ * NOTE: reveal_personal_emails is intentionally NOT included here.
+ * Apollo Basic plan does not support email reveal via search and will
+ * silently consume Enrichment credits without returning emails.
+ * Email enrichment is handled separately via Hunter.io / Anymailfinder
+ * configured in Settings > Enrichment tab.
  */
 function apolloRequest(string $apolloApiKey, array $searchParams, ?string $forcePlanMode = null): array {
     $url = 'https://api.apollo.io/api/v1/mixed_people/api_search';
@@ -151,7 +157,10 @@ $searchParams = [
     'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
     'person_locations'                => [$location],
     'per_page'                        => $perPage,
-    'reveal_personal_emails'          => true,
+    // reveal_personal_emails removed — Apollo Basic plan does not support
+    // email reveal via search. Using this flag wastes Enrichment credits
+    // without returning emails. Use enrichment services (Hunter.io /
+    // Anymailfinder) configured in Settings > Enrichment tab instead.
 ];
 
 $debugInfo = [
@@ -164,6 +173,7 @@ $debugInfo = [
     'apollo_people_count'     => null,
     'apollo_response_preview' => null,
     'api_error'               => null,
+    'reveal_emails_via_search' => false, // disabled to prevent credit waste
 ];
 
 for ($page = 1; $page <= $maxPages; $page++) {

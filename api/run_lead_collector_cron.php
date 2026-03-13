@@ -24,6 +24,13 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
+// Enrichment service settings
+$enrichmentApolloActive        = getSetting('enrichment_apollo_active', '0') === '1';
+$enrichmentHunterActive        = getSetting('enrichment_hunter_active', '0') === '1';
+$enrichmentAnymailfinderActive = getSetting('enrichment_anymailfinder_active', '0') === '1';
+$hunterApiKey                  = getSetting('hunter_api_key', '');
+$anymailfinderApiKey           = getSetting('anymailfinder_api_key', '');
+
 $titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
@@ -132,6 +139,104 @@ function apolloEnrichEmail(string $apolloApiKey, array $person): string {
     return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
 }
 
+/**
+ * Try to find email via Hunter.io domain search.
+ * Uses /v2/email-finder endpoint with first name, last name, and company domain.
+ *
+ * @param string $hunterApiKey Hunter.io API key
+ * @param array  $person       Apollo person array (expects 'first_name', 'last_name',
+ *                             'organization.website_url')
+ * @return string Validated email address, or empty string if not found
+ */
+function hunterEnrichEmail(string $hunterApiKey, array $person): string {
+    $firstName = trim($person['first_name'] ?? '');
+    $lastName  = trim($person['last_name'] ?? '');
+    $orgDomain = trim($person['organization']['website_url'] ?? '');
+
+    // Extract domain from URL
+    if ($orgDomain) {
+        $parsed = parse_url($orgDomain);
+        $host   = $parsed['host'] ?? '';
+        if ($host) {
+            $orgDomain = preg_replace('/^www\./', '', $host);
+        } else {
+            $orgDomain = '';
+        }
+    }
+
+    if (empty($firstName) || empty($orgDomain)) {
+        return '';
+    }
+
+    $url = 'https://api.hunter.io/v2/email-finder?'
+        . 'domain=' . urlencode($orgDomain)
+        . '&first_name=' . urlencode($firstName)
+        . '&last_name=' . urlencode($lastName)
+        . '&api_key=' . urlencode($hunterApiKey);
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>15]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) return '';
+    $data  = json_decode($response, true);
+    $email = strtolower(trim($data['data']['email'] ?? ''));
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
+}
+
+/**
+ * Try to find email via Anymailfinder.
+ *
+ * @param string $anymailfinderApiKey Anymailfinder API key
+ * @param array  $person              Apollo person array (expects 'first_name', 'last_name',
+ *                                    'organization.website_url')
+ * @return string Validated email address, or empty string if not found
+ */
+function anymailfinderEnrichEmail(string $anymailfinderApiKey, array $person): string {
+    $firstName = trim($person['first_name'] ?? '');
+    $lastName  = trim($person['last_name'] ?? '');
+    $orgDomain = trim($person['organization']['website_url'] ?? '');
+
+    if ($orgDomain) {
+        $parsed = parse_url($orgDomain);
+        $host   = $parsed['host'] ?? '';
+        if ($host) {
+            $orgDomain = preg_replace('/^www\./', '', $host);
+        } else {
+            $orgDomain = '';
+        }
+    }
+
+    if (empty($firstName) || empty($orgDomain)) return '';
+
+    $payload = [
+        'full_name'   => $firstName . ' ' . $lastName,
+        'domain_name' => $orgDomain,
+    ];
+
+    $ch = curl_init('https://api.anymailfinder.com/v5.0/search/person.json');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $anymailfinderApiKey,
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) return '';
+    $data  = json_decode($response, true);
+    $email = strtolower(trim($data['email'] ?? ''));
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
+}
+
 // Create collection record
 Database::query(
     "INSERT INTO lead_collections (source, total_fetched, status, search_params, started_at) VALUES(?,?,'running',?,NOW())",
@@ -164,6 +269,11 @@ $debugInfo = [
     'apollo_people_count'     => null,
     'apollo_response_preview' => null,
     'api_error'               => null,
+    'enrichment_services_active' => array_values(array_filter([
+        $enrichmentApolloActive        ? 'apollo'        : null,
+        $enrichmentHunterActive        ? 'hunter'        : null,
+        $enrichmentAnymailfinderActive ? 'anymailfinder' : null,
+    ])),
 ];
 
 for ($page = 1; $page <= $maxPages; $page++) {
@@ -216,10 +326,27 @@ for ($page = 1; $page <= $maxPages; $page++) {
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $email = apolloEnrichEmail($apolloApiKey, $person);
+            // Step 1: Apollo Professional /people/match
+            if ($enrichmentApolloActive) {
+                $email = apolloEnrichEmail($apolloApiKey, $person);
+            }
         }
 
-        // If still no valid email — skip this lead, do not save with placeholder
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            // Step 2: Hunter.io
+            if ($enrichmentHunterActive && !empty($hunterApiKey)) {
+                $email = hunterEnrichEmail($hunterApiKey, $person);
+            }
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            // Step 3: Anymailfinder
+            if ($enrichmentAnymailfinderActive && !empty($anymailfinderApiKey)) {
+                $email = anymailfinderEnrichEmail($anymailfinderApiKey, $person);
+            }
+        }
+
+        // If no valid email found from any active service — skip this lead
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $skipped++;
             continue;

@@ -68,6 +68,13 @@ $allowedKeys = [
         'warmup_start_volume','warmup_max_volume',
     ],
     'automation' => ['automation_mode'],
+    'enrichment' => [
+        'enrichment_apollo_active',
+        'enrichment_hunter_active',
+        'enrichment_anymailfinder_active',
+        'hunter_api_key',
+        'anymailfinder_api_key',
+    ],
     // Per-provider credential groups
     'smtp_cpanel'       => ['cpanel_smtp_host','cpanel_smtp_port','cpanel_smtp_secure','cpanel_smtp_user','cpanel_smtp_pass','cpanel_smtp_from_email','cpanel_smtp_from_name','cpanel_imap_host','cpanel_imap_user','cpanel_imap_pass'],
     'smtp_business'     => ['business_smtp_host','business_smtp_port','business_smtp_secure','business_smtp_user','business_smtp_pass','business_smtp_from_email','business_smtp_from_name'],
@@ -87,7 +94,8 @@ $saved = 0;
 $sensitiveKeys = ['smtp_pass','imap_pass','n8n_api_key','brevo_api_key',
                   'ms_oauth_client_id','ms_oauth_client_secret','apollo_api_key',
                   'cpanel_smtp_pass','business_smtp_pass','ms365_smtp_pass','gmail_smtp_pass','brevo_smtp_pass',
-                  'cpanel_imap_pass','ms365_imap_pass'];
+                  'cpanel_imap_pass','ms365_imap_pass',
+                  'hunter_api_key','anymailfinder_api_key'];
 try {
     foreach ($input['settings'] as $key => $value) {
         $key = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($key)));

@@ -195,6 +195,108 @@ switch ($service) {
         }
         break;
 
+    case 'enrichment_apollo':
+        $key = safeGet('apollo_api_key') ?: APOLLO_API_KEY;
+        if (!$key) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'Apollo API key not configured']);
+            exit;
+        }
+        $ch = curl_init('https://api.apollo.io/api/v1/people/match');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['reveal_personal_emails' => true, 'first_name' => 'Test', 'last_name' => 'User', 'organization_name' => 'TestCo']),
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Cache-Control: no-cache',
+                'X-Api-Key: ' . $key,
+            ],
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        $body  = curl_exec($ch);
+        $error = curl_error($ch);
+        $code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($error) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'CURL Error: '.$error]);
+            exit;
+        }
+        ob_clean();
+        if ($code === 200) {
+            echo json_encode(['success'=>true,'message'=>'Connected — Apollo People Match endpoint accessible']);
+        } else {
+            $data = json_decode($body, true) ?? [];
+            $err  = $data['message'] ?? ('HTTP '.$code.' — Connection failed');
+            echo json_encode(['success'=>false,'error'=>$err]);
+        }
+        break;
+
+    case 'enrichment_hunter':
+        $key = safeGet('hunter_api_key', '');
+        if (empty($key)) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'Hunter.io API key not configured']);
+            exit;
+        }
+        $ch = curl_init('https://api.hunter.io/v2/account?api_key=' . urlencode($key));
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_TIMEOUT=>10, CURLOPT_FOLLOWLOCATION=>true, CURLOPT_SSL_VERIFYPEER=>true]);
+        $body  = curl_exec($ch);
+        $error = curl_error($ch);
+        $code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($error) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'CURL Error: '.$error]);
+            exit;
+        }
+        $data = json_decode($body, true) ?? [];
+        ob_clean();
+        if ($code === 200 && isset($data['data']['email'])) {
+            $requests = $data['data']['requests']['searches']['available'] ?? 0;
+            echo json_encode(['success'=>true,'message'=>'Connected! Account: '.$data['data']['email'].'. Searches available: '.$requests]);
+        } else {
+            echo json_encode(['success'=>false,'error'=>'Invalid API key or connection failed (HTTP '.$code.')']);
+        }
+        break;
+
+    case 'enrichment_anymailfinder':
+        $key = safeGet('anymailfinder_api_key', '');
+        if (empty($key)) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'Anymailfinder API key not configured']);
+            exit;
+        }
+        $ch = curl_init('https://api.anymailfinder.com/v5.0/account.json');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HTTPHEADER     => ['Authorization: Bearer '.$key],
+        ]);
+        $body  = curl_exec($ch);
+        $error = curl_error($ch);
+        $code  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($error) {
+            ob_clean();
+            echo json_encode(['success'=>false,'error'=>'CURL Error: '.$error]);
+            exit;
+        }
+        $data = json_decode($body, true) ?? [];
+        ob_clean();
+        if ($code === 200) {
+            $remaining = $data['requests_remaining'] ?? 'N/A';
+            echo json_encode(['success'=>true,'message'=>'Connected! Requests remaining: '.$remaining]);
+        } else {
+            echo json_encode(['success'=>false,'error'=>'Invalid API key or connection failed (HTTP '.$code.')']);
+        }
+        break;
+
     default:
         ob_clean();
         http_response_code(400);

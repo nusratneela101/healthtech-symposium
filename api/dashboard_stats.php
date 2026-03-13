@@ -1,10 +1,19 @@
 <?php
+ob_start();
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
+ob_clean();
 header('Content-Type: application/json');
-Auth::check();
+
+// Check auth without redirect — return 401 JSON instead
+if (!Auth::isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
 
 try {
     $stats = [

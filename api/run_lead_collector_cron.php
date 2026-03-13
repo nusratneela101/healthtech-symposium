@@ -24,7 +24,7 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);
@@ -46,14 +46,16 @@ function mapSegment(string $ind): string {
 /**
  * Make an Apollo people search request.
  *
- * ROOT CAUSE FIX: Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
+ * Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
  * Putting api_key in the POST body causes HTTP 422 INVALID_API_KEY_LOCATION error.
  *
- * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/api_search  (X-Api-Key header)
- * Free plan URL : https://api.apollo.io/v1/mixed_people/api_search      (X-Api-Key header)
+ * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
+ * Free plan URL : https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
  *
  * Strategy: try paid URL first; if 403 API_INACCESSIBLE returned, fall back to free URL.
  * In BOTH cases the key goes in the X-Api-Key header ONLY — never in the POST body.
+ *
+ * reveal_personal_emails=true is included so Apollo returns real personal emails.
  */
 function apolloRequest(string $apolloApiKey, array $searchParams, ?string $forcePlanMode = null): array {
     $planModesToTry = $forcePlanMode ? [$forcePlanMode] : ['paid', 'free'];
@@ -67,8 +69,8 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
 
         // Only the URL differs between plans — key is ALWAYS in X-Api-Key header
         $url = ($planMode === 'paid')
-            ? 'https://api.apollo.io/api/v1/mixed_people/api_search'
-            : 'https://api.apollo.io/v1/mixed_people/api_search';
+            ? 'https://api.apollo.io/api/v1/mixed_people/search'
+            : 'https://api.apollo.io/v1/mixed_people/search';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -124,6 +126,7 @@ $searchParams = [
     'person_titles'                   => !empty($titles) ? $titles : ['CEO'],
     'person_locations'                => [$location],
     'per_page'                        => $perPage,
+    'reveal_personal_emails'          => true,
 ];
 
 $debugInfo = [

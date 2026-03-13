@@ -132,91 +132,91 @@ try {
 <div class="kpi-grid">
     <div class="kpi-card kc-blue">
         <div class="kpi-icon">👥</div>
-        <div class="kpi-val"><?php echo number_format($stats['total_leads']); ?></div>
+        <div class="kpi-val" id="kpi-total-leads"><?php echo number_format($stats['total_leads']); ?></div>
         <div class="kpi-lbl">Total Leads</div>
         <div class="kpi-trend t-up">↑ In Database</div>
     </div>
     <div class="kpi-card kc-green">
         <div class="kpi-icon">✉️</div>
-        <div class="kpi-val"><?php echo number_format($stats['emails_sent']); ?></div>
+        <div class="kpi-val" id="kpi-emails-sent"><?php echo number_format($stats['emails_sent']); ?></div>
         <div class="kpi-lbl">Emails Sent</div>
         <div class="kpi-trend t-up">↑ All Time</div>
     </div>
     <div class="kpi-card kc-yellow">
         <div class="kpi-icon">💬</div>
-        <div class="kpi-val"><?php echo number_format($stats['responded']); ?></div>
+        <div class="kpi-val" id="kpi-responded"><?php echo number_format($stats['responded']); ?></div>
         <div class="kpi-lbl">Responses</div>
         <div class="kpi-trend t-nt">→ Responded</div>
     </div>
     <div class="kpi-card kc-purple">
         <div class="kpi-icon">🎯</div>
-        <div class="kpi-val"><?php echo number_format($stats['converted']); ?></div>
+        <div class="kpi-val" id="kpi-converted"><?php echo number_format($stats['converted']); ?></div>
         <div class="kpi-lbl">Converted</div>
         <div class="kpi-trend t-up">↑ Registered</div>
     </div>
     <div class="kpi-card kc-cyan">
         <div class="kpi-icon">🆕</div>
-        <div class="kpi-val"><?php echo number_format($stats['new_leads']); ?></div>
+        <div class="kpi-val" id="kpi-new-leads"><?php echo number_format($stats['new_leads']); ?></div>
         <div class="kpi-lbl">New Leads</div>
         <div class="kpi-trend t-nt">→ Pending</div>
     </div>
     <div class="kpi-card kc-red">
         <div class="kpi-icon">📬</div>
-        <div class="kpi-val"><?php echo number_format($stats['unread_responses']); ?></div>
+        <div class="kpi-val" id="kpi-unread"><?php echo number_format($stats['unread_responses']); ?></div>
         <div class="kpi-lbl">Unread Responses</div>
         <div class="kpi-trend t-dn">↓ Needs Action</div>
     </div>
     <div class="kpi-card kc-blue">
         <div class="kpi-icon">🚀</div>
-        <div class="kpi-val"><?php echo number_format($stats['total_campaigns']); ?></div>
+        <div class="kpi-val" id="kpi-campaigns"><?php echo number_format($stats['total_campaigns']); ?></div>
         <div class="kpi-lbl">Campaigns</div>
         <div class="kpi-trend t-up">↑ Created</div>
     </div>
     <div class="kpi-card kc-yellow">
         <div class="kpi-icon">🔕</div>
-        <div class="kpi-val"><?php echo number_format($stats['unsubscribed']); ?></div>
+        <div class="kpi-val" id="kpi-unsubscribed"><?php echo number_format($stats['unsubscribed']); ?></div>
         <div class="kpi-lbl">Unsubscribed</div>
         <div class="kpi-trend t-dn">↓ Opted Out</div>
     </div>
     <div class="kpi-card kc-green">
         <div class="kpi-icon">📥</div>
-        <div class="kpi-val"><?php echo number_format($stats['delivered']); ?></div>
+        <div class="kpi-val" id="kpi-delivered"><?php echo number_format($stats['delivered']); ?></div>
         <div class="kpi-lbl">Delivered</div>
         <div class="kpi-trend t-up">↑ Confirmed</div>
     </div>
     <div class="kpi-card kc-red">
         <div class="kpi-icon">⛔</div>
-        <div class="kpi-val"><?php echo number_format($stats['bounced']); ?></div>
+        <div class="kpi-val" id="kpi-bounced"><?php echo number_format($stats['bounced']); ?></div>
         <div class="kpi-lbl">Bounced / Failed</div>
         <div class="kpi-trend t-dn">↓ Errors</div>
     </div>
     <div class="kpi-card kc-cyan">
         <div class="kpi-icon">📊</div>
-        <div class="kpi-val"><?php echo $openRateStr; ?></div>
+        <div class="kpi-val" id="kpi-open-rate"><?php echo $openRateStr; ?></div>
         <div class="kpi-lbl">Open Rate</div>
         <div class="kpi-trend t-nt"><?php echo $stats['opened'] ? '→ Tracked' : '→ No tracking data'; ?></div>
     </div>
     <div class="kpi-card kc-purple">
         <div class="kpi-icon">🔥</div>
-        <div class="kpi-val"><?php echo number_format($stats['hot_leads']); ?></div>
+        <div class="kpi-val" id="kpi-hot-leads"><?php echo number_format($stats['hot_leads']); ?></div>
         <div class="kpi-lbl">Hot Leads</div>
         <div class="kpi-trend t-up">↑ Interested</div>
     </div>
     <div class="kpi-card kc-blue">
         <div class="kpi-icon">🔁</div>
-        <div class="kpi-val"><?php echo number_format($stats['followups_sent']); ?></div>
+        <div class="kpi-val" id="kpi-followups"><?php echo number_format($stats['followups_sent']); ?></div>
         <div class="kpi-lbl">Follow-ups Sent</div>
         <div class="kpi-trend t-up">↑ Seq. 2</div>
     </div>
     <div class="kpi-card kc-green">
         <div class="kpi-icon">📅</div>
-        <div class="kpi-val"><?php echo number_format($stats['week_sends']); ?></div>
+        <div class="kpi-val" id="kpi-week"><?php echo number_format($stats['week_sends']); ?></div>
         <div class="kpi-lbl">This Week</div>
         <div class="kpi-trend t-up">↑ Sent</div>
     </div>
     <div class="kpi-card kc-yellow">
         <div class="kpi-icon">🗓️</div>
-        <div class="kpi-val"><?php echo number_format($stats['month_sends']); ?></div>
+        <div class="kpi-val" id="kpi-month"><?php echo number_format($stats['month_sends']); ?></div>
         <div class="kpi-lbl">This Month</div>
         <div class="kpi-trend t-up">↑ Sent</div>
     </div>
@@ -412,6 +412,62 @@ new ApexCharts(document.getElementById('campChart'), {
             </div>`;
         }).join('');
     } catch(e) {}
+})();
+
+// ── Live KPI Refresh ──────────────────────────────────────────────────────
+(function liveDashboardRefresh() {
+    const KPI_MAP = {
+        'total_leads':      'kpi-total-leads',
+        'emails_sent':      'kpi-emails-sent',
+        'responded':        'kpi-responded',
+        'converted':        'kpi-converted',
+        'new_leads':        'kpi-new-leads',
+        'unread_responses': 'kpi-unread',
+        'total_campaigns':  'kpi-campaigns',
+        'unsubscribed':     'kpi-unsubscribed',
+        'delivered':        'kpi-delivered',
+        'bounced':          'kpi-bounced',
+        'open_rate':        'kpi-open-rate',
+        'hot_leads':        'kpi-hot-leads',
+        'followups_sent':   'kpi-followups',
+        'week_sends':       'kpi-week',
+        'month_sends':      'kpi-month',
+    };
+
+    function formatNumber(v) {
+        if (typeof v === 'string') return v; // e.g. "12.3%" for open_rate
+        return v.toLocaleString();
+    }
+
+    async function refreshKPIs() {
+        try {
+            const res = await fetch(<?php echo json_encode(APP_URL); ?> + '/api/dashboard_stats.php', { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+            const stats = data.stats;
+            for (const [key, elemId] of Object.entries(KPI_MAP)) {
+                const el = document.getElementById(elemId);
+                if (el && stats[key] !== undefined) {
+                    const newVal = formatNumber(stats[key]);
+                    if (el.textContent !== newVal) {
+                        el.textContent = newVal;
+                        // Brief flash animation to indicate update
+                        el.style.transition = 'color 0.3s';
+                        el.style.color = '#10b981';
+                        setTimeout(() => { el.style.color = ''; }, 600);
+                    }
+                }
+            }
+        } catch (e) { /* silently ignore network errors */ }
+    }
+
+    // Initial call immediately, then every 30 seconds
+    refreshKPIs();
+    const refreshInterval = setInterval(function() {
+        if (!document.hidden) refreshKPIs();
+    }, 30000);
+    window.addEventListener('beforeunload', () => clearInterval(refreshInterval));
 })();
 </script>
 

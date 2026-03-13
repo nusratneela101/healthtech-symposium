@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 $startTime = microtime(true);
 
 // Auth check
-$apiKey = $_GET['api_key'] ?? '';
+$apiKey = $_GET['api_key'] ?? ''; 
 if ($apiKey !== N8N_API_KEY) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -186,7 +186,7 @@ Database::query(
 
 $durationMs = (int)round((microtime(true) - $startTime) * 1000);
 $logStatus  = $apiError ? 'error' : 'ok';
-$message    = "Fetched: {\$totalFetched}, Saved: {\$saved}, Duplicates: {\$duplicates}, Skipped: {\$skipped}";
+$message    = "Fetched: {$totalFetched}, Saved: {$saved}, Duplicates: {$duplicates}, Skipped: {$skipped}";
 if ($apiError) {
     $message .= ' | Error: ' . $apiError;
 }

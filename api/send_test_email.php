@@ -1,9 +1,15 @@
 <?php
+ob_start();
+
+// Bootstrap: set session name and start session BEFORE loading config
+require_once __DIR__ . '/../includes/session_bootstrap.php';
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/email.php';
 
+ob_clean();
 header('Content-Type: application/json');
 
 // Accept session auth (admin UI) or API key (n8n)

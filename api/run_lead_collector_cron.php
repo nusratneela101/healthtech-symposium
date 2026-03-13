@@ -24,7 +24,7 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);
@@ -49,62 +49,87 @@ function mapSegment(string $ind): string {
  * Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
  * Putting api_key in the POST body causes HTTP 422 INVALID_API_KEY_LOCATION error.
  *
- * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
- * Free plan URL : https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
+ * URL : https://api.apollo.io/api/v1/mixed_people/api_search  (X-Api-Key header)
  *
- * Strategy: try paid URL first; if 403 API_INACCESSIBLE returned, fall back to free URL.
- * In BOTH cases the key goes in the X-Api-Key header ONLY — never in the POST body.
+ * The key goes in the X-Api-Key header ONLY — never in the POST body.
  *
  * reveal_personal_emails=true is included so Apollo returns real personal emails.
  */
 function apolloRequest(string $apolloApiKey, array $searchParams, ?string $forcePlanMode = null): array {
-    $planModesToTry = $forcePlanMode ? [$forcePlanMode] : ['paid', 'free'];
+    $url = 'https://api.apollo.io/api/v1/mixed_people/api_search';
 
-    $lastResponse = false;
-    $lastHttpCode = 0;
-    $usedPlanMode = 'paid';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($searchParams),
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'Cache-Control: no-cache',
+            'X-Api-Key: ' . $apolloApiKey,
+        ],
+        CURLOPT_TIMEOUT        => 30,
+    ]);
 
-    foreach ($planModesToTry as $planMode) {
-        $usedPlanMode = $planMode;
-
-        // Only the URL differs between plans — key is ALWAYS in X-Api-Key header
-        $url = ($planMode === 'paid')
-            ? 'https://api.apollo.io/api/v1/mixed_people/search'
-            : 'https://api.apollo.io/v1/mixed_people/search';
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($searchParams),
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Cache-Control: no-cache',
-                'X-Api-Key: ' . $apolloApiKey,
-            ],
-            CURLOPT_TIMEOUT        => 30,
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        $lastResponse = $response;
-        $lastHttpCode = $httpCode;
-
-        // If paid plan returns 403 API_INACCESSIBLE, fall back to free plan URL
-        if ($planMode === 'paid' && $httpCode === 403 && strpos((string)$response, 'API_INACCESSIBLE') !== false) {
-            continue;
-        }
-
-        break;
-    }
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
     return [
-        'response' => $lastResponse,
-        'httpCode' => $lastHttpCode,
-        'planMode' => $usedPlanMode,
+        'response' => $response,
+        'httpCode' => $httpCode,
+        'planMode' => 'paid',
     ];
+}
+
+/**
+ * Enrich a single person via Apollo People Match endpoint to reveal their email.
+ * Uses POST /api/v1/people/match with linkedin_url or name+organization.
+ * Returns the enriched email string, or empty string if not found.
+ */
+function apolloEnrichEmail(string $apolloApiKey, array $person): string {
+    $linkedinUrl = trim($person['linkedin_url'] ?? '');
+    $firstName   = trim($person['first_name'] ?? '');
+    $lastName    = trim($person['last_name'] ?? '');
+    $orgName     = trim($person['organization']['name'] ?? '');
+
+    $payload = ['reveal_personal_emails' => true];
+
+    if ($linkedinUrl) {
+        $payload['linkedin_url'] = $linkedinUrl;
+    } elseif ($firstName && $orgName) {
+        $payload['first_name']        = $firstName;
+        $payload['last_name']         = $lastName;
+        $payload['organization_name'] = $orgName;
+    } else {
+        return '';
+    }
+
+    $ch = curl_init('https://api.apollo.io/api/v1/people/match');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'Cache-Control: no-cache',
+            'X-Api-Key: ' . $apolloApiKey,
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        return '';
+    }
+
+    $data  = json_decode($response, true);
+    $email = strtolower(trim(($data['person'] ?? [])['email'] ?? ''));
+
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
 }
 
 // Create collection record
@@ -191,19 +216,23 @@ for ($page = 1; $page <= $maxPages; $page++) {
         }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $email = 'noemail_' . uniqid() . '@noemail.placeholder';
+            $email = apolloEnrichEmail($apolloApiKey, $person);
         }
 
-        if (strpos($email, '@noemail.placeholder') === false) {
-            $existing = Database::fetchOne("SELECT id FROM leads WHERE email=?", [$email]);
-            if ($existing) {
-                $duplicates++;
-                Database::query(
-                    "INSERT INTO lead_collection_items (collection_id, lead_id, action) VALUES(?,?,'duplicate')",
-                    [$collectionId, (int)$existing['id']]
-                );
-                continue;
-            }
+        // If still no valid email — skip this lead, do not save with placeholder
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $skipped++;
+            continue;
+        }
+
+        $existing = Database::fetchOne("SELECT id FROM leads WHERE email=?", [$email]);
+        if ($existing) {
+            $duplicates++;
+            Database::query(
+                "INSERT INTO lead_collection_items (collection_id, lead_id, action) VALUES(?,?,'duplicate')",
+                [$collectionId, (int)$existing['id']]
+            );
+            continue;
         }
 
         $fn          = trim($person['first_name'] ?? '');

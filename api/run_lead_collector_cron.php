@@ -49,8 +49,8 @@ function mapSegment(string $ind): string {
  * ROOT CAUSE FIX: Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
  * Putting api_key in the POST body causes HTTP 422 INVALID_API_KEY_LOCATION error.
  *
- * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
- * Free plan URL : https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
+ * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/api_search  (X-Api-Key header)
+ * Free plan URL : https://api.apollo.io/v1/mixed_people/api_search      (X-Api-Key header)
  *
  * Strategy: try paid URL first; if 403 API_INACCESSIBLE returned, fall back to free URL.
  * In BOTH cases the key goes in the X-Api-Key header ONLY — never in the POST body.
@@ -67,8 +67,8 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
 
         // Only the URL differs between plans — key is ALWAYS in X-Api-Key header
         $url = ($planMode === 'paid')
-            ? 'https://api.apollo.io/api/v1/mixed_people/search'
-            : 'https://api.apollo.io/v1/mixed_people/search';
+            ? 'https://api.apollo.io/api/v1/mixed_people/api_search'
+            : 'https://api.apollo.io/v1/mixed_people/api_search';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [

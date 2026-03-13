@@ -9,7 +9,7 @@ header('Content-Type: application/json');
 $startTime = microtime(true);
 
 // Auth check
-$apiKey = $_GET['api_key'] ?? '';
+$apiKey = $_GET['api_key'] ?? ''; 
 if ($apiKey !== N8N_API_KEY) {
     http_response_code(401);
     echo json_encode(['error' => 'Unauthorized']);
@@ -24,7 +24,7 @@ $titlesRaw    = getSetting('apollo_search_titles', '');
 $perPage      = min(25, max(1, (int)getSetting('apollo_per_page', '25')));
 $maxPages     = max(1, (int)getSetting('apollo_max_pages', '5'));
 
-$titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
+titles = array_values(array_filter(array_map('trim', explode("\n", $titlesRaw))));
 
 if (empty($apolloApiKey)) {
     http_response_code(400);
@@ -45,8 +45,15 @@ function mapSegment(string $ind): string {
 
 /**
  * Make an Apollo people search request.
- * BOTH paid and free plans require X-Api-Key header.
- * Difference is only the URL: paid uses /api/v1/, free uses /v1/
+ *
+ * ROOT CAUSE FIX: Apollo ALWAYS requires the API key in the X-Api-Key HTTP header.
+ * Putting api_key in the POST body causes HTTP 422 INVALID_API_KEY_LOCATION error.
+ *
+ * Paid plan URL : https://api.apollo.io/api/v1/mixed_people/search  (X-Api-Key header)
+ * Free plan URL : https://api.apollo.io/v1/mixed_people/search      (X-Api-Key header)
+ *
+ * Strategy: try paid URL first; if 403 API_INACCESSIBLE returned, fall back to free URL.
+ * In BOTH cases the key goes in the X-Api-Key header ONLY — never in the POST body.
  */
 function apolloRequest(string $apolloApiKey, array $searchParams, ?string $forcePlanMode = null): array {
     $planModesToTry = $forcePlanMode ? [$forcePlanMode] : ['paid', 'free'];
@@ -58,7 +65,7 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
     foreach ($planModesToTry as $planMode) {
         $usedPlanMode = $planMode;
 
-        // Both plans use X-Api-Key header. Only the URL differs.
+        // Only the URL differs between plans — key is ALWAYS in X-Api-Key header
         $url = ($planMode === 'paid')
             ? 'https://api.apollo.io/api/v1/mixed_people/search'
             : 'https://api.apollo.io/v1/mixed_people/search';
@@ -67,11 +74,11 @@ function apolloRequest(string $apolloApiKey, array $searchParams, ?string $force
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($searchParams),  // NO api_key in body
+            CURLOPT_POSTFIELDS     => json_encode($searchParams),
             CURLOPT_HTTPHEADER     => [
                 'Content-Type: application/json',
                 'Cache-Control: no-cache',
-                'X-Api-Key: ' . $apolloApiKey,  // ALWAYS in header
+                'X-Api-Key: ' . $apolloApiKey,
             ],
             CURLOPT_TIMEOUT        => 30,
         ]);

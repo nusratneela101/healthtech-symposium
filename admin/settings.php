@@ -639,7 +639,6 @@ function s(string $key, string $fallback = ''): string {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <div>
                     <div style="font-size:15px;font-weight:600;color:#e2e8f0">🎯 Hunter.io</div>
-                    <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Free: 25 emails/mo · Starter: 500/mo ($49) · Growth: 5,000/mo ($99)</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px">
                     <label style="font-size:13px;color:#8a9ab5">Status:</label>
@@ -669,7 +668,6 @@ function s(string $key, string $fallback = ''): string {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
                 <div>
                     <div style="font-size:15px;font-weight:600;color:#e2e8f0">🔎 Anymailfinder</div>
-                    <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Free trial available · Starter: 1,000/mo ($49) · Growth: 5,000/mo ($99)</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px">
                     <label style="font-size:13px;color:#8a9ab5">Status:</label>

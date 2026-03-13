@@ -1,5 +1,12 @@
 <?php
+// Ensure output buffering is active before any output
 ob_start();
+
+// Bootstrap: set session name and start session BEFORE loading config
+// (config.php also calls session_start, but only if PHP_SESSION_NONE;
+//  we need to set the correct session name first so the browser cookie is read)
+require_once __DIR__ . '/../includes/session_bootstrap.php';
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/auth.php';

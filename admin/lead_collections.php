@@ -53,21 +53,25 @@ if (isset($_GET['export_history'])) {
     exit;
 }
 
-// Handle manual trigger
+// Handle manual trigger — calls Apollo API directly
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])) {
-    $ch = curl_init(APP_URL . '/api/collect_leads.php?api_key=' . urlencode(N8N_API_KEY) . '&manual=1');
+    $ch = curl_init(APP_URL . '/api/apollo_direct_collect.php');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 180);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['leads' => [], 'source' => 'Manual']));
+    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    // Pass session cookie so Auth::requireSuperAdmin() passes
+    curl_setopt($ch, CURLOPT_COOKIE, session_name() . '=' . session_id());
     $response = curl_exec($ch);
     curl_close($ch);
     $result = json_decode($response, true);
     if ($result && ($result['success'] ?? false)) {
-        flash('success', "Manual collection complete! Saved: {$result['saved']}, Skipped: {$result['skipped']}");
+        $msg = "Manual collection complete! Fetched: {$result['fetched']}, Saved: {$result['saved']}, Duplicates: {$result['duplicates']}";
+        if (!empty($result['message'])) $msg .= ' — ' . $result['message'];
+        flash('success', $msg);
     } else {
-        flash('error', 'Collection failed: ' . ($result['error'] ?? 'Unknown error'));
+        flash('error', 'Collection failed: ' . ($result['error'] ?? 'Unknown error. Check Apollo API key in Settings → Apollo.'));
     }
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;

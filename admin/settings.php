@@ -599,6 +599,15 @@ function s(string $key, string $fallback = ''): string {
                 These settings are read by n8n's lead_collector workflow via<br>
                 <code style="color:#60a5fa">GET <?php echo APP_URL; ?>/api/get_apollo_config.php?api_key=YOUR_KEY</code>
             </div>
+            <div style="margin-top:16px;padding:12px 16px;background:rgba(13,110,253,.08);border:1px solid rgba(13,110,253,.2);border-radius:8px;font-size:12px;color:#8a9ab5;line-height:1.7">
+                <strong style="color:#e2e8f0">📌 How to get your Apollo API key:</strong><br>
+                1. Log in to <a href="https://app.apollo.io" target="_blank" style="color:#60a5fa">app.apollo.io</a><br>
+                2. Go to <strong style="color:#e2e8f0">Settings → Integrations → API</strong><br>
+                3. Copy your API key and paste it in the Apollo API Key field above.<br><br>
+                <strong style="color:#e2e8f0">🔍 Search Titles:</strong> Comma-separated job titles to search for (e.g. <em>Product Manager, COO, Founder</em>)<br>
+                <strong style="color:#e2e8f0">📍 Location:</strong> Set to <em>Canada</em> for this event.<br>
+                <strong style="color:#e2e8f0">📄 Per Page / Max Pages:</strong> Controls how many leads are fetched per run (max 100/page × 10 pages = 1,000 leads).
+            </div>
         </div>
     </div>
 </div>

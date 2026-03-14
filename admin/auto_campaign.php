@@ -45,8 +45,7 @@ $segments  = [];
 $provinces = [];
 try {
     $templates   = Database::fetchAll("SELECT id, name, subject FROM email_templates ORDER BY is_default DESC, id DESC");
-    $segmentRows = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
-    $segments    = array_merge([''], array_column($segmentRows, 'segment'));
+    $segments    = array_merge([''], getSegments());
     $provinces   = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province");
 } catch (Exception $e) {}
 

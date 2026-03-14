@@ -106,6 +106,23 @@ function detectSegment(string $jobTitle, string $company): string {
     return 'Other';
 }
 
+function getSegments(): array {
+    try {
+        $rows = Database::fetchAll("SELECT name FROM segments ORDER BY sort_order ASC, name ASC");
+        if (!empty($rows)) return array_column($rows, 'name');
+    } catch (Exception $e) {}
+    // Fallback to hardcoded list if segments table doesn't exist yet
+    return [
+        'Healthcare Providers',
+        'Health IT & Digital Health',
+        'Pharmaceutical & Biotech',
+        'Medical Devices & Equipment',
+        'Venture Capital / Investors',
+        'Fintech Startups',
+        'Other',
+    ];
+}
+
 function audit_log(string $action, string $entityType = '', ?int $entityId = null, string $details = ''): void {
     try {
         $userId = null;

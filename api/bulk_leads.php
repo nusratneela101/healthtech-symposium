@@ -47,8 +47,7 @@ switch ($action) {
 
     case 'bulk_segment_update':
         $segment = trim($input['value'] ?? '');
-        $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech',
-                      'Medical Devices','Venture Capital / Investors','Fintech Startups','Other'];
+        $validSegs = getSegments();
         if (!in_array($segment, $validSegs, true)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'error' => 'Invalid segment value']);

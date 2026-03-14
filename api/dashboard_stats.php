@@ -33,7 +33,8 @@ try {
         'unread_responses' => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE is_read=0")['c'] ?? 0),
         'delivered'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0),
         'bounced'          => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0),
-        'hot_leads'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE response_type='interested'")['c'] ?? 0),
+        // Fix: response_type column does not exist; using sentiment='positive' instead
+        'hot_leads'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE sentiment='positive'")['c'] ?? 0),
         'followups_sent'   => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0),
         'week_sends'       => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0),
         'month_sends'      => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0),

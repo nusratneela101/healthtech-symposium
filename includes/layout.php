@@ -74,6 +74,10 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             👥 Lead Database
         </a>
         <?php if (Auth::isSuperAdmin()): ?>
+        <a href="<?php echo APP_URL; ?>/admin/segments.php"
+           class="nav-item<?php echo $currentPage==='segments.php'?' active':''; ?>">
+            📂 Segments
+        </a>
         <a href="<?php echo APP_URL; ?>/admin/import_leads.php"
            class="nav-item<?php echo $currentPage==='import_leads.php'?' active':''; ?>">
             📥 Import Leads

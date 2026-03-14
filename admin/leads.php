@@ -78,8 +78,7 @@ $leads = Database::fetchAll(
     $params
 );
 
-$segmentRows  = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE segment IS NOT NULL AND segment != '' ORDER BY segment ASC");
-$segments  = array_column($segmentRows, 'segment');
+$segments = getSegments();
 $statuses  = ['new','emailed','responded','converted','unsubscribed','bounced'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province ASC");
 $activeSegs = array_filter((array)($_GET['segment'] ?? []));

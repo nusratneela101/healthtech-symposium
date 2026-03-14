@@ -1,6 +1,6 @@
-# HealthTech Symposium — All-in-One Setup Guide (English)
+# Canada FinTech Symposium — All-in-One Setup Guide (English)
 
-> **This is the complete, all-in-one setup guide for the HealthTech Symposium Campaign Management Platform.**
+> **This is the complete, all-in-one setup guide for the Canada FinTech Symposium Campaign Management Platform.**
 > It covers every step from uploading files to cPanel through to your first login and running automated workflows.
 > Follow the sections in order for the smoothest experience.
 
@@ -48,7 +48,7 @@ Before you start, make sure you have the following:
 5. Once the upload is complete, right-click the `.zip` file and select **Extract**.
 6. Verify that all project files (e.g., `index.php`, `login.php`, `admin/`, `api/`, `n8n_workflows/`, etc.) are **directly** inside `public_html/` — not inside a nested subfolder.
 
-> **Important:** If the files end up inside `public_html/healthtech-symposium/` rather than `public_html/`, move them up one level using File Manager's drag-and-drop or the **Move** option.
+> **Important:** If the files end up inside `public_html/fintech-symposium/` rather than `public_html/`, move them up one level using File Manager's drag-and-drop or the **Move** option.
 
 ---
 
@@ -122,7 +122,7 @@ SMTP_SECURE=tls
 SMTP_USER=your_brevo_login_email
 SMTP_PASS=your_brevo_smtp_key
 SMTP_FROM_EMAIL=info@yourdomain.com
-SMTP_FROM_NAME=HealthTech Symposium
+SMTP_FROM_NAME=Canada FinTech Symposium
 
 IMAP_HOST=imap.yourdomain.com
 IMAP_PORT=993
@@ -201,7 +201,7 @@ SESSION_NAME=hts_session
 2. Go to **Settings → Integrations → API** and generate an API key. Copy and save it.
 3. In Apollo, set up your prospecting filters:
    - **Location:** Canada
-   - **Industry:** Health / Healthcare Technology
+   - **Industry:** Financial Services / FinTech
    - Adjust title and company size filters as needed.
 4. You will add the Apollo API key to n8n credentials in the next section.
 

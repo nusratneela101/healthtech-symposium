@@ -265,7 +265,7 @@ function writeEnvFromDbStep(array $data): array
 
     // Merge/override with DB step values
     $appUrl = rtrim($data['app_url'] ?? '', '/');
-    $existing['APP_NAME']     = $existing['APP_NAME']     ?? '"Canada HealthTech Symposium"';
+    $existing['APP_NAME']     = $existing['APP_NAME']     ?? '"Canada FinTech Symposium"';
     $existing['APP_URL']      = '"' . $appUrl . '"';
     $existing['APP_VERSION']  = $existing['APP_VERSION']  ?? '"2.0.0"';
     $existing['APP_KEY']      = $existing['APP_KEY']      ?? ('"' . bin2hex(random_bytes(32)) . '"');
@@ -310,7 +310,7 @@ function generateEnvFile(array $data): array
     $appKey = $existing['APP_KEY'] ?? ('"' . bin2hex(random_bytes(32)) . '"');
 
     // Override / set all keys from the final step data
-    $existing['APP_NAME']    = '"' . ($data['app_name'] ?? 'Canada HealthTech Symposium') . '"';
+    $existing['APP_NAME']    = '"' . ($data['app_name'] ?? 'Canada FinTech Symposium') . '"';
     $existing['APP_URL']     = '"' . rtrim($data['app_url'] ?? '', '/') . '"';
     $existing['APP_VERSION'] = '"2.0.0"';
     $existing['APP_KEY']     = $appKey;
@@ -336,7 +336,7 @@ function generateEnvFile(array $data): array
         $existing['SMTP_USER']       = $data['ms_smtp_user'] ?? '';
         $existing['SMTP_PASS']       = $data['ms_smtp_pass'] ?? '';
         $existing['SMTP_FROM_EMAIL'] = $data['ms_smtp_user'] ?? '';
-        $existing['SMTP_FROM_NAME']  = '"' . ($data['app_name'] ?? 'Canada HealthTech Symposium') . '"';
+        $existing['SMTP_FROM_NAME']  = '"' . ($data['app_name'] ?? 'Canada FinTech Symposium') . '"';
     } elseif ($emailProvider === 'smtp') {
         $existing['SMTP_HOST']       = $data['smtp_host'] ?? '';
         $existing['SMTP_PORT']       = $data['smtp_port'] ?? '587';
@@ -344,7 +344,7 @@ function generateEnvFile(array $data): array
         $existing['SMTP_USER']       = $data['smtp_user'] ?? '';
         $existing['SMTP_PASS']       = $data['smtp_pass'] ?? '';
         $existing['SMTP_FROM_EMAIL'] = $data['smtp_from_email'] ?? $data['smtp_user'] ?? '';
-        $existing['SMTP_FROM_NAME']  = '"' . ($data['app_name'] ?? 'Canada HealthTech Symposium') . '"';
+        $existing['SMTP_FROM_NAME']  = '"' . ($data['app_name'] ?? 'Canada FinTech Symposium') . '"';
     }
 
     // n8n

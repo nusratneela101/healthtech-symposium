@@ -102,6 +102,7 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
     ?>
     <a href="<?php echo htmlspecialchars($exportUrl); ?>" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export CSV</a>
     <button class="btn-sec" style="font-size:13px" onclick="autoFixSegments()" aria-label="Auto-fix lead segments">🔍 Auto-Fix Segments</button>
+    <button onclick="openDeleteAllModal()" class="btn-launch" style="background:#ef4444;border-color:#ef4444;font-size:13px" aria-label="Delete all leads">🗑️ Delete All Leads</button>
     </div>
     <?php endif; ?>
 </div>
@@ -227,6 +228,18 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
         <div style="display:flex;gap:10px">
             <button class="btn-launch" id="modal-confirm" onclick="confirmBulk()">✓ Confirm</button>
             <button class="btn-sec" onclick="closeBulkModal()">✕ Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete All Leads Modal -->
+<div id="delete-all-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center">
+    <div style="background:#0d1b2e;border:1px solid #ef4444;border-radius:12px;padding:28px;max-width:440px;width:90%">
+        <h3 style="margin:0 0 12px;font-size:17px;color:#ef4444">⚠️ Delete ALL Leads?</h3>
+        <p style="font-size:14px;color:#8a9ab5;margin:0 0 20px">This will permanently delete <strong style="color:#fff">ALL leads</strong> from the database. This action <strong style="color:#ef4444">CANNOT be undone</strong>.</p>
+        <div style="display:flex;gap:10px">
+            <button class="btn-launch" style="background:#ef4444;border-color:#ef4444" onclick="confirmDeleteAll()">🗑️ Yes, Delete All</button>
+            <button class="btn-sec" onclick="closeDeleteAllModal()">✕ Cancel</button>
         </div>
     </div>
 </div>
@@ -374,6 +387,31 @@ function showToast(msg, type){
     el.textContent = msg;
     wrap.appendChild(el);
     setTimeout(function(){ el.remove(); }, 4000);
+}
+
+function openDeleteAllModal() {
+    document.getElementById('delete-all-modal').style.display = 'flex';
+}
+function closeDeleteAllModal() {
+    document.getElementById('delete-all-modal').style.display = 'none';
+}
+function confirmDeleteAll() {
+    closeDeleteAllModal();
+    fetch('<?php echo APP_URL; ?>/api/delete_all_leads.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            if (typeof showToast === 'function') showToast('✅ All leads deleted (' + d.deleted + ' removed).', 'success');
+            else alert('All leads deleted: ' + d.deleted + ' removed.');
+            setTimeout(function() { location.reload(); }, 1500);
+        } else {
+            alert('Error: ' + (d.error || 'Unknown error'));
+        }
+    })
+    .catch(function(e) { alert('Network error: ' + e.message); });
 }
 </script>
 

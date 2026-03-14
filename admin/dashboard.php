@@ -35,7 +35,8 @@ try {
         'unread_responses' => $unreadCount,
         'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0,
         'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
-        'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE response_type='interested'")['c'] ?? 0,
+        // Fix: response_type column does not exist; using sentiment='positive' instead
+        'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE sentiment='positive'")['c'] ?? 0,
         'followups_sent'   => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0,
         'week_sends'       => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0,
         'month_sends'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0,
@@ -97,15 +98,15 @@ $campSent     = json_encode(array_map('intval', array_column($campPerf, 'sent_co
 $campFailed   = json_encode(array_map('intval', array_column($campPerf, 'failed_count')));
 $campReplied  = json_encode(array_map('intval', array_column($campPerf, 'reply_count')));
 
-// Hot leads
+// Hot leads — Fix: use sentiment='positive' (response_type column does not exist)
 $hotLeads = [];
 try {
     $hotLeads = Database::fetchAll(
-        "SELECT r.id, r.from_name, r.from_email, r.subject, r.body_text, r.received_at,
-                l.company
+        "SELECT r.id, r.email as from_email, r.subject, r.body, r.received_at,
+                l.company, l.full_name as from_name
          FROM responses r
          LEFT JOIN leads l ON r.lead_id = l.id
-         WHERE r.response_type='interested'
+         WHERE r.sentiment='positive'
          ORDER BY r.received_at DESC LIMIT 10"
     );
 } catch (Exception $e) {}
@@ -116,7 +117,7 @@ try {
     $activity = Database::fetchAll(
         "SELECT 'email' AS type, recipient_email AS info, sent_at AS ts FROM email_logs WHERE status='sent'
          UNION ALL
-         SELECT 'response', from_email, received_at FROM responses
+         SELECT 'response', email, received_at FROM responses
          ORDER BY ts DESC LIMIT 10"
     );
 } catch (Exception $e) {}
@@ -128,7 +129,7 @@ try {
         "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
     );
 } catch (Exception $e) {}
-?>
+}?>
 
 <div class="kpi-grid">
     <div class="kpi-card kc-blue">
@@ -279,7 +280,7 @@ try {
                 <span class="pill p-interested" style="margin-left:8px">Interested</span>
             </div>
             <div class="is"><?php echo htmlspecialchars($hl['subject']); ?></div>
-            <div class="ip"><?php echo htmlspecialchars(substr(strip_tags($hl['body_text']), 0, 120)); ?>…</div>
+            <div class="ip"><?php echo htmlspecialchars(substr(strip_tags($hl['body']), 0, 120)); ?>…</div>
         </div>
         <div style="font-size:12px;color:#8a9ab5;white-space:nowrap"><?php echo timeAgo($hl['received_at']); ?></div>
     </div>

@@ -3,6 +3,7 @@ ob_start();
 require_once __DIR__ . '/../includes/session_bootstrap.php';
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 ob_clean();
 header('Content-Type: application/json');
@@ -50,11 +51,14 @@ foreach ($leads as $l) {
         continue;
     }
 
-    $fn = trim($l['first_name'] ?? '');
-    $ln = trim($l['last_name'] ?? '');
-    $segment = trim($l['segment'] ?? 'Other');
-    $validSegs = ['Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices','Venture Capital / Investors','Fintech Startups','Other'];
-    if (!in_array($segment, $validSegs)) $segment = 'Other';
+    $fn        = trim($l['first_name'] ?? '');
+    $ln        = trim($l['last_name'] ?? '');
+    $segment   = trim($l['segment'] ?? 'Other');
+    $validSegs = getSegments();
+    if (!in_array($segment, $validSegs, true)) {
+        $mapped = mapApolloSegment($segment);
+        $segment = ($mapped !== 'Other') ? $mapped : detectSegment(trim($l['job_title'] ?? ''), trim($l['company'] ?? ''));
+    }
 
     try {
         Database::query(

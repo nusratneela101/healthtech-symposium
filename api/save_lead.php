@@ -91,24 +91,18 @@ foreach ($leads as $index => $l) {
     $phone   = trim($l['phone']      ?? '');
     $segment = trim($l['segment']    ?? 'Other');
 
-    $validSegs = [
-        'Healthcare Providers',
-        'Health IT & Digital Health',
-        'Pharmaceutical & Biotech',
-        'Medical Devices',
-        'Venture Capital / Investors',
-        'Fintech Startups',
-        'Other',
-    ];
+    $validSegs = getSegments();
 
     if (!in_array($segment, $validSegs, true)) {
-        $segment = 'Other';
-    }
-
-    if ($segment === 'Other') {
-        $jobTitle = trim($l['role'] ?? ($l['job_title'] ?? ''));
-        $company  = trim($l['company'] ?? '');
-        $segment  = detectSegment($jobTitle, $company);
+        // Try Apollo industry mapping first, then keyword detection
+        $mapped = mapApolloSegment($segment);
+        if ($mapped !== 'Other') {
+            $segment = $mapped;
+        } else {
+            $jobTitle = trim($l['role'] ?? ($l['job_title'] ?? ''));
+            $company  = trim($l['company'] ?? '');
+            $segment  = detectSegment($jobTitle, $company);
+        }
     }
 
     try {

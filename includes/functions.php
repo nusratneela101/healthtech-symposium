@@ -20,13 +20,11 @@ function pill(string $status): string {
         'auto_reply'     => 'p-auto',
         'bounce'         => 'p-bounced',
         'other'          => 'p-other',
-        'Venture Capital / Investors'      => 'p-vc',
-        'Healthcare Providers'             => 'p-hp',
-        'Health IT & Digital Health'       => 'p-hi',
-        'Pharmaceutical & Biotech'         => 'p-pb',
-        'Medical Devices'                  => 'p-md',
-        'Medical Devices & Equipment'      => 'p-md',
-        'Fintech Startups'              => 'p-hs',
+        'Venture Capital / Investors'              => 'p-vc',
+        'Financial Services'                       => 'p-fs',
+        'Banking'                                  => 'p-bk',
+        'Information Technology & Services'        => 'p-it',
+        'Fintech Startups'                         => 'p-hs',
     ];
     $cls = $map[$status] ?? 'p-other';
     return '<span class="pill ' . $cls . '">' . htmlspecialchars($status) . '</span>';
@@ -68,42 +66,69 @@ function paginate(int $total, int $page, int $perPage, string $baseUrl): string 
 }
 
 function detectSegment(string $jobTitle, string $company): string {
-    $haystack = trim($jobTitle) . ' ' . trim($company);
+    $haystack = strtolower(trim($jobTitle) . ' ' . trim($company));
 
     $rules = [
-        'Healthcare Providers' => [
-            'doctor','physician','hospital','clinic','nurse','surgeon',
-            'medical director','health system','health centre','healthcare',
-        ],
-        'Health IT & Digital Health' => [
-            'cto','software','digital health','it','platform','tech','data',
-            'engineer','developer','health it','informatics',
-        ],
-        'Pharmaceutical & Biotech' => [
-            'pharma','drug','biotech','biotechnology','clinical',
-            'therapeutics','bioscience',
-        ],
-        'Medical Devices & Equipment' => [
-            'device','medical equipment','implant','diagnostics','imaging','medtech',
-        ],
         'Venture Capital / Investors' => [
-            'vc','venture capital','investor','capital','fund','managing partner',
-            'angel','investment','private equity',
+            'venture capital','managing partner','general partner','limited partner',
+            'angel investor','angel fund','investment fund','private equity',
+            'fund partner','vc partner','portfolio manager','lp ',
         ],
         'Fintech Startups' => [
-            'startup','fintech','founder','co-founder',
+            'fintech','co-founder','cofounder','founder','startup',
+        ],
+        'Banking' => [
+            'bank ','banking','rbc','td bank','bmo','scotiabank','cibc','nbc',
+            'national bank','desjardins','atb financial','credit union',
+        ],
+        'Financial Services' => [
+            'financial services','payments','payment','moneris','wealthsimple',
+            'insurance','wealth management','asset management','brokerage',
+            'neo financial','helcim','interac','nuvei','fiserv','mastercard','visa',
+        ],
+        'Information Technology & Services' => [
+            'software','developer','engineer','cto','technology','platform',
+            'digital','data','it ','saas','cloud','api','tech ',
         ],
     ];
 
     foreach ($rules as $segment => $keywords) {
         foreach ($keywords as $kw) {
-            if (stripos($haystack, $kw) !== false) {
+            if (strpos($haystack, $kw) !== false) {
                 return $segment;
             }
         }
     }
 
     return 'Other';
+}
+
+/**
+ * Map an Apollo.io industry/segment string to a canonical segment name.
+ * Called before detectSegment() so exact Apollo values always win.
+ */
+function mapApolloSegment(string $apolloSegment): string {
+    $map = [
+        'financial services'               => 'Financial Services',
+        'banking'                          => 'Banking',
+        'venture capital & private equity' => 'Venture Capital / Investors',
+        'venture capital'                  => 'Venture Capital / Investors',
+        'private equity'                   => 'Venture Capital / Investors',
+        'investment banking'               => 'Venture Capital / Investors',
+        'information technology & services'=> 'Information Technology & Services',
+        'information technology'           => 'Information Technology & Services',
+        'computer & network security'      => 'Information Technology & Services',
+        'information services'             => 'Information Technology & Services',
+        'internet'                         => 'Information Technology & Services',
+        'software'                         => 'Information Technology & Services',
+        'insurance'                        => 'Financial Services',
+        'capital markets'                  => 'Financial Services',
+        'accounting'                       => 'Financial Services',
+        'fintech'                          => 'Fintech Startups',
+    ];
+
+    $key = strtolower(trim($apolloSegment));
+    return $map[$key] ?? 'Other';
 }
 
 function getSegments(): array {
@@ -113,11 +138,10 @@ function getSegments(): array {
     } catch (Exception $e) {}
     // Fallback to hardcoded list if segments table doesn't exist yet
     return [
-        'Healthcare Providers',
-        'Health IT & Digital Health',
-        'Pharmaceutical & Biotech',
-        'Medical Devices & Equipment',
+        'Financial Services',
+        'Banking',
         'Venture Capital / Investors',
+        'Information Technology & Services',
         'Fintech Startups',
         'Other',
     ];

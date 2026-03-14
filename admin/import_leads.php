@@ -27,9 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
             $fullName  = trim($data['full_name']  ?? "$firstName $lastName");
             $segment   = trim($data['segment'] ?? 'Other');
             $validSegs = getSegments();
-            if (!in_array($segment, $validSegs)) $segment = 'Other';
-            if ($segment === 'Other') {
-                $segment = detectSegment(trim($data['job_title'] ?? ''), trim($data['company'] ?? ''));
+            if (!in_array($segment, $validSegs, true)) {
+                // Try to map Apollo industry value directly first
+                $mapped = mapApolloSegment($segment);
+                $segment = ($mapped !== 'Other') ? $mapped : detectSegment(trim($data['job_title'] ?? ''), trim($data['company'] ?? ''));
             }
             try {
                 Database::query(

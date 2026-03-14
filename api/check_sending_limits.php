@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/session_bootstrap.php';
 /**
  * Check whether sending another email is permitted under the configured limits.
  *

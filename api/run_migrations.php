@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../includes/session_bootstrap.php';
 /**
  * Run pending migrations for existing installations.
  * Restricted to SuperAdmin users only.

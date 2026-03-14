@@ -7,12 +7,14 @@ CREATE TABLE IF NOT EXISTS segments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert existing default segments
-INSERT IGNORE INTO segments (name, sort_order) VALUES
-('Healthcare Providers', 1),
-('Health IT & Digital Health', 2),
-('Pharmaceutical & Biotech', 3),
-('Medical Devices & Equipment', 4),
-('Venture Capital / Investors', 5),
-('Fintech Startups', 6),
-('Other', 99);
+-- Insert default FinTech segments
+INSERT IGNORE INTO segments (name, color, sort_order) VALUES
+('Financial Services',                '#0d6efd', 1),
+('Banking',                           '#8b5cf6', 2),
+('Venture Capital / Investors',       '#10b981', 3),
+('Information Technology & Services', '#06b6d4', 4),
+('Fintech Startups',                  '#f59e0b', 5),
+('Other',                             '#6b7280', 99);
+
+-- NOTE: Run this to remove old healthcare segments if upgrading from v1:
+-- DELETE FROM segments WHERE name IN ('Healthcare Providers','Health IT & Digital Health','Pharmaceutical & Biotech','Medical Devices & Equipment');

@@ -42,12 +42,12 @@ define('FOLLOWUP_DAILY_LIMIT',   (int)($_ENV['FOLLOWUP_DAILY_LIMIT']   ?? 0));
 define('FOLLOWUP_WEEKLY_LIMIT',  (int)($_ENV['FOLLOWUP_WEEKLY_LIMIT']  ?? 0));
 define('FOLLOWUP_MONTHLY_LIMIT', (int)($_ENV['FOLLOWUP_MONTHLY_LIMIT'] ?? 0));
 
-ini_set('session.cookie_httponly', 1);
-ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 1 : 0);
-ini_set('session.use_strict_mode', 1);
-session_name(SESSION_NAME);
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 1 : 0);
+    ini_set('session.use_strict_mode', 1);
+    session_name(SESSION_NAME);
     session_start();
 }
 

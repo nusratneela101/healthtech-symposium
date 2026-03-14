@@ -129,7 +129,7 @@ try {
         "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
     );
 } catch (Exception $e) {}
-}?>
+?>
 
 <div class="kpi-grid">
     <div class="kpi-card kc-blue">

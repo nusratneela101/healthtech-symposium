@@ -14,8 +14,14 @@ $where  = '1=1';
 $params = [];
 
 if (!empty($_GET['segment'])) {
-    $where .= ' AND segment = ?';
-    $params[] = $_GET['segment'];
+    $segs = array_filter(array_map('trim', (array)$_GET['segment']));
+    if (!empty($segs)) {
+        $segPlaceholders = implode(',', array_fill(0, count($segs), '?'));
+        $where .= " AND segment IN ($segPlaceholders)";
+        foreach ($segs as $seg) {
+            $params[] = $seg;
+        }
+    }
 }
 if (!empty($_GET['status'])) {
     $where .= ' AND status = ?';
@@ -76,7 +82,12 @@ $segmentRows  = Database::fetchAll("SELECT DISTINCT segment FROM leads WHERE seg
 $segments  = array_column($segmentRows, 'segment');
 $statuses  = ['new','emailed','responded','converted','unsubscribed','bounced'];
 $provinces = Database::fetchAll("SELECT DISTINCT province FROM leads WHERE province != '' ORDER BY province ASC");
-$pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??''])));
+$activeSegs = array_filter((array)($_GET['segment'] ?? []));
+$pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . http_build_query(array_filter([
+    'status'   => $_GET['status']   ?? '',
+    'province' => $_GET['province'] ?? '',
+    'q'        => $_GET['q']        ?? '',
+])) . (!empty($activeSegs) ? '&' . http_build_query(['segment' => $activeSegs]) : ''));
 ?>
 
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -84,7 +95,12 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
     <?php if (Auth::isSuperAdmin()): ?>
     <div style="display:flex;gap:10px">
     <a href="<?php echo APP_URL; ?>/admin/import_leads.php" class="btn-launch" style="text-decoration:none;font-size:13px">+ Import Leads</a>
-    <a href="<?php echo htmlspecialchars(APP_URL . '/admin/leads.php?export_csv=1&' . http_build_query(array_filter(['segment'=>$_GET['segment']??'','status'=>$_GET['status']??'','province'=>$_GET['province']??'','q'=>$_GET['q']??'']))); ?>" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export CSV</a>
+    <?php
+    $exportParams = array_filter(['status' => $_GET['status'] ?? '', 'province' => $_GET['province'] ?? '', 'q' => $_GET['q'] ?? '']);
+    $exportUrl = APP_URL . '/admin/leads.php?export_csv=1&' . http_build_query($exportParams);
+    if (!empty($activeSegs)) $exportUrl .= '&' . http_build_query(['segment' => $activeSegs]);
+    ?>
+    <a href="<?php echo htmlspecialchars($exportUrl); ?>" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export CSV</a>
     <button class="btn-sec" style="font-size:13px" onclick="autoFixSegments()" aria-label="Auto-fix lead segments">🔍 Auto-Fix Segments</button>
     </div>
     <?php endif; ?>
@@ -93,12 +109,15 @@ $pagination = paginate($total, $page, $perPage, APP_URL . '/admin/leads.php?' . 
 <div class="gc" style="margin-bottom:20px">
     <form method="GET" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
         <input class="fi" name="q" placeholder="Search name, email, company…" value="<?php echo htmlspecialchars($_GET['q']??''); ?>" style="flex:1;min-width:200px">
-        <select class="fi" name="segment" style="min-width:160px">
-            <option value="">All Segments</option>
-            <?php foreach ($segments as $s): ?>
-            <option value="<?php echo $s; ?>" <?php echo ($_GET['segment']??'')===$s?'selected':''; ?>><?php echo $s; ?></option>
+        <select class="fi" name="segment[]" multiple aria-label="Filter by segment" aria-describedby="segment-hint" style="min-width:200px;height:auto;min-height:38px;max-height:120px">
+            <?php
+            $selectedSegs = isset($_GET['segment']) ? (array)$_GET['segment'] : [];
+            foreach ($segments as $s):
+            ?>
+            <option value="<?php echo htmlspecialchars($s); ?>" <?php echo in_array($s, $selectedSegs) ? 'selected' : ''; ?>><?php echo htmlspecialchars($s); ?></option>
             <?php endforeach; ?>
         </select>
+        <small id="segment-hint" style="color:#8a9ab5;font-size:11px;display:block;margin-top:2px">Hold Ctrl/Cmd to select multiple</small>
         <select class="fi" name="status" style="min-width:120px">
             <option value="">All Statuses</option>
             <?php foreach ($statuses as $s): ?>

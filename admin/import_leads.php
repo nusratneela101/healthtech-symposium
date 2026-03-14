@@ -172,7 +172,7 @@ $totalLeads = Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0;
     <div style="padding:16px;background:#0d1f38;border-radius:8px;font-size:13px;line-height:1.8;color:#8a9ab5">
         <ol style="padding-left:20px">
             <li>Log in to your Apollo.io account</li>
-            <li>Navigate to <strong style="color:#e2e8f0">People Search</strong> and apply filters (Location: Canada, Industry: Financial Services / Technology)</li>
+            <li>Navigate to <strong style="color:#e2e8f0">People Search</strong> and apply filters (Location: Canada, Industry: Financial Services / FinTech)</li>
             <li>Select contacts and click <strong style="color:#e2e8f0">Export → CSV</strong></li>
             <li>Map fields: First Name, Last Name, Email, Company, Title → Job Title, Seniority → Role</li>
             <li>Add a <em>segment</em> column manually based on industry before importing</li>

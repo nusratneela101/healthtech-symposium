@@ -1,6 +1,6 @@
-# HealthTech Symposium — সম্পূর্ণ সেটআপ গাইড (বাংলা)
+# Canada FinTech Symposium — সম্পূর্ণ সেটআপ গাইড (বাংলা)
 
-> **এটি HealthTech Symposium ক্যাম্পেইন ম্যানেজমেন্ট প্ল্যাটফর্মের সম্পূর্ণ অল-ইন-ওয়ান সেটআপ গাইড।**
+> **এটি Canada FinTech Symposium ক্যাম্পেইন ম্যানেজমেন্ট প্ল্যাটফর্মের সম্পূর্ণ অল-ইন-ওয়ান সেটআপ গাইড।**
 > cPanel-এ ফাইল আপলোড করা থেকে শুরু করে প্রথম লগইন ও স্বয়ংক্রিয় ওয়ার্কফ্লো চালানো পর্যন্ত প্রতিটি ধাপ এখানে বর্ণনা করা হয়েছে।
 > সর্বোত্তম ফলাফলের জন্য ধাপগুলো ক্রম অনুযায়ী অনুসরণ করুন।
 
@@ -48,7 +48,7 @@
 5. আপলোড সম্পন্ন হলে `.zip` ফাইলটিতে রাইট-ক্লিক করুন এবং **Extract** নির্বাচন করুন।
 6. নিশ্চিত করুন যে প্রজেক্টের সব ফাইল (যেমন `index.php`, `login.php`, `admin/`, `api/`, `n8n_workflows/` ইত্যাদি) সরাসরি `public_html/`-এর ভেতরে আছে — কোনো নেস্টেড সাবফোল্ডারে নয়।
 
-> **গুরুত্বপূর্ণ:** যদি ফাইলগুলো `public_html/healthtech-symposium/`-এর ভেতরে চলে যায়, তাহলে File Manager-এর drag-and-drop বা **Move** অপশন ব্যবহার করে সেগুলো এক লেভেল উপরে নিয়ে আসুন।
+> **গুরুত্বপূর্ণ:** যদি ফাইলগুলো `public_html/fintech-symposium/`-এর ভেতরে চলে যায়, তাহলে File Manager-এর drag-and-drop বা **Move** অপশন ব্যবহার করে সেগুলো এক লেভেল উপরে নিয়ে আসুন।
 
 ---
 
@@ -122,7 +122,7 @@ SMTP_SECURE=tls
 SMTP_USER=your_brevo_login_email
 SMTP_PASS=your_brevo_smtp_key
 SMTP_FROM_EMAIL=info@yourdomain.com
-SMTP_FROM_NAME=HealthTech Symposium
+SMTP_FROM_NAME=Canada FinTech Symposium
 
 IMAP_HOST=imap.yourdomain.com
 IMAP_PORT=993
@@ -201,7 +201,7 @@ SESSION_NAME=hts_session
 2. **Settings → Integrations → API**-এ যান এবং একটি API কী তৈরি করুন। কী-টি কপি করে সংরক্ষণ করুন।
 3. Apollo-তে আপনার প্রসপেক্টিং ফিল্টার সেট করুন:
    - **Location:** Canada
-   - **Industry:** Health / Healthcare Technology
+   - **Industry:** Financial Services / FinTech
    - প্রয়োজনমতো টাইটেল ও কোম্পানির আকারের ফিল্টার সামঞ্জস্য করুন।
 4. পরের অংশে আপনি n8n ক্রেডেনশিয়ালে Apollo API কী যোগ করবেন।
 

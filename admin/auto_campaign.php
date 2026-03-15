@@ -18,12 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
     $testMode = isset($_POST['test_mode']) ? 1 : 0;
 
     try {
-        $where  = '1=1';
+        $where  = "status NOT IN ('unsubscribed','bounced','emailed')";
         $params = [];
-        if ($seg)  { $where .= ' AND segment=?';  $params[] = $seg; }
+        if ($seg)  { $where .= ' AND LOWER(TRIM(segment))=LOWER(TRIM(?))';  $params[] = $seg; }
         if ($role) { $where .= ' AND role LIKE ?'; $params[] = "%$role%"; }
-        if ($prov) { $where .= ' AND province=?'; $params[] = $prov; }
-        $where .= " AND status NOT IN ('unsubscribed','bounced','emailed')";
+        if ($prov) { $where .= ' AND LOWER(TRIM(province))=LOWER(TRIM(?))'; $params[] = $prov; }
         $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 
         Database::query(

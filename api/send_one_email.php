@@ -70,17 +70,17 @@ if (!$tpl) {
 // Build lead query
 $where  = "l.status NOT IN ('unsubscribed','bounced','emailed') AND l.email NOT LIKE '%@noemail.placeholder'";
 $params = [];
-if ($campaign['filter_segment']) { $where .= ' AND l.segment=?';      $params[] = $campaign['filter_segment']; }
-if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?';     $params[] = '%' . $campaign['filter_role'] . '%'; }
-if ($campaign['filter_province']){ $where .= ' AND l.province=?';     $params[] = $campaign['filter_province']; }
+if ($campaign['filter_segment']) { $where .= ' AND LOWER(TRIM(l.segment))=LOWER(TRIM(?))';  $params[] = $campaign['filter_segment']; }
+if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?';                           $params[] = '%' . $campaign['filter_role'] . '%'; }
+if ($campaign['filter_province']){ $where .= ' AND LOWER(TRIM(l.province))=LOWER(TRIM(?))'; $params[] = $campaign['filter_province']; }
 
 // For follow-up sequences: allow re-emailed leads but check no log exists for this sequence
 if ($followUpSeq > 1) {
     $where  = "l.status NOT IN ('unsubscribed','bounced') AND l.email NOT LIKE '%@noemail.placeholder'";
     $params = [];
-    if ($campaign['filter_segment']) { $where .= ' AND l.segment=?';  $params[] = $campaign['filter_segment']; }
-    if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?'; $params[] = '%' . $campaign['filter_role'] . '%'; }
-    if ($campaign['filter_province']){ $where .= ' AND l.province=?'; $params[] = $campaign['filter_province']; }
+    if ($campaign['filter_segment']) { $where .= ' AND LOWER(TRIM(l.segment))=LOWER(TRIM(?))';  $params[] = $campaign['filter_segment']; }
+    if ($campaign['filter_role'])    { $where .= ' AND l.role LIKE ?';                           $params[] = '%' . $campaign['filter_role'] . '%'; }
+    if ($campaign['filter_province']){ $where .= ' AND LOWER(TRIM(l.province))=LOWER(TRIM(?))'; $params[] = $campaign['filter_province']; }
 }
 
 $lead = Database::fetchOne(

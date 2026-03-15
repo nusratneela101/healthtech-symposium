@@ -23,16 +23,14 @@ if (empty($apolloApiKey)) {
     http_response_code(400);
     echo json_encode([
         'success' => false,
-        'error'   => 'Apollo API key is not configured. Go to Settings → Apollo tab and enter your Apollo API key.',
+        'error'   => 'Apollo API key is not configured. Go to Settings -> Apollo tab and enter your Apollo API key.',
     ]);
     exit;
 }
 
-// Build Apollo People Search payload
-$titles = array_filter(array_map('trim', explode(',', $searchTitles)));
-
-$allLeads   = [];
-$page       = 1;
+$titles   = array_filter(array_map('trim', explode(',', $searchTitles)));
+$allLeads = [];
+$page     = 1;
 $totalPages = $maxPages;
 
 while ($page <= $totalPages) {
@@ -48,7 +46,7 @@ while ($page <= $totalPages) {
         $payload['q_organization_keyword_tags'] = array_values(array_filter(array_map('trim', explode(',', $searchIndustry))));
     }
 
-    $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/search');
+    $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/api_search');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 60,
@@ -66,8 +64,7 @@ while ($page <= $totalPages) {
     curl_close($ch);
 
     if ($response === false || $httpCode !== 200) {
-        // Log error detail but continue to return whatever was collected so far
-        error_log("apollo_direct_collect: page {$page} failed (HTTP {$httpCode})" . ($curlError ? " — {$curlError}" : ''));
+        error_log("apollo_direct_collect: page {$page} failed (HTTP {$httpCode})" . ($curlError ? " - {$curlError}" : '') . " | Response: " . substr($response, 0, 300));
         break;
     }
 
@@ -77,7 +74,6 @@ while ($page <= $totalPages) {
     }
 
     foreach ($data['people'] as $person) {
-        // Pick best available email
         $email = $person['email'] ?? '';
         if (empty($email) && !empty($person['contact']['email'])) {
             $email = $person['contact']['email'];
@@ -104,16 +100,13 @@ while ($page <= $totalPages) {
         ];
     }
 
-    // Check if there are more pages
     $totalFromApi    = (int)($data['pagination']['total_entries'] ?? 0);
     $calculatedPages = (int)ceil($totalFromApi / $perPage);
     $totalPages      = min($maxPages, $calculatedPages);
-
     $page++;
 }
 
 if (empty($allLeads)) {
-    // Still create a collection record so the user can see the run happened
     Database::query(
         "INSERT INTO lead_collections (source, total_fetched, total_saved, total_skipped, total_duplicates, status, search_params, started_at, completed_at) VALUES('Apollo Direct',0,0,0,0,'completed',?,NOW(),NOW())",
         [json_encode(['titles' => array_values($titles), 'location' => $searchLocation])]
@@ -126,12 +119,11 @@ if (empty($allLeads)) {
         'saved'         => 0,
         'skipped'       => 0,
         'duplicates'    => 0,
-        'message'       => 'Apollo returned 0 results. Check your search filters in Settings → Apollo.',
+        'message'       => 'Apollo returned 0 results. Check your search filters in Settings -> Apollo.',
     ]);
     exit;
 }
 
-// Create collection record
 Database::query(
     "INSERT INTO lead_collections (source, total_fetched, status, search_params, started_at) VALUES('Apollo Direct',?,'running',?,NOW())",
     [count($allLeads), json_encode(['titles' => array_values($titles), 'location' => $searchLocation])]

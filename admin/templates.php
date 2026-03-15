@@ -408,9 +408,21 @@ if (isset($_GET['edit'])) {
                                         <label class="sig-lbl">LinkedIn URL</label>
                                         <input class="fi sig-fi" id="sb_linkedin" value="https://www.linkedin.com/company/canada-fintech-symposium" oninput="buildSignature()">
                                     </div>
-                                    <div>
+                                    <div style="margin-bottom:8px">
                                         <label class="sig-lbl">Instagram URL</label>
                                         <input class="fi sig-fi" id="sb_instagram" value="https://www.instagram.com/canadafintechsymposium" oninput="buildSignature()">
+                                    </div>
+                                    <div style="margin-bottom:8px">
+                                        <label class="sig-lbl">Twitter / X URL</label>
+                                        <input class="fi sig-fi" id="sb_twitter" placeholder="https://twitter.com/…" oninput="buildSignature()">
+                                    </div>
+                                    <div style="margin-bottom:8px">
+                                        <label class="sig-lbl">Facebook URL</label>
+                                        <input class="fi sig-fi" id="sb_facebook" placeholder="https://facebook.com/…" oninput="buildSignature()">
+                                    </div>
+                                    <div>
+                                        <label class="sig-lbl">YouTube URL</label>
+                                        <input class="fi sig-fi" id="sb_youtube" placeholder="https://youtube.com/…" oninput="buildSignature()">
                                     </div>
                                 </div>
                             </div>
@@ -552,6 +564,9 @@ if (isset($_GET['edit'])) {
                 var disclaimer  = escHtml(v('sb_disclaimer'));
                 var linkedin    = safeUrl(v('sb_linkedin'));
                 var instagram   = safeUrl(v('sb_instagram'));
+                var twitter     = safeUrl(v('sb_twitter'));
+                var facebook    = safeUrl(v('sb_facebook'));
+                var youtube     = safeUrl(v('sb_youtube'));
                 var websiteHref = normalizeWebsite(v('sb_website'));
 
                 var primaryColor = document.getElementById('sb_primary_color').value || '#1a3a6b';
@@ -595,12 +610,28 @@ if (isset($_GET['edit'])) {
 
                 /* -- Website + social row -- */
                 var websiteLink = websiteHref ? '<a href="' + escHtml(websiteHref) + '" target="_blank" style="font-size:12px;color:' + primaryColor + ';text-decoration:none">&#127760; ' + website + '</a>' : '';
+                /* Inline SVG icons as data URIs — render in all email clients regardless of image blocking */
+                var svgLinkedIn  = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 width%3D%2220%22 height%3D%2220%22%3E%3Crect width%3D%2224%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%230077B5%22%2F%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M7 9h2v9H7zm1-3a1.1 1.1 0 1 1 0 2.2A1.1 1.1 0 0 1 8 6zm4 3h2v1.2c.4-.7 1.2-1.4 2.4-1.4C18 8.8 19 10 19 12.3V18h-2v-5.4c0-1.3-.5-2-1.5-2s-1.5.8-1.5 2V18h-2V9z%22%2F%3E%3C%2Fsvg%3E';
+                var svgInstagram = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 width%3D%2220%22 height%3D%2220%22%3E%3Crect width%3D%2224%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23E1306C%22%2F%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M12 7.2A4.8 4.8 0 1 0 12 16.8 4.8 4.8 0 0 0 12 7.2zm0 7.9a3.1 3.1 0 1 1 0-6.2 3.1 3.1 0 0 1 0 6.2zm5-8.1a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0zM12 4c-2.2 0-2.4 0-3.3.05C7 4.1 5.9 4.5 5.1 5.1 4.5 5.9 4.1 7 4.05 8.7 4 9.6 4 9.8 4 12s0 2.4.05 3.3C4.1 17 4.5 18.1 5.1 18.9c.8.6 1.9 1 3.6 1.05.9.05 1.1.05 3.3.05s2.4 0 3.3-.05c1.7-.05 2.8-.45 3.6-1.05.6-.8 1-1.9 1.05-3.6.05-.9.05-1.1.05-3.3s0-2.4-.05-3.3C19.9 7 19.5 5.9 18.9 5.1 18.1 4.5 17 4.1 15.3 4.05 14.4 4 14.2 4 12 4zm0 1.8c2.1 0 2.4 0 3.2.05 1.4.06 2.1.3 2.6.5.7.27 1.1.6 1.6 1.1.5.5.83.9 1.1 1.6.2.5.44 1.2.5 2.6.05.8.05 1.1.05 3.2s0 2.4-.05 3.2c-.06 1.4-.3 2.1-.5 2.6a4 4 0 0 1-1.1 1.6c-.5.5-.9.83-1.6 1.1-.5.2-1.2.44-2.6.5-.8.05-1.1.05-3.2.05s-2.4 0-3.2-.05c-1.4-.06-2.1-.3-2.6-.5a4 4 0 0 1-1.6-1.1 4 4 0 0 1-1.1-1.6c-.2-.5-.44-1.2-.5-2.6C5.8 14.4 5.8 14.1 5.8 12s0-2.4.05-3.2c.06-1.4.3-2.1.5-2.6.27-.7.6-1.1 1.1-1.6.5-.5.9-.83 1.6-1.1.5-.2 1.2-.44 2.6-.5C9.6 5.8 9.9 5.8 12 5.8z%22%2F%3E%3C%2Fsvg%3E';
+                var svgTwitter   = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 width%3D%2220%22 height%3D%2220%22%3E%3Crect width%3D%2224%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23000%22%2F%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M17.53 5h-2.16l-3.37 4.3L8.8 5H5l5.27 7.13L5.1 19h2.16l3.68-4.7L14.9 19H19l-5.48-7.41L17.53 5zm-1.04 12.3L7.4 6.7h1.12l9.09 10.6h-1.12z%22%2F%3E%3C%2Fsvg%3E';
+                var svgFacebook  = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 width%3D%2220%22 height%3D%2220%22%3E%3Crect width%3D%2224%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%231877F2%22%2F%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M16 8h-2.5C12.7 8 12 8.4 12 9.5V11h4l-.5 3h-3.5v8h-3v-8H7v-3h2.5V9C9.5 6.6 11 5 13.5 5H16v3z%22%2F%3E%3C%2Fsvg%3E';
+                var svgYouTube   = 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 24 24%22 width%3D%2220%22 height%3D%2220%22%3E%3Crect width%3D%2224%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23FF0000%22%2F%3E%3Cpath fill%3D%22%23fff%22 d%3D%22M20.4 8s-.2-1.4-.8-2c-.8-.8-1.7-.8-2.1-.9C15.4 5 12 5 12 5s-3.4 0-5.5.1c-.4.1-1.3.1-2.1.9-.6.6-.8 2-.8 2S3.4 9.6 3.4 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.8C8 18.9 12 19 12 19s3.4 0 5.5-.1c.4-.1 1.3-.1 2.1-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C20.6 9.6 20.4 8 20.4 8zM10 14.5V9.5l5.5 2.5-5.5 2.5z%22%2F%3E%3C%2Fsvg%3E';
+
                 var socialIcons = '';
                 if (linkedin) {
-                    socialIcons += '<a href="' + escHtml(linkedin) + '" target="_blank" style="margin-left:6px"><img src="https://cdn-icons-png.flaticon.com/24/174/174857.png" width="20" height="20" alt="LinkedIn" style="border:0;vertical-align:middle"></a>';
+                    socialIcons += '<a href="' + escHtml(linkedin) + '" target="_blank" style="margin-left:6px"><img src="' + svgLinkedIn + '" width="20" height="20" alt="LinkedIn" style="border:0;vertical-align:middle"></a>';
                 }
                 if (instagram) {
-                    socialIcons += '<a href="' + escHtml(instagram) + '" target="_blank" style="margin-left:6px"><img src="https://cdn-icons-png.flaticon.com/24/2111/2111463.png" width="20" height="20" alt="Instagram" style="border:0;vertical-align:middle"></a>';
+                    socialIcons += '<a href="' + escHtml(instagram) + '" target="_blank" style="margin-left:6px"><img src="' + svgInstagram + '" width="20" height="20" alt="Instagram" style="border:0;vertical-align:middle"></a>';
+                }
+                if (twitter) {
+                    socialIcons += '<a href="' + escHtml(twitter) + '" target="_blank" style="margin-left:6px"><img src="' + svgTwitter + '" width="20" height="20" alt="Twitter/X" style="border:0;vertical-align:middle"></a>';
+                }
+                if (facebook) {
+                    socialIcons += '<a href="' + escHtml(facebook) + '" target="_blank" style="margin-left:6px"><img src="' + svgFacebook + '" width="20" height="20" alt="Facebook" style="border:0;vertical-align:middle"></a>';
+                }
+                if (youtube) {
+                    socialIcons += '<a href="' + escHtml(youtube) + '" target="_blank" style="margin-left:6px"><img src="' + svgYouTube + '" width="20" height="20" alt="YouTube" style="border:0;vertical-align:middle"></a>';
                 }
                 var socialRow = (websiteLink || socialIcons)
                     ? '<table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:8px"><tr><td style="vertical-align:middle">' + websiteLink + '</td><td style="text-align:right;vertical-align:middle">' + socialIcons + '</td></tr></table>'
@@ -645,6 +676,14 @@ if (isset($_GET['edit'])) {
 
                 /* Assemble full table */
                 var cols = logo ? '2' : '1';
+                var unsubscribeBlock = '<tr>'
+                    + '<td colspan="' + cols + '" style="padding-top:14px;border-top:1px solid #e5e7eb;">'
+                    + '<p style="font-size:11px;color:#888888;margin:0;font-family:Arial,sans-serif;">'
+                    + 'You received this email because you are a valued contact in our network. '
+                    + '<a href="{{unsubscribe_link}}" style="color:#888888;text-decoration:underline;">Unsubscribe</a>'
+                    + '</p>'
+                    + '</td>'
+                    + '</tr>';
                 var html = '<!-- Email Signature -->\n'
                     + '<table cellpadding="0" cellspacing="0" border="0" style="font-family:' + font + ';max-width:480px;border-top:3px solid ' + primaryColor + ';padding-top:12px">'
                     + '<tr>'
@@ -656,6 +695,7 @@ if (isset($_GET['edit'])) {
                     + '<tr><td colspan="' + cols + '">' + socialRow   + '</td></tr>'
                     + bannerBlock
                     + disclaimerBlock
+                    + unsubscribeBlock
                     + '</table>';
 
                 /* Update preview */

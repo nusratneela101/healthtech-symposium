@@ -116,6 +116,8 @@ $body = str_replace(
      $lead['province'], $lead['email'], $unsubLink, $signatureHtml],
     $tpl['html_body']
 );
+// Second pass: replace {{unsubscribe_link}} that may appear inside the injected signature HTML
+$body = str_replace('{{unsubscribe_link}}', $unsubLink, $body);
 
 // Prepend header image if set
 if (!empty($tpl['header_image_url'])) {
@@ -125,7 +127,8 @@ if (!empty($tpl['header_image_url'])) {
 
 // Append signature if set AND template did not use {{signature}} placeholder
 if (!empty($tpl['signature_html']) && strpos($tpl['html_body'], '{{signature}}') === false) {
-    $body .= '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">' . $tpl['signature_html'];
+    $appendedSig = str_replace('{{unsubscribe_link}}', $unsubLink, $tpl['signature_html']);
+    $body .= '<hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">' . $appendedSig;
 }
 
 $subject = str_replace(

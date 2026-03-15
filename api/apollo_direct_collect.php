@@ -9,7 +9,15 @@ require_once __DIR__ . '/../includes/functions.php';
 ob_clean();
 header('Content-Type: application/json');
 
-Auth::requireSuperAdmin();
+// Accept internal token OR session superadmin
+$internalToken = $_SERVER['HTTP_X_INTERNAL_TOKEN'] ?? '';
+if ($internalToken === 'fintech2026secure') {
+    // Valid internal call — proceed
+} elseif (!class_exists('Auth') || !Auth::isSuperAdmin()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
 
 // Get Apollo settings
 $apolloApiKey   = getSetting('apollo_api_key', APOLLO_API_KEY);

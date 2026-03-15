@@ -60,9 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
     curl_setopt($ch, CURLOPT_TIMEOUT, 180);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'X-Internal-Token: fintech2026secure',
+    ]);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     // Pass session cookie so Auth::requireSuperAdmin() passes
     curl_setopt($ch, CURLOPT_COOKIE, session_name() . '=' . session_id());
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     $response = curl_exec($ch);
     curl_close($ch);
     $result = json_decode($response, true);

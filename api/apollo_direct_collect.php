@@ -37,7 +37,6 @@ $totalPages = $maxPages;
 
 while ($page <= $totalPages) {
     $payload = [
-        'api_key'              => $apolloApiKey,
         'person_titles'        => array_values($titles),
         'person_locations'     => [$searchLocation],
         'page'                 => $page,
@@ -49,13 +48,17 @@ while ($page <= $totalPages) {
         $payload['q_organization_keyword_tags'] = array_values(array_filter(array_map('trim', explode(',', $searchIndustry))));
     }
 
-    $ch = curl_init('https://api.apollo.io/v1/mixed_people/search');
+    $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/search');
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => 60,
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => json_encode($payload),
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Cache-Control: no-cache'],
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'Cache-Control: no-cache',
+            'X-Api-Key: ' . $apolloApiKey,
+        ],
     ]);
     $response  = curl_exec($ch);
     $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);

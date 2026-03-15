@@ -53,6 +53,34 @@ if (isset($_GET['export_history'])) {
     exit;
 }
 
+// Handle manual trigger — process manual/CSV leads (no Apollo needed)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_manual_leads'])) {
+    $ch = curl_init(APP_URL . '/api/process_manual_leads.php');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'X-Internal-Token: fintech2026secure',
+    ]);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_COOKIE, session_name() . '=' . session_id());
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $result = json_decode($response, true);
+    if ($result && ($result['success'] ?? false)) {
+        flash('success', $result['message'] ?? "Manual collection complete. {$result['saved']} leads ready.");
+    } else {
+        $errMsg = $result['error'] ?? 'Unexpected error processing manual leads. Check server logs.';
+        flash('error', 'Manual leads processing failed: ' . $errMsg);
+    }
+    header('Location: ' . APP_URL . '/admin/lead_collections.php');
+    exit;
+}
+
 // Handle manual trigger — calls Apollo API directly
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])) {
     $ch = curl_init(APP_URL . '/api/apollo_direct_collect.php');
@@ -75,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
     curl_close($ch);
     $result = json_decode($response, true);
     if ($result && ($result['success'] ?? false)) {
-        $msg = "Manual collection complete! Fetched: {$result['fetched']}, Saved: {$result['saved']}, Duplicates: {$result['duplicates']}";
+        $msg = "Apollo collection complete! Fetched: {$result['fetched']}, Saved: {$result['saved']}, Duplicates: {$result['duplicates']}";
         if (!empty($result['message'])) $msg .= ' — ' . $result['message'];
         flash('success', $msg);
     } else {
@@ -86,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
         } else {
             $errMsg = 'Unknown error. Check Apollo API key in Settings → Apollo.';
         }
-        flash('error', 'Collection failed: ' . $errMsg);
+        flash('error', 'Apollo collection failed: ' . $errMsg . ' If you added leads manually, use "Process Manual Leads" instead.');
     }
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;
@@ -135,7 +163,10 @@ if ($viewId > 0) {
     <div style="display:flex;gap:10px">
         <a href="<?php echo APP_URL; ?>/admin/lead_collections.php?export_history=1" class="btn-sec" style="text-decoration:none;font-size:13px">⬇️ Export History CSV</a>
         <form method="POST" style="margin:0">
-            <button type="submit" name="trigger_collection" value="1" class="btn-launch" style="font-size:13px" onclick="return confirm('Trigger a manual collection run now?')">🔄 Trigger Manual Collection</button>
+            <button type="submit" name="trigger_manual_leads" value="1" class="btn-sec" style="font-size:13px" onclick="return confirm('Process all Manual and CSV Import leads with status = new?')">📥 Process Manual Leads</button>
+        </form>
+        <form method="POST" style="margin:0">
+            <button type="submit" name="trigger_collection" value="1" class="btn-launch" style="font-size:13px" onclick="return confirm('Collect leads from Apollo now? (Requires valid Apollo API key)')">🔍 Collect from Apollo</button>
         </form>
     </div>
 </div>

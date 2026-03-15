@@ -71,7 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
         if (!empty($result['message'])) $msg .= ' — ' . $result['message'];
         flash('success', $msg);
     } else {
-        flash('error', 'Collection failed: ' . ($result['error'] ?? 'Unknown error. Check Apollo API key in Settings → Apollo.'));
+        if (!empty($result['error'])) {
+            $errMsg = $result['error'];
+        } elseif (!empty($response) && $result === null) {
+            $errMsg = 'Unexpected response from collector. Check server logs.';
+        } else {
+            $errMsg = 'Unknown error. Check Apollo API key in Settings → Apollo.';
+        }
+        flash('error', 'Collection failed: ' . $errMsg);
     }
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;

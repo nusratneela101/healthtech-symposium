@@ -74,28 +74,17 @@ class EmailService {
     }
 
     /**
-     * Add anti-spam headers and List-Unsubscribe to a PHPMailer instance.
-     * Extracts the unsubscribe URL from the HTML body if present.
+     * Add headers that signal a personal/transactional message to Gmail and other providers.
+     * Avoids bulk-mail signals that trigger the Promotions tab.
      */
     private static function addAntiSpamHeaders(object $mail, string $htmlBody): void {
-        // Precedence: bulk signals to ISPs this is a bulk/campaign message
-        $mail->addCustomHeader('Precedence', 'bulk');
+        // Precedence: personal signals this is a one-to-one message (not bulk)
+        $mail->addCustomHeader('Precedence', 'personal');
 
-        // X-Mailer: identify the sending application
-        $appName = defined('APP_NAME') ? APP_NAME : 'EmailApp';
-        $mail->addCustomHeader('X-Mailer', $appName . ' Mailer');
+        // Hide the default PHPMailer X-Mailer header; identify as a plain PHP mailer
+        $mail->XMailer = 'PHP/' . phpversion();
 
-        // List-Unsubscribe header (one-click unsubscribe per RFC 8058 / Gmail requirements)
-        $unsubUrl = '';
-        if (preg_match('/href=["\']([^"\']*unsubscribe[^"\']*)["\']/', $htmlBody, $m)) {
-            $unsubUrl = $m[1];
-        }
-        if ($unsubUrl) {
-            $mail->addCustomHeader('List-Unsubscribe', '<' . $unsubUrl . '>');
-            $mail->addCustomHeader('List-Unsubscribe-Post', 'List-Unsubscribe=One-Click');
-        }
-
-        // X-Auto-Response-Suppress: avoid out-of-office loops for bulk sends
+        // X-Auto-Response-Suppress: avoid out-of-office loops
         $mail->addCustomHeader('X-Auto-Response-Suppress', 'OOF, DR, RN, NRN, AutoReply');
     }
 

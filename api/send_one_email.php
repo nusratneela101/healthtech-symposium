@@ -137,6 +137,10 @@ $subject = str_replace(
     $tpl['subject']
 );
 
+// Strip Promotions-triggering words from the start of the subject line
+$subject = preg_replace('/^(Invitation|Invite|Registration|Event|Conference|Symposium|Newsletter):\s*/i', '', $subject);
+$subject = trim($subject);
+
 // Wrap in professional email shell
 $body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">

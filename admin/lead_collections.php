@@ -53,29 +53,23 @@ if (isset($_GET['export_history'])) {
     exit;
 }
 
-// Handle manual trigger — process manual/CSV leads (no Apollo needed)
+// Handle manual trigger — process manual/CSV leads (direct DB, no cURL self-call)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_manual_leads'])) {
-    $ch = curl_init(APP_URL . '/api/process_manual_leads.php');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'X-Internal-Token: fintech2026secure',
-    ]);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    curl_setopt($ch, CURLOPT_COOKIE, session_name() . '=' . session_id());
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    $result = json_decode($response, true);
-    if ($result && ($result['success'] ?? false)) {
-        flash('success', $result['message'] ?? "Manual collection complete. {$result['saved']} leads ready.");
+    $manualLeads = Database::fetchAll(
+        "SELECT id FROM leads WHERE source IN ('Manual', 'CSV Import') AND status = 'new'"
+    );
+    $count = count($manualLeads);
+
+    if ($count === 0) {
+        flash('info', 'ℹ️ No new Manual or CSV Import leads found to process.');
     } else {
-        $errMsg = $result['error'] ?? 'Unexpected error processing manual leads. Check server logs.';
-        flash('error', 'Manual leads processing failed: ' . $errMsg);
+        Database::query(
+            "INSERT INTO lead_collections
+             (source, total_fetched, total_saved, total_skipped, total_duplicates, status, search_params, started_at, completed_at)
+             VALUES ('Manual Import', ?, ?, 0, 0, 'completed', 'Manual/CSV leads processing', NOW(), NOW())",
+            [$count, $count]
+        );
+        flash('success', "✅ Manual collection complete. {$count} leads ready for campaign.");
     }
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;
@@ -94,27 +88,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['trigger_collection'])
     ]);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    // Pass session cookie so Auth::requireSuperAdmin() passes
     curl_setopt($ch, CURLOPT_COOKIE, session_name() . '=' . session_id());
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-    $response = curl_exec($ch);
+    $response  = curl_exec($ch);
+    $curlError = curl_error($ch);
     curl_close($ch);
     $result = json_decode($response, true);
     if ($result && ($result['success'] ?? false)) {
-        $msg = "Apollo collection complete! Fetched: {$result['fetched']}, Saved: {$result['saved']}, Duplicates: {$result['duplicates']}";
-        if (!empty($result['message'])) $msg .= ' — ' . $result['message'];
-        flash('success', $msg);
-    } else {
-        if (!empty($result['error'])) {
-            $errMsg = $result['error'];
-        } elseif (!empty($response) && $result === null) {
-            $errMsg = 'Unexpected response from collector. Check server logs.';
+        $saved = (int)($result['saved'] ?? 0);
+        if ($saved === 0) {
+            flash('warning', '⚠️ Apollo returned 0 leads. Check API key or search configuration.');
         } else {
-            $errMsg = 'Unknown error. Check Apollo API key in Settings → Apollo.';
+            $msg = "✅ Apollo collection complete. {$saved} leads saved.";
+            if (!empty($result['message'])) $msg .= ' — ' . $result['message'];
+            flash('success', $msg);
         }
-        flash('error', 'Apollo collection failed: ' . $errMsg . ' If you added leads manually, use "Process Manual Leads" instead.');
+    } else {
+        if (!empty($curlError)) {
+            flash('error', '❌ Apollo collection failed. Check your Apollo API key in Settings → Apollo.');
+        } elseif (!empty($result['error'])) {
+            flash('error', '❌ Apollo collection failed: ' . $result['error'] . ' Check your Apollo API key in Settings → Apollo.');
+        } else {
+            flash('error', '❌ Apollo collection failed. Check your Apollo API key in Settings → Apollo.');
+        }
     }
     header('Location: ' . APP_URL . '/admin/lead_collections.php');
     exit;

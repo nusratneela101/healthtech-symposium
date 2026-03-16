@@ -36,14 +36,14 @@ foreach ($events as $evt) {
                         "UPDATE email_logs SET status='delivered' WHERE message_id=?",
                         [$messageId]
                     );
-                } else {
-                    Database::query(
-                        "UPDATE email_logs SET status='delivered'
-                         WHERE recipient_email=? AND status='sent'
-                         ORDER BY sent_at DESC LIMIT 1",
-                        [$email]
-                    );
                 }
+                // Always also try by email as fallback (handles message_id format mismatch)
+                Database::query(
+                    "UPDATE email_logs SET status='delivered'
+                     WHERE recipient_email=? AND status='sent'
+                     ORDER BY sent_at DESC LIMIT 1",
+                    [$email]
+                );
                 break;
 
             case 'opened':
@@ -113,6 +113,13 @@ foreach ($events as $evt) {
                         [$messageId]
                     );
                 }
+                // Always also try by email as fallback (handles message_id format mismatch)
+                Database::query(
+                    "UPDATE email_logs SET status='failed'
+                     WHERE recipient_email=? AND status='sent'
+                     ORDER BY sent_at DESC LIMIT 1",
+                    [$email]
+                );
                 break;
         }
 

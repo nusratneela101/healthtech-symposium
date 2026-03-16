@@ -206,6 +206,11 @@ if ($campaign['test_mode']) {
     }
 }
 
+// Guard: ensure status is never saved as blank or null
+if (empty($status)) {
+    $status = 'sent';
+}
+
 // Log
 Database::query(
     "INSERT INTO email_logs (campaign_id,lead_id,recipient_email,recipient_name,subject,status,message_id,error_message,follow_up_sequence,sent_at)

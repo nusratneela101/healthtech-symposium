@@ -40,7 +40,7 @@ foreach ($events as $evt) {
                 // Always also try by email as fallback (handles message_id format mismatch)
                 Database::query(
                     "UPDATE email_logs SET status='delivered'
-                     WHERE recipient_email=? AND status='sent'
+                     WHERE recipient_email=? AND (status='sent' OR status='' OR status IS NULL)
                      ORDER BY sent_at DESC LIMIT 1",
                     [$email]
                 );
@@ -76,7 +76,7 @@ foreach ($events as $evt) {
                 }
                 Database::query(
                     "UPDATE email_logs SET status='bounced'
-                     WHERE recipient_email=? AND status IN ('sent','delivered')
+                     WHERE recipient_email=? AND (status IN ('sent','delivered') OR status='' OR status IS NULL)
                      ORDER BY sent_at DESC LIMIT 1",
                     [$email]
                 );
@@ -116,7 +116,7 @@ foreach ($events as $evt) {
                 // Always also try by email as fallback (handles message_id format mismatch)
                 Database::query(
                     "UPDATE email_logs SET status='failed'
-                     WHERE recipient_email=? AND status='sent'
+                     WHERE recipient_email=? AND (status='sent' OR status='' OR status IS NULL)
                      ORDER BY sent_at DESC LIMIT 1",
                     [$email]
                 );

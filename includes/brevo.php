@@ -87,8 +87,10 @@ class Brevo {
         }
 
         $res = self::request('POST', '/smtp/email', $payload);
-        if ($res['code'] === 201 && !empty($res['body']['messageId'])) {
-            return ['success' => true, 'message_id' => $res['body']['messageId']];
+        if ($res['code'] === 201) {
+            // Return success even when messageId is absent; email was accepted by Brevo.
+            // An empty message_id means webhook matching will fall back to recipient email.
+            return ['success' => true, 'message_id' => $res['body']['messageId'] ?? ''];
         }
         $errMsg = $res['body']['message'] ?? ('HTTP ' . $res['code']);
         return ['success' => false, 'error' => $errMsg];

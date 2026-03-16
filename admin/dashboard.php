@@ -129,94 +129,95 @@ try {
         "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
     );
 } catch (Exception $e) {}
+$baseUrl = htmlspecialchars(APP_URL, ENT_QUOTES, 'UTF-8');
 ?>
 
 <div class="kpi-grid">
-    <div class="kpi-card kc-blue">
+    <div class="kpi-card kc-blue" onclick="window.location='<?php echo $baseUrl; ?>/admin/leads.php'">
         <div class="kpi-icon">👥</div>
         <div class="kpi-val" id="kpi-total-leads" data-stat="total_leads"><?php echo number_format($stats['total_leads']); ?></div>
         <div class="kpi-lbl">Total Leads</div>
         <div class="kpi-trend t-up">↑ In Database</div>
     </div>
-    <div class="kpi-card kc-green">
+    <div class="kpi-card kc-green" onclick="window.location='<?php echo $baseUrl; ?>/admin/export.php?type=email_logs'">
         <div class="kpi-icon">✉️</div>
         <div class="kpi-val" id="kpi-emails-sent" data-stat="emails_sent"><?php echo number_format($stats['emails_sent']); ?></div>
         <div class="kpi-lbl">Emails Sent</div>
         <div class="kpi-trend t-up">↑ All Time</div>
     </div>
-    <div class="kpi-card kc-yellow">
+    <div class="kpi-card kc-yellow" onclick="window.location='<?php echo $baseUrl; ?>/admin/responses.php'">
         <div class="kpi-icon">💬</div>
         <div class="kpi-val" id="kpi-responded" data-stat="responded"><?php echo number_format($stats['responded']); ?></div>
         <div class="kpi-lbl">Responses</div>
         <div class="kpi-trend t-nt">→ Responded</div>
     </div>
-    <div class="kpi-card kc-purple">
+    <div class="kpi-card kc-purple" onclick="window.location='<?php echo $baseUrl; ?>/admin/leads.php?status=responded'">
         <div class="kpi-icon">🎯</div>
         <div class="kpi-val" id="kpi-converted" data-stat="converted"><?php echo number_format($stats['converted']); ?></div>
         <div class="kpi-lbl">Converted</div>
         <div class="kpi-trend t-up">↑ Registered</div>
     </div>
-    <div class="kpi-card kc-cyan">
+    <div class="kpi-card kc-cyan" onclick="window.location='<?php echo $baseUrl; ?>/admin/leads.php?status=new'">
         <div class="kpi-icon">🆕</div>
         <div class="kpi-val" id="kpi-new-leads" data-stat="new_leads"><?php echo number_format($stats['new_leads']); ?></div>
         <div class="kpi-lbl">New Leads</div>
         <div class="kpi-trend t-nt">→ Pending</div>
     </div>
-    <div class="kpi-card kc-red">
+    <div class="kpi-card kc-red" onclick="window.location='<?php echo $baseUrl; ?>/admin/responses.php?filter=unread'">
         <div class="kpi-icon">📬</div>
         <div class="kpi-val" id="kpi-unread" data-stat="unread_responses"><?php echo number_format($stats['unread_responses']); ?></div>
         <div class="kpi-lbl">Unread Responses</div>
         <div class="kpi-trend t-dn">↓ Needs Action</div>
     </div>
-    <div class="kpi-card kc-blue">
+    <div class="kpi-card kc-blue" onclick="window.location='<?php echo $baseUrl; ?>/admin/campaign.php'">
         <div class="kpi-icon">🚀</div>
         <div class="kpi-val" id="kpi-campaigns" data-stat="total_campaigns"><?php echo number_format($stats['total_campaigns']); ?></div>
         <div class="kpi-lbl">Campaigns</div>
         <div class="kpi-trend t-up">↑ Created</div>
     </div>
-    <div class="kpi-card kc-yellow">
+    <div class="kpi-card kc-yellow" onclick="window.location='<?php echo $baseUrl; ?>/admin/leads.php?status=unsubscribed'">
         <div class="kpi-icon">🔕</div>
         <div class="kpi-val" id="kpi-unsubscribed" data-stat="unsubscribed"><?php echo number_format($stats['unsubscribed']); ?></div>
         <div class="kpi-lbl">Unsubscribed</div>
         <div class="kpi-trend t-dn">↓ Opted Out</div>
     </div>
-    <div class="kpi-card kc-green">
+    <div class="kpi-card kc-green" onclick="window.location='<?php echo $baseUrl; ?>/admin/export.php?type=email_logs&amp;status=delivered'">
         <div class="kpi-icon">📥</div>
         <div class="kpi-val" id="kpi-delivered" data-stat="delivered"><?php echo number_format($stats['delivered']); ?></div>
         <div class="kpi-lbl">Delivered</div>
         <div class="kpi-trend t-up">↑ Confirmed</div>
     </div>
-    <div class="kpi-card kc-red">
+    <div class="kpi-card kc-red" onclick="window.location='<?php echo $baseUrl; ?>/admin/leads.php?status=bounced'">
         <div class="kpi-icon">⛔</div>
         <div class="kpi-val" id="kpi-bounced" data-stat="bounced"><?php echo number_format($stats['bounced']); ?></div>
         <div class="kpi-lbl">Bounced / Failed</div>
         <div class="kpi-trend t-dn">↓ Errors</div>
     </div>
-    <div class="kpi-card kc-cyan">
+    <div class="kpi-card kc-cyan" onclick="window.location='<?php echo $baseUrl; ?>/admin/email_health.php'">
         <div class="kpi-icon">📊</div>
         <div class="kpi-val" id="kpi-open-rate" data-stat="open_rate"><?php echo $openRateStr; ?></div>
         <div class="kpi-lbl">Open Rate</div>
         <div class="kpi-trend t-nt"><?php echo $stats['opened'] ? '→ Tracked' : '→ No tracking data'; ?></div>
     </div>
-    <div class="kpi-card kc-purple">
+    <div class="kpi-card kc-purple" onclick="window.location='<?php echo $baseUrl; ?>/admin/responses.php?filter=positive'">
         <div class="kpi-icon">🔥</div>
         <div class="kpi-val" id="kpi-hot-leads" data-stat="hot_leads"><?php echo number_format($stats['hot_leads']); ?></div>
         <div class="kpi-lbl">Hot Leads</div>
         <div class="kpi-trend t-up">↑ Interested</div>
     </div>
-    <div class="kpi-card kc-blue">
+    <div class="kpi-card kc-blue" onclick="window.location='<?php echo $baseUrl; ?>/admin/export.php?type=email_logs'">
         <div class="kpi-icon">🔁</div>
         <div class="kpi-val" id="kpi-followups" data-stat="followups_sent"><?php echo number_format($stats['followups_sent']); ?></div>
         <div class="kpi-lbl">Follow-ups Sent</div>
         <div class="kpi-trend t-up">↑ Seq. 2</div>
     </div>
-    <div class="kpi-card kc-green">
+    <div class="kpi-card kc-green" onclick="window.location='<?php echo $baseUrl; ?>/admin/email_health.php'">
         <div class="kpi-icon">📅</div>
         <div class="kpi-val" id="kpi-week" data-stat="week_sends"><?php echo number_format($stats['week_sends']); ?></div>
         <div class="kpi-lbl">This Week</div>
         <div class="kpi-trend t-up">↑ Sent</div>
     </div>
-    <div class="kpi-card kc-yellow">
+    <div class="kpi-card kc-yellow" onclick="window.location='<?php echo $baseUrl; ?>/admin/email_health.php'">
         <div class="kpi-icon">🗓️</div>
         <div class="kpi-val" id="kpi-month" data-stat="month_sends"><?php echo number_format($stats['month_sends']); ?></div>
         <div class="kpi-lbl">This Month</div>

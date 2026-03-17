@@ -38,27 +38,30 @@ if ($apiKey !== N8N_API_KEY) {
 $startTime = microtime(true);
 $maxRunSeconds = 1680; // 28 minutes max — prevents overlap with next 30-min cron run
 
-// ── Acquire a DB-level lock to prevent overlapping pipeline runs ──────────────
-// Stale-lock threshold (35 min) = max run time (28 min) + 7 min safety buffer,
-// so a crashed run's lock expires shortly after the next scheduled run starts.
+// ── Acquire a MySQL advisory lock to prevent overlapping pipeline runs ────────
+// Uses the same lock name as run_campaign_cron.php so both scripts cannot run
+// at the same time, preventing TOCTOU race conditions on sending limits.
 try {
-    $lockStmt = Database::query(
-        "INSERT INTO site_settings (setting_key, setting_value)
-         VALUES ('full_pipeline_lock', NOW())
-         ON DUPLICATE KEY UPDATE
-             setting_value = IF(setting_value < DATE_SUB(NOW(), INTERVAL 35 MINUTE),
-                                VALUES(setting_value),
-                                setting_value)"
-    );
-    $lockAcquired = $lockStmt->rowCount() > 0;
+    $lockRow      = Database::fetchOne("SELECT GET_LOCK('healthtech_email_sender', 0) AS got_lock");
+    $lockAcquired = isset($lockRow['got_lock']) && (int)$lockRow['got_lock'] === 1;
 } catch (Exception $e) {
-    $lockAcquired = true; // if lock table fails, proceed anyway
+    $lockAcquired = true; // if advisory lock unavailable, proceed anyway
 }
 
 if (!$lockAcquired) {
+    try {
+        Database::query(
+            "INSERT INTO cron_log (job_name, status, message, duration_ms)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE status=VALUES(status), message=VALUES(message),
+                                     duration_ms=VALUES(duration_ms), last_run=NOW()",
+            ['full_pipeline', 'skipped', 'Skipped: another instance is running (locked)', 0]
+        );
+    } catch (Exception $e) { /* ignore */ }
     echo json_encode([
         'success' => false,
-        'error'   => 'Another full_pipeline run is already in progress. Skipping to prevent overlap.',
+        'skipped' => true,
+        'reason'  => 'Another sender is already running',
     ]);
     exit;
 }
@@ -548,9 +551,9 @@ if ($limitHit) {
     $logMessage .= ' | Limit: ' . $limitReason;
 }
 
-// ── Release the lock ──────────────────────────────────────────────────────────
+// ── Release the advisory lock ─────────────────────────────────────────────────
 try {
-    Database::query("DELETE FROM site_settings WHERE setting_key = 'full_pipeline_lock'");
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
 } catch (Exception $e) { /* ignore */ }
 
 try {

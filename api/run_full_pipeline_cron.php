@@ -38,6 +38,23 @@ if ($apiKey !== N8N_API_KEY) {
 $startTime = microtime(true);
 $maxRunSeconds = 1680; // 28 minutes max — prevents overlap with next 30-min cron run
 
+// ── Ensure cron_log table exists before any logging ──────────────────────────
+try {
+    Database::query(
+        "CREATE TABLE IF NOT EXISTS `cron_log` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `job_name` varchar(100) NOT NULL,
+          `status` varchar(20) DEFAULT 'ok',
+          `message` text,
+          `duration_ms` int DEFAULT 0,
+          `last_run` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `job_name` (`job_name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+    );
+} catch (Exception $e) { /* ignore */ }
+
 // ── Acquire a MySQL advisory lock to prevent overlapping pipeline runs ────────
 // Uses the same lock name as run_campaign_cron.php so both scripts cannot run
 // at the same time, preventing TOCTOU race conditions on sending limits.
@@ -233,6 +250,32 @@ function pipelineAnymailfinderEnrich(string $anymailfinderApiKey, array $person)
     return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : '';
 }
 
+// ── pipelineLog helper: upsert step status into cron_log and optionally notify ─
+/**
+ * Helper: upsert a step status into cron_log and optionally create a notification.
+ */
+function pipelineLog(string $jobName, string $status, string $message, int $durationMs = 0, bool $notify = false): void
+{
+    try {
+        Database::query(
+            "INSERT INTO cron_log (job_name, status, message, duration_ms)
+             VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE status=VALUES(status), message=VALUES(message),
+                                     duration_ms=VALUES(duration_ms), last_run=NOW()",
+            [$jobName, $status, $message, $durationMs]
+        );
+    } catch (Exception $e) { /* ignore */ }
+
+    if ($notify) {
+        try {
+            Database::query(
+                "INSERT INTO notifications (user_id, title, message, type) VALUES (0, ?, ?, ?)",
+                ['Pipeline: ' . $jobName, $message, $status === 'ok' ? 'info' : 'warning']
+            );
+        } catch (Exception $e) { /* ignore */ }
+    }
+}
+
 $collectionSaved      = 0;
 $collectionSkipped    = 0;
 $collectionDuplicates = 0;
@@ -241,13 +284,23 @@ $collectionError      = null;
 $collectionId         = null;
 
 if (!empty($apolloApiKey)) {
+    // Determine the start page — resume from last run if page tracking is enabled
+    $lastPageFetched = (int)getSetting('last_apollo_page_fetched', '0');
+    $startPage       = ($lastPageFetched > 0) ? $lastPageFetched + 1 : 1;
+
+    // Determine how many pages to fetch
+    $totalPages = ($apolloPaginationMode === 'all') ? $safetyMaxPages : $maxPages;
+    $endPage    = ($apolloPaginationMode === 'all') ? ($startPage + $safetyMaxPages - 1) : ($startPage + $maxPages - 1);
+
     // Create a lead_collections record to track this run
     Database::query(
         "INSERT INTO lead_collections (source, total_fetched, status, search_params, started_at)
          VALUES (?, ?, 'running', ?, NOW())",
-        ['Apollo Pipeline', 0, json_encode(['location' => $location, 'industry' => $industry])]
+        ['Apollo Pipeline', 0, json_encode(['location' => $location, 'industry' => $industry, 'start_page' => $startPage])]
     );
     $collectionId = (int)Database::lastInsertId();
+
+    pipelineLog('full_pipeline_step1', 'ok', "Starting lead collection from page $startPage (mode: $apolloPaginationMode)");
 
     $searchParams = [
         'q_organization_industry_tag_ids' => [],
@@ -257,30 +310,46 @@ if (!empty($apolloApiKey)) {
         'reveal_personal_emails'          => true,
     ];
 
-    // Determine how many pages to fetch
-    $totalPages = ($apolloPaginationMode === 'all') ? $safetyMaxPages : $maxPages;
+    $lastSuccessfulPage = $lastPageFetched;
+    $allPagesExhausted  = false;
 
-    for ($page = 1; $page <= $totalPages; $page++) {
+    for ($page = $startPage; $page <= $endPage; $page++) {
         $pageParams = array_merge($searchParams, ['page' => $page]);
 
-        $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/api_search');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($pageParams),
-            CURLOPT_HTTPHEADER     => [
-                'Content-Type: application/json',
-                'Cache-Control: no-cache',
-                'X-Api-Key: ' . $apolloApiKey,
-            ],
-            CURLOPT_TIMEOUT => 30,
-        ]);
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        // Apollo rate-limit retry: up to 3 attempts with exponential backoff
+        $maxRetries  = 3;
+        $response    = false;
+        $httpCode    = 0;
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            $ch = curl_init('https://api.apollo.io/api/v1/mixed_people/api_search');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode($pageParams),
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json',
+                    'Cache-Control: no-cache',
+                    'X-Api-Key: ' . $apolloApiKey,
+                ],
+                CURLOPT_TIMEOUT => 30,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 429) {
+                // Rate limited — wait with exponential backoff then retry
+                $waitSeconds = (int)pow(2, $attempt); // 2s, 4s, 8s
+                pipelineLog('full_pipeline_step1', 'ok', "Apollo rate limit (429) on page $page, attempt $attempt — waiting {$waitSeconds}s");
+                sleep($waitSeconds);
+                $response = false;
+                continue;
+            }
+            break; // Success or non-429 error — stop retrying
+        }
 
         if ($response === false || $httpCode !== 200) {
-            $collectionError = 'Apollo HTTP ' . $httpCode . ' on page ' . $page;
+            $collectionError = 'Apollo HTTP ' . $httpCode . ' on page ' . $page . ' (after retries)';
             break;
         }
 
@@ -288,10 +357,13 @@ if (!empty($apolloApiKey)) {
         $people = $data['people'] ?? [];
 
         if (empty($people)) {
+            // No more results — all pages exhausted; reset page tracker for next run
+            $allPagesExhausted = true;
             break; // No more results — stop paginating
         }
 
-        $collectionFetched += count($people);
+        $collectionFetched  += count($people);
+        $lastSuccessfulPage  = $page;
 
         foreach ($people as $person) {
             $email       = strtolower(trim($person['email'] ?? ''));
@@ -369,6 +441,27 @@ if (!empty($apolloApiKey)) {
          WHERE id=?",
         [$collectionFetched, $collectionSaved, $collectionSkipped, $collectionDuplicates, $collectionId]
     );
+
+    // Save page tracking: reset to 0 when all pages exhausted so next run starts from page 1
+    try {
+        if ($allPagesExhausted) {
+            Database::query(
+                "INSERT INTO site_settings (setting_key, setting_value) VALUES ('last_apollo_page_fetched', '0')
+                 ON DUPLICATE KEY UPDATE setting_value='0'"
+            );
+        } elseif ($lastSuccessfulPage > $lastPageFetched) {
+            Database::query(
+                "INSERT INTO site_settings (setting_key, setting_value) VALUES ('last_apollo_page_fetched', ?)
+                 ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)",
+                [(string)$lastSuccessfulPage]
+            );
+        }
+    } catch (Exception $e) { /* ignore */ }
+
+    $step1Msg = "Fetched: $collectionFetched | Saved: $collectionSaved | Dupes: $collectionDuplicates | Skipped: $collectionSkipped | Last page: $lastSuccessfulPage"
+        . ($collectionError ? ' | Error: ' . $collectionError : '')
+        . ($allPagesExhausted ? ' | All pages exhausted — reset' : '');
+    pipelineLog('full_pipeline_step1', $collectionError ? 'error' : 'ok', $step1Msg, 0, $collectionSaved > 0);
 }
 
 $pipelineLog['step1_collection'] = [
@@ -381,51 +474,78 @@ $pipelineLog['step1_collection'] = [
 ];
 
 // =============================================================================
-// STEP 2: Auto-create campaign for new leads (if no running campaign exists)
+// STEP 2: Auto-create campaign for new leads (if no active campaign exists)
 // =============================================================================
 
 $campaignId      = null;
 $campaignCreated = false;
 
-$existingCampaign = Database::fetchOne("SELECT id FROM campaigns WHERE status='running' LIMIT 1");
+// Check for any active campaign: running, draft, or scheduled
+$existingCampaign = Database::fetchOne(
+    "SELECT id FROM campaigns WHERE status IN ('running', 'draft', 'scheduled') ORDER BY id DESC LIMIT 1"
+);
 
 if ($existingCampaign) {
     $campaignId = (int)$existingCampaign['id'];
-    $pipelineLog['step2_campaign'] = ['action' => 'reused', 'campaign_id' => $campaignId];
-} elseif ($autoCampaignEnabled) {
-    $defaultTpl = Database::fetchOne(
-        "SELECT id FROM email_templates WHERE is_default=1 AND is_active=1 LIMIT 1"
-    );
-    if ($defaultTpl) {
-        $newLeadsCount = (int)(Database::fetchOne(
-            "SELECT COUNT(*) AS c FROM leads WHERE status='new'"
-        )['c'] ?? 0);
 
-        $campaignKey  = 'camp_' . time() . '_' . rand(1000, 9999);
-        $campaignName = 'Auto Pipeline — ' . date('Y-m-d H:i');
-
+    // Update total_leads to reflect current eligible lead count
+    $eligibleCount = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM leads
+         WHERE status='new' AND email NOT LIKE '%@noemail.placeholder' AND email != ''"
+    )['c'] ?? 0);
+    try {
         Database::query(
-            "INSERT INTO campaigns
-                 (campaign_key, name, template_id, filter_segment, filter_role,
-                  filter_province, total_leads, status, test_mode, created_by)
-             VALUES (?, ?, ?, NULL, NULL, NULL, ?, 'running', 0, 0)",
-            [$campaignKey, $campaignName, (int)$defaultTpl['id'], $newLeadsCount]
+            "UPDATE campaigns SET total_leads=? WHERE id=?",
+            [$eligibleCount, $campaignId]
         );
-        $campaignId      = (int)Database::lastInsertId();
-        $campaignCreated = true;
+    } catch (Exception $e) { /* ignore */ }
 
-        $pipelineLog['step2_campaign'] = [
-            'action'      => 'created',
-            'campaign_id' => $campaignId,
-            'total_leads' => $newLeadsCount,
-        ];
+    pipelineLog('full_pipeline_step2', 'ok', "Reused existing campaign #$campaignId (eligible leads: $eligibleCount)");
+    $pipelineLog['step2_campaign'] = ['action' => 'reused', 'campaign_id' => $campaignId, 'total_leads' => $eligibleCount];
+} elseif ($autoCampaignEnabled) {
+    // Check if there are eligible leads (new status OR any leads if collection just ran)
+    $newLeadsCount = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM leads
+         WHERE status='new' AND email NOT LIKE '%@noemail.placeholder' AND email != ''"
+    )['c'] ?? 0);
+
+    if ($newLeadsCount === 0 && $collectionSaved === 0) {
+        pipelineLog('full_pipeline_step2', 'ok', 'Skipped campaign creation — no eligible leads found');
+        $pipelineLog['step2_campaign'] = ['action' => 'skipped', 'reason' => 'No eligible leads'];
     } else {
-        $pipelineLog['step2_campaign'] = [
-            'action' => 'skipped',
-            'reason' => 'No default template found (set is_default=1 on a template)',
-        ];
+        $defaultTpl = Database::fetchOne(
+            "SELECT id FROM email_templates WHERE is_default=1 AND is_active=1 LIMIT 1"
+        );
+        if ($defaultTpl) {
+            $campaignKey  = 'camp_' . time() . '_' . rand(1000, 9999);
+            $campaignName = 'Auto Pipeline — ' . date('Y-m-d H:i');
+
+            Database::query(
+                "INSERT INTO campaigns
+                     (campaign_key, name, template_id, filter_segment, filter_role,
+                      filter_province, total_leads, status, test_mode, created_by)
+                 VALUES (?, ?, ?, NULL, NULL, NULL, ?, 'running', 0, 0)",
+                [$campaignKey, $campaignName, (int)$defaultTpl['id'], $newLeadsCount]
+            );
+            $campaignId      = (int)Database::lastInsertId();
+            $campaignCreated = true;
+
+            pipelineLog('full_pipeline_step2', 'ok', "Created new campaign #$campaignId with $newLeadsCount leads", 0, true);
+            $pipelineLog['step2_campaign'] = [
+                'action'      => 'created',
+                'campaign_id' => $campaignId,
+                'total_leads' => $newLeadsCount,
+            ];
+        } else {
+            pipelineLog('full_pipeline_step2', 'error', 'No default template found (set is_default=1 on a template)');
+            $pipelineLog['step2_campaign'] = [
+                'action' => 'skipped',
+                'reason' => 'No default template found (set is_default=1 on a template)',
+            ];
+        }
     }
 } else {
+    pipelineLog('full_pipeline_step2', 'ok', 'Skipped — auto_campaign_enabled is off');
     $pipelineLog['step2_campaign'] = [
         'action' => 'skipped',
         'reason' => 'auto_campaign_enabled is off',
@@ -444,15 +564,17 @@ $limitReason = '';
 if ($campaignId) {
     $campaign = Database::fetchOne("SELECT * FROM campaigns WHERE id=?", [$campaignId]);
 
-    if ($campaign && in_array($campaign['status'], ['running', 'draft'])) {
+    if ($campaign && in_array($campaign['status'], ['running', 'draft', 'scheduled'])) {
         // Ensure the campaign is marked running before we start sending
-        if ($campaign['status'] === 'draft') {
+        if (in_array($campaign['status'], ['draft', 'scheduled'])) {
             Database::query(
                 "UPDATE campaigns SET status='running', started_at=NOW() WHERE id=?",
                 [$campaignId]
             );
             $campaign['status'] = 'running';
         }
+
+        pipelineLog('full_pipeline_step3', 'ok', "Starting sends for campaign #$campaignId (batch size: $pipelineBatchSize)");
 
         $tpl = Database::fetchOne("SELECT * FROM email_templates WHERE id=?", [$campaign['template_id']]);
 
@@ -530,6 +652,10 @@ if ($campaignId) {
         'limit_hit'    => $limitHit,
         'limit_reason' => $limitReason ?: null,
     ];
+
+    $step3Msg = "Campaign #$campaignId | Sent: $totalSent | Failed: $totalFailed"
+        . ($limitHit ? ' | Stopped: ' . $limitReason : '');
+    pipelineLog('full_pipeline_step3', ($totalFailed > 0 && $totalSent === 0) ? 'error' : 'ok', $step3Msg, 0, $totalSent > 0);
 } else {
     $pipelineLog['step3_sending'] = ['skipped' => true, 'reason' => 'No campaign available'];
 }
@@ -556,15 +682,7 @@ try {
     Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
 } catch (Exception $e) { /* ignore */ }
 
-try {
-    Database::query(
-        "INSERT INTO cron_log (job_name, status, message, duration_ms)
-         VALUES (?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE status=VALUES(status), message=VALUES(message),
-                                 duration_ms=VALUES(duration_ms), last_run=NOW()",
-        ['full_pipeline', 'ok', $logMessage, $durationMs]
-    );
-} catch (Exception $e) { /* ignore — table may not exist yet */ }
+pipelineLog('full_pipeline', 'ok', $logMessage, $durationMs, false);
 
 echo json_encode([
     'success'  => true,

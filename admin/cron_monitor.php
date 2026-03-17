@@ -36,6 +36,41 @@ try {
     );
 } catch (Exception $e) {}
 
+// Warm-up status for the pipeline summary card
+require_once __DIR__ . '/../includes/warmup.php';
+$warmupProgress = WarmupManager::getProgress();
+
+// Quick stats for the pipeline card
+$todaySent         = 0;
+$todayLeads        = 0;
+$activeCampaigns   = 0;
+try {
+    $row = Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM email_logs
+         WHERE status='sent' AND DATE(COALESCE(sent_at, created_at)) = CURDATE()"
+    );
+    $todaySent = (int)($row['c'] ?? 0);
+
+    $row2 = Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM leads WHERE DATE(created_at) = CURDATE() AND source='Apollo Pipeline'"
+    );
+    $todayLeads = (int)($row2['c'] ?? 0);
+
+    $row3 = Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM campaigns WHERE status IN ('running','draft','scheduled')"
+    );
+    $activeCampaigns = (int)($row3['c'] ?? 0);
+} catch (Exception $e) {}
+
+// Effective daily limit (warm-up takes precedence)
+$effectiveDailyLimit = null;
+if ($warmupProgress['enabled'] && $warmupProgress['daily_limit'] !== null) {
+    $effectiveDailyLimit = $warmupProgress['daily_limit'];
+} else {
+    $dl = (int)getSetting('email_daily_limit', '0');
+    if ($dl > 0) $effectiveDailyLimit = $dl;
+}
+
 function formatTimeAgo(?string $dateStr): string {
     if (!$dateStr) return '—';
     $diff = time() - strtotime($dateStr);
@@ -56,6 +91,94 @@ function statusDot(string $status): string {
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">⏱️ Cron Job Monitor</h2>
+
+<?php
+$fpStatus  = $cronStatus['full_pipeline'];
+$fpLastRun = $fpStatus['last_run'] ?? null;
+$fpMsg     = $fpStatus['message'] ?? '';
+$fpStat    = $fpStatus['status'] ?? 'never';
+$fpColor   = match($fpStat) { 'ok' => '#10b981', 'error' => '#ef4444', 'skipped' => '#f59e0b', default => '#8a9ab5' };
+$fpBg      = match($fpStat) { 'ok' => 'rgba(16,185,129,0.07)', 'error' => 'rgba(239,68,68,0.07)', default => 'rgba(30,58,95,0.4)' };
+?>
+
+<!-- ── Full Pipeline Summary Card ──────────────────────────────────────────── -->
+<div class="gc" style="margin-bottom:24px;border:2px solid <?php echo $fpColor; ?>;background:<?php echo $fpBg; ?>">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+            <div style="font-size:18px;font-weight:700;color:#e2e8f0">🔄 Full Pipeline</div>
+            <div style="font-size:12px;color:#8a9ab5;margin-top:2px">Lead collection → Campaign → Email sending</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn-sec" id="run-pipeline-btn"
+                    onclick="runPipelineNow()"
+                    style="padding:8px 18px;font-size:13px;font-weight:600;border-color:<?php echo $fpColor; ?>;color:<?php echo $fpColor; ?>">
+                ▶ Run Now
+            </button>
+            <a href="<?php echo APP_URL; ?>/api/run_full_pipeline_status.php?api_key=<?php echo defined('N8N_API_KEY') ? N8N_API_KEY : ''; ?>"
+               target="_blank"
+               style="font-size:12px;color:#60a5fa;text-decoration:none;padding:8px 12px;border:1px solid #1e3a5f;border-radius:6px">
+                📊 Status API
+            </a>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:20px">
+        <!-- Last Run -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Last Run</div>
+            <div style="font-size:14px;color:#e2e8f0;font-weight:600"><?php echo formatTimeAgo($fpLastRun); ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px"><?php echo htmlspecialchars($fpLastRun ?: 'Never'); ?></div>
+        </div>
+        <!-- Status -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Status</div>
+            <div style="font-size:14px;color:<?php echo $fpColor; ?>;font-weight:600"><?php echo statusDot($fpStat); ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px;word-break:break-word"><?php echo htmlspecialchars(substr($fpMsg, 0, 80)); ?></div>
+        </div>
+        <!-- Warm-up -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Warm-up</div>
+            <?php if ($warmupProgress['enabled']): ?>
+            <div style="font-size:14px;color:#f59e0b;font-weight:600">Day <?php echo $warmupProgress['current_day']; ?> / <?php echo $warmupProgress['days']; ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px">Today's limit: <?php echo $warmupProgress['daily_limit'] ?? '—'; ?></div>
+            <?php else: ?>
+            <div style="font-size:14px;color:#8a9ab5;font-weight:600">Disabled</div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px">No warm-up limit</div>
+            <?php endif; ?>
+        </div>
+        <!-- Leads Today -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Leads Today</div>
+            <div style="font-size:20px;color:#60a5fa;font-weight:700"><?php echo number_format($todayLeads); ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px">collected via Apollo</div>
+        </div>
+        <!-- Emails Sent Today -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sent Today</div>
+            <div style="font-size:20px;color:#10b981;font-weight:700">
+                <?php echo number_format($todaySent); ?>
+                <?php if ($effectiveDailyLimit !== null): ?>
+                <span style="font-size:13px;color:#8a9ab5"> / <?php echo number_format($effectiveDailyLimit); ?></span>
+                <?php endif; ?>
+            </div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px">
+                <?php if ($effectiveDailyLimit !== null): ?>
+                    <?php echo max(0, $effectiveDailyLimit - $todaySent); ?> remaining
+                <?php else: ?>
+                    no limit set
+                <?php endif; ?>
+            </div>
+        </div>
+        <!-- Active Campaigns -->
+        <div style="background:#0d1b2e;border:1px solid #1e3a5f;border-radius:8px;padding:12px 14px">
+            <div style="font-size:11px;color:#8a9ab5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Active Campaigns</div>
+            <div style="font-size:20px;color:<?php echo $activeCampaigns > 0 ? '#10b981' : '#8a9ab5'; ?>;font-weight:700"><?php echo $activeCampaigns; ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:2px">running / draft / scheduled</div>
+        </div>
+    </div>
+
+    <div id="run-pipeline-result" style="margin-top:12px;font-size:13px"></div>
+</div>
 
 <div class="gc" style="margin-bottom:24px">
     <div class="gc-title">🤖 Automation Mode</div>
@@ -212,6 +335,47 @@ function copyCmd(elemId) {
     }).catch(function(){
         showToast('Copy failed — please copy manually', 'error');
     });
+}
+
+function runPipelineNow() {
+    var btn = document.getElementById('run-pipeline-btn');
+    var res = document.getElementById('run-pipeline-result');
+    if (!btn) return;
+    btn.disabled = true;
+    btn.textContent = '⏳ Running…';
+    res.textContent = '';
+    res.style.color = '#8a9ab5';
+
+    var apiKey = <?php echo json_encode(defined('N8N_API_KEY') ? N8N_API_KEY : ''); ?>;
+    fetch('<?php echo APP_URL; ?>/api/run_full_pipeline_cron.php?api_key=' + encodeURIComponent(apiKey))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            btn.disabled = false;
+            btn.textContent = '▶ Run Now';
+            if (d.success) {
+                var s1 = d.pipeline && d.pipeline.step1_collection;
+                var s3 = d.pipeline && d.pipeline.step3_sending;
+                var msg = '✅ Done';
+                if (s1) msg += ' | Leads saved: ' + (s1.saved || 0);
+                if (s3) msg += ' | Emails sent: ' + (s3.sent || 0);
+                msg += ' (' + (d.duration || 0) + 'ms)';
+                res.textContent = msg;
+                res.style.color = '#10b981';
+                setTimeout(function(){ window.location.reload(); }, 3000);
+            } else if (d.skipped) {
+                res.textContent = '⏸ Skipped — ' + (d.reason || 'another instance is running');
+                res.style.color = '#f59e0b';
+            } else {
+                res.textContent = '❌ Error: ' + (d.error || 'Unknown error');
+                res.style.color = '#ef4444';
+            }
+        })
+        .catch(function(e){
+            btn.disabled = false;
+            btn.textContent = '▶ Run Now';
+            res.textContent = '❌ Network error: ' + e.message;
+            res.style.color = '#ef4444';
+        });
 }
 </script>
 

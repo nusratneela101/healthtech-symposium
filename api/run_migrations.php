@@ -235,6 +235,20 @@ $migrations = [
         'name' => 'email_logs.sent_at_backfill',
         'sql'  => "UPDATE `email_logs` SET `sent_at` = `created_at` WHERE `sent_at` IS NULL",
     ],
+    [
+        'name' => 'cron_log',
+        'sql'  => "CREATE TABLE IF NOT EXISTS `cron_log` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `job_name` varchar(100) NOT NULL,
+          `status` varchar(20) DEFAULT 'ok',
+          `message` text,
+          `duration_ms` int DEFAULT 0,
+          `last_run` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `job_name` (`job_name`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    ],
 ];
 
 $ok   = 0;

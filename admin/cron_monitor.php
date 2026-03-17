@@ -6,6 +6,7 @@ Auth::requireSuperAdmin();
 $automationMode = getSetting('automation_mode', 'cron');
 
 $cronJobs = [
+    'full_pipeline'   => ['label' => '🔄 Full Pipeline',    'schedule' => 'Every 30 min', 'icon' => '🔄'],
     'campaign_sender' => ['label' => '📧 Campaign Sender',  'schedule' => 'Every 5 min',  'icon' => '📧'],
     'inbox_poller'    => ['label' => '📥 Inbox Poller',     'schedule' => 'Every 10 min', 'icon' => '📥'],
     'lead_collector'  => ['label' => '👥 Lead Collector',   'schedule' => 'Daily 8 AM',   'icon' => '👥'],
@@ -153,7 +154,8 @@ function statusDot(string $status): string {
     $baseUrl = APP_URL;
     $apiKey  = defined('N8N_API_KEY') ? N8N_API_KEY : '';
     $cronCommands = [
-        'campaign_sender' => ['label'=>'📧 Campaign Sender (every 5 min)','schedule'=>'*/5 * * * *','command'=>"curl -s \"{$baseUrl}/api/run_campaign_cron.php?api_key={$apiKey}\""]
+        'full_pipeline'   => ['label'=>'🔄 Full Pipeline (every 30 min)','schedule'=>'*/30 * * * *','command'=>"curl -s \"{$baseUrl}/api/run_full_pipeline_cron.php?api_key={$apiKey}\""]
+        ,'campaign_sender' => ['label'=>'📧 Campaign Sender (every 5 min)','schedule'=>'*/5 * * * *','command'=>"curl -s \"{$baseUrl}/api/run_campaign_cron.php?api_key={$apiKey}\""]
         ,'inbox_poller'    => ['label'=>'📥 Inbox Poller (every 10 min)','schedule'=>'*/10 * * * *','command'=>"curl -s \"{$baseUrl}/api/poll_inbox.php?api_key={$apiKey}\""]
         ,'lead_collector'  => ['label'=>'👥 Lead Collector (daily 8 AM)','schedule'=>'0 8 * * *','command'=>"curl -s \"{$baseUrl}/api/run_lead_collector_cron.php?api_key={$apiKey}\""]
         ,'followup_sender' => ['label'=>'🔁 Follow-up Sender (daily 10 AM)','schedule'=>'0 10 * * *','command'=>"curl -s \"{$baseUrl}/api/run_followup_cron.php?api_key={$apiKey}\""]

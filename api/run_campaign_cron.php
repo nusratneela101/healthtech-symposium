@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/rate_limiter.php';
 require_once __DIR__ . '/check_sending_limits.php';
+require_once __DIR__ . '/../includes/campaign_sender.php';
 
 ob_clean();
 header('Content-Type: application/json');
@@ -23,10 +24,109 @@ if ($apiKey !== N8N_API_KEY) {
     exit;
 }
 
-// Log cron heartbeat — actual campaign sending is handled by send_one_email.php
-// called per-email by cPanel or the front-end scheduler.
-$startMs = microtime(true);
-$durationMs = (int)round((microtime(true) - $startMs) * 1000);
+$startTime    = microtime(true);
+$batchSize    = max(1, (int)getSetting('cron_batch_size', '50'));
+$delaySeconds = max(0, (int)getSetting('cron_send_delay_seconds', '5'));
+
+// Find all currently running campaigns
+$runningCampaigns = Database::fetchAll("SELECT * FROM campaigns WHERE status='running'");
+
+$totalSent       = 0;
+$totalFailed     = 0;
+$completedCount  = 0;
+$limitHit        = false;
+$limitReason     = '';
+$campaignResults = [];
+
+foreach ($runningCampaigns as $campaign) {
+    $campaignId  = (int)$campaign['id'];
+    $followUpSeq = 1;
+
+    $tpl = Database::fetchOne("SELECT * FROM email_templates WHERE id=?", [$campaign['template_id']]);
+    if (!$tpl) {
+        $campaignResults[] = ['campaign_id' => $campaignId, 'error' => 'Template not found'];
+        continue;
+    }
+
+    $sentThisCampaign   = 0;
+    $failedThisCampaign = 0;
+    $campaignComplete   = false;
+
+    for ($i = 0; $i < $batchSize; $i++) {
+        // Respect warm-up and daily/weekly/monthly limits
+        $limitCheck = checkSendingLimits($followUpSeq);
+        if (!$limitCheck['allowed']) {
+            $limitHit    = true;
+            $limitReason = $limitCheck['reason'];
+            break 2; // stop processing all campaigns
+        }
+
+        // Build lead query respecting campaign filters
+        $where  = "l.status NOT IN ('unsubscribed','bounced','emailed') AND l.email NOT LIKE '%@noemail.placeholder'";
+        $params = [];
+        if (!empty($campaign['filter_segment'])) {
+            $where   .= ' AND LOWER(TRIM(l.segment))=LOWER(TRIM(?))';
+            $params[] = $campaign['filter_segment'];
+        }
+        if (!empty($campaign['filter_role'])) {
+            $where   .= ' AND l.role LIKE ?';
+            $params[] = '%' . $campaign['filter_role'] . '%';
+        }
+        if (!empty($campaign['filter_province'])) {
+            $where   .= ' AND LOWER(TRIM(l.province))=LOWER(TRIM(?))';
+            $params[] = $campaign['filter_province'];
+        }
+
+        $lead = Database::fetchOne(
+            "SELECT l.* FROM leads l
+             LEFT JOIN email_logs el
+                    ON el.lead_id = l.id AND el.campaign_id = ? AND el.follow_up_sequence = ?
+             WHERE $where AND el.id IS NULL LIMIT 1",
+            array_merge([$campaignId, $followUpSeq], $params)
+        );
+
+        if (!$lead) {
+            // No more eligible leads — mark campaign complete
+            Database::query(
+                "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                [$campaignId]
+            );
+            $completedCount++;
+            $campaignComplete = true;
+            break;
+        }
+
+        $result = sendCampaignEmail($campaign, $tpl, $lead, $followUpSeq);
+
+        if ($result['status'] === 'sent') {
+            $sentThisCampaign++;
+            $totalSent++;
+        } else {
+            $failedThisCampaign++;
+            $totalFailed++;
+        }
+
+        if ($delaySeconds > 0) {
+            sleep($delaySeconds);
+        }
+    }
+
+    $campaignResults[] = [
+        'campaign_id' => $campaignId,
+        'sent'        => $sentThisCampaign,
+        'failed'      => $failedThisCampaign,
+        'complete'    => $campaignComplete,
+    ];
+}
+
+$durationMs = (int)round((microtime(true) - $startTime) * 1000);
+$message    = sprintf(
+    'Sent: %d, Failed: %d, Completed campaigns: %d',
+    $totalSent, $totalFailed, $completedCount
+);
+if ($limitHit) {
+    $message .= ' | Limit: ' . $limitReason;
+}
 
 try {
     Database::query(
@@ -34,8 +134,16 @@ try {
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE status=VALUES(status), message=VALUES(message),
                                  duration_ms=VALUES(duration_ms), last_run=NOW()",
-        ['campaign_sender', 'ok', 'Campaign cron heartbeat', $durationMs]
+        ['campaign_sender', 'ok', $message, $durationMs]
     );
 } catch (Exception $e) { /* ignore — table may not exist yet */ }
 
-echo json_encode(['success' => true, 'message' => 'Campaign cron is active in cron mode']);
+echo json_encode([
+    'success'             => true,
+    'sent'                => $totalSent,
+    'failed'              => $totalFailed,
+    'completed_campaigns' => $completedCount,
+    'limit_hit'           => $limitHit,
+    'limit_reason'        => $limitReason ?: null,
+    'results'             => $campaignResults,
+]);

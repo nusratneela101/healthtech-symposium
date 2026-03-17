@@ -783,6 +783,29 @@ function s(string $key, string $fallback = ''): string {
             <button class="btn-launch" onclick="saveSection('email_defaults',['send_delay','max_batch','test_mode_default'])">💾 Save Defaults</button>
         </div>
     </div>
+    <div class="gc" style="margin-top:20px">
+        <div class="gc-title">🎯 Pipeline Target Mode</div>
+        <div class="gc-sub">Controls how auto-created pipeline campaigns determine when to stop sending</div>
+        <div class="settings-grid">
+            <div class="sf-row">
+                <label>Pipeline Target Mode</label>
+                <select class="fi" id="pipeline_target_mode" onchange="togglePipelineTargetCount(this.value)">
+                    <option value="all" <?php echo s('pipeline_target_mode','all')==='all'?'selected':''; ?>>📧 All Leads (send to all matching leads)</option>
+                    <option value="fixed" <?php echo s('pipeline_target_mode','all')==='fixed'?'selected':''; ?>>🎯 Fixed Count (stop after N emails)</option>
+                </select>
+            </div>
+            <div class="sf-row" id="pipeline_target_count_row" style="<?php echo s('pipeline_target_mode','all')==='fixed'?'':'display:none'; ?>">
+                <label>Fixed Target Count</label>
+                <input class="fi" id="pipeline_target_count" type="number" min="1"
+                       value="<?php echo s('pipeline_target_count','500'); ?>" placeholder="e.g. 500">
+                <span style="font-size:12px;color:#8a9ab5">Pipeline campaign will stop after sending this many emails</span>
+            </div>
+        </div>
+        <div style="margin-top:20px">
+            <button class="btn-launch" onclick="savePipelineTarget()">💾 Save Pipeline Target</button>
+            <div id="pipeline_target-result" style="margin-top:10px;font-size:13px"></div>
+        </div>
+    </div>
 </div>
 
 <!-- ─── SENDING LIMITS ──────────────────────────────────────────────── -->
@@ -1003,6 +1026,37 @@ function saveSection(group, fields) {
     .catch(function(e) {
         console.error('Save error:', e);
         showToast('❌ Network error: '+e.message, 'error');
+    });
+}
+
+function togglePipelineTargetCount(mode) {
+    var row = document.getElementById('pipeline_target_count_row');
+    if (row) row.style.display = (mode === 'fixed') ? '' : 'none';
+}
+
+function savePipelineTarget() {
+    var mode = document.getElementById('pipeline_target_mode').value;
+    var count = document.getElementById('pipeline_target_count').value;
+    var settings = { pipeline_target_mode: mode, pipeline_target_count: count };
+    var resultEl = document.getElementById('pipeline_target-result');
+    if (resultEl) resultEl.textContent = 'Saving…';
+    fetch('<?php echo APP_URL; ?>/api/save_settings.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({group: 'pipeline_target', settings: settings})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            showToast('✅ Pipeline target saved', 'success');
+            if (resultEl) resultEl.textContent = '';
+        } else {
+            showToast('❌ ' + (d.error || 'Save failed'), 'error');
+            if (resultEl) resultEl.textContent = '❌ ' + (d.error || 'Save failed');
+        }
+    })
+    .catch(function(e) {
+        showToast('❌ Network error: ' + e.message, 'error');
     });
 }
 

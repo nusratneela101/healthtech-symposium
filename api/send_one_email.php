@@ -73,6 +73,19 @@ if (!$limitCheck['allowed']) {
     ]);
     exit;
 }
+
+// ── Fixed target check ───────────────────────────────────────────────────
+if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_count'] ?? 0) > 0) {
+    if ((int)$campaign['sent_count'] >= (int)$campaign['target_count']) {
+        Database::query(
+            "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+            [$campaignId]
+        );
+        Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+        echo json_encode(['done' => true, 'sent' => $campaign['sent_count'], 'failed' => $campaign['failed_count']]);
+        exit;
+    }
+}
 // ─────────────────────────────────────────────────────────────────────────
 
 // If campaign is done, return summary

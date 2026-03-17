@@ -88,6 +88,8 @@ $pipelineBatchSize    = max(1, (int)getSetting('pipeline_batch_size', '100'));
 $delaySeconds         = max(0, (int)getSetting('cron_send_delay_seconds', '5'));
 $autoCampaignEnabled  = getSetting('auto_campaign_enabled', '1') === '1';
 $apolloPaginationMode = getSetting('apollo_pagination_mode', 'configured');
+$pipelineTargetMode   = getSetting('pipeline_target_mode', 'all') === 'fixed' ? 'fixed' : 'all';
+$pipelineTargetCount  = max(0, (int)getSetting('pipeline_target_count', '0'));
 
 $pipelineLog = [
     'step1_collection' => null,
@@ -523,9 +525,11 @@ if ($existingCampaign) {
             Database::query(
                 "INSERT INTO campaigns
                      (campaign_key, name, template_id, filter_segment, filter_role,
-                      filter_province, total_leads, status, test_mode, created_by)
-                 VALUES (?, ?, ?, NULL, NULL, NULL, ?, 'running', 0, 0)",
-                [$campaignKey, $campaignName, (int)$defaultTpl['id'], $newLeadsCount]
+                      filter_province, total_leads, status, test_mode, created_by,
+                      target_mode, target_count)
+                 VALUES (?, ?, ?, NULL, NULL, NULL, ?, 'running', 0, 0, ?, ?)",
+                [$campaignKey, $campaignName, (int)$defaultTpl['id'], $newLeadsCount,
+                 $pipelineTargetMode, $pipelineTargetCount]
             );
             $campaignId      = (int)Database::lastInsertId();
             $campaignCreated = true;
@@ -595,6 +599,17 @@ if ($campaignId) {
                     $limitHit    = true;
                     $limitReason = $limitCheck['reason'];
                     break;
+                }
+
+                // Check fixed target limit
+                if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_count'] ?? 0) > 0) {
+                    if (((int)$campaign['sent_count'] + $totalSent) >= (int)$campaign['target_count']) {
+                        Database::query(
+                            "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                            [$campaignId]
+                        );
+                        break;
+                    }
                 }
 
                 // Build lead query respecting any campaign filters

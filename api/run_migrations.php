@@ -10,7 +10,24 @@ require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json');
 
-Auth::requireSuperAdmin();
+$authenticated = false;
+if (!empty($_SESSION['user_id'])) {
+    $user = Database::fetchOne("SELECT role FROM users WHERE id=?", [$_SESSION['user_id']]);
+    if ($user && $user['role'] === 'superadmin') {
+        $authenticated = true;
+    }
+}
+if (!$authenticated) {
+    $apiKey = $_GET['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '';
+    if (!empty($apiKey) && defined('N8N_API_KEY') && hash_equals(N8N_API_KEY, $apiKey)) {
+        $authenticated = true;
+    }
+}
+if (!$authenticated) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+    exit;
+}
 
 $results = [];
 
@@ -99,11 +116,13 @@ $migrations = [
         'name' => 'lead_tag_map',
         'sql'  => "CREATE TABLE IF NOT EXISTS `lead_tag_map` (
           `lead_id` int(11) NOT NULL,
-          `tag_id` int(11) NOT NULL,
+          `tag_id`  int(11) NOT NULL,
           PRIMARY KEY (`lead_id`, `tag_id`),
-          FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
-          FOREIGN KEY (`tag_id`) REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+          KEY `idx_ltm_lead` (`lead_id`),
+          KEY `idx_ltm_tag`  (`tag_id`),
+          CONSTRAINT `fk_ltm_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
+          CONSTRAINT `fk_ltm_tag`  FOREIGN KEY (`tag_id`)  REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ],
     [
         'name' => 'rate_limits',
@@ -168,6 +187,26 @@ $migrations = [
     [
         'name' => 'email_logs.sent_at',
         'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `sent_at` DATETIME NULL",
+    ],
+    [
+        'name' => 'responses.response_type',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `response_type` VARCHAR(50) NULL DEFAULT NULL",
+    ],
+    [
+        'name' => 'responses.is_read',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `is_read` TINYINT(1) NOT NULL DEFAULT 0",
+    ],
+    [
+        'name' => 'responses.is_replied',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `is_replied` TINYINT(1) NOT NULL DEFAULT 0",
+    ],
+    [
+        'name' => 'responses.sentiment',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `sentiment` VARCHAR(20) NULL DEFAULT NULL",
+    ],
+    [
+        'name' => 'email_logs.clicked',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `clicked` TINYINT(1) NOT NULL DEFAULT 0",
     ],
 ];
 

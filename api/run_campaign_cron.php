@@ -25,8 +25,34 @@ if ($apiKey !== N8N_API_KEY) {
 }
 
 $startTime    = microtime(true);
+$maxRunSeconds = 240; // 4 minutes max — prevents overlap with next 5-min cron run
 $batchSize    = max(1, (int)getSetting('cron_batch_size', '50'));
 $delaySeconds = max(0, (int)getSetting('cron_send_delay_seconds', '5'));
+
+// ── Acquire a DB-level lock to prevent overlapping cron runs ──────────────────
+// Uses ON DUPLICATE KEY UPDATE with a conditional: only update (acquire) the lock
+// if the existing lock is older than 15 minutes (stale/crashed run).
+try {
+    $lockStmt = Database::query(
+        "INSERT INTO site_settings (setting_key, setting_value)
+         VALUES ('campaign_sender_lock', NOW())
+         ON DUPLICATE KEY UPDATE
+             setting_value = IF(setting_value < DATE_SUB(NOW(), INTERVAL 6 MINUTE),
+                                VALUES(setting_value),
+                                setting_value)"
+    );
+    $lockAcquired = $lockStmt->rowCount() > 0;
+} catch (Exception $e) {
+    $lockAcquired = true; // if lock table fails, proceed anyway
+}
+
+if (!$lockAcquired) {
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Another campaign_sender run is already in progress. Skipping to prevent overlap.',
+    ]);
+    exit;
+}
 
 // Find all currently running campaigns
 $runningCampaigns = Database::fetchAll("SELECT * FROM campaigns WHERE status='running'");
@@ -53,6 +79,13 @@ foreach ($runningCampaigns as $campaign) {
     $campaignComplete   = false;
 
     for ($i = 0; $i < $batchSize; $i++) {
+        // Cap execution time to prevent overlap with next cron run
+        if ((microtime(true) - $startTime) > $maxRunSeconds) {
+            $limitHit    = true;
+            $limitReason = 'Max run time reached (' . $maxRunSeconds . 's)';
+            break 2;
+        }
+
         // Respect warm-up and daily/weekly/monthly limits
         $limitCheck = checkSendingLimits($followUpSeq);
         if (!$limitCheck['allowed']) {
@@ -127,6 +160,11 @@ $message    = sprintf(
 if ($limitHit) {
     $message .= ' | Limit: ' . $limitReason;
 }
+
+// ── Release the lock ──────────────────────────────────────────────────────────
+try {
+    Database::query("DELETE FROM site_settings WHERE setting_key = 'campaign_sender_lock'");
+} catch (Exception $e) { /* ignore */ }
 
 try {
     Database::query(

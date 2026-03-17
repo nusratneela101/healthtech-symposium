@@ -36,6 +36,32 @@ if ($apiKey !== N8N_API_KEY) {
 }
 
 $startTime = microtime(true);
+$maxRunSeconds = 1680; // 28 minutes max — prevents overlap with next 30-min cron run
+
+// ── Acquire a DB-level lock to prevent overlapping pipeline runs ──────────────
+// Stale-lock threshold (35 min) = max run time (28 min) + 7 min safety buffer,
+// so a crashed run's lock expires shortly after the next scheduled run starts.
+try {
+    $lockStmt = Database::query(
+        "INSERT INTO site_settings (setting_key, setting_value)
+         VALUES ('full_pipeline_lock', NOW())
+         ON DUPLICATE KEY UPDATE
+             setting_value = IF(setting_value < DATE_SUB(NOW(), INTERVAL 35 MINUTE),
+                                VALUES(setting_value),
+                                setting_value)"
+    );
+    $lockAcquired = $lockStmt->rowCount() > 0;
+} catch (Exception $e) {
+    $lockAcquired = true; // if lock table fails, proceed anyway
+}
+
+if (!$lockAcquired) {
+    echo json_encode([
+        'success' => false,
+        'error'   => 'Another full_pipeline run is already in progress. Skipping to prevent overlap.',
+    ]);
+    exit;
+}
 
 // Read pipeline settings
 $pipelineBatchSize    = max(1, (int)getSetting('pipeline_batch_size', '100'));
@@ -431,6 +457,13 @@ if ($campaignId) {
             $followUpSeq = 1;
 
             for ($i = 0; $i < $pipelineBatchSize; $i++) {
+                // Cap execution time to prevent overlap with next cron run
+                if ((microtime(true) - $startTime) > $maxRunSeconds) {
+                    $limitHit    = true;
+                    $limitReason = 'Max run time reached (' . $maxRunSeconds . 's)';
+                    break;
+                }
+
                 // Respect warm-up and daily/weekly/monthly limits before each send
                 $limitCheck = checkSendingLimits($followUpSeq);
                 if (!$limitCheck['allowed']) {
@@ -514,6 +547,11 @@ $logMessage = sprintf(
 if ($limitHit) {
     $logMessage .= ' | Limit: ' . $limitReason;
 }
+
+// ── Release the lock ──────────────────────────────────────────────────────────
+try {
+    Database::query("DELETE FROM site_settings WHERE setting_key = 'full_pipeline_lock'");
+} catch (Exception $e) { /* ignore */ }
 
 try {
     Database::query(

@@ -99,6 +99,15 @@ function statusDot(string $status): string {
 <div class="gc" style="margin-bottom:24px">
     <div class="gc-title">📊 Cron Job Status</div>
     <div class="gc-sub">Live status of all scheduled cron jobs</div>
+    <?php if (($cronStatus['full_pipeline']['status'] ?? 'never') === 'never'): ?>
+    <div style="margin-top:16px;background:rgba(245,158,11,0.12);border:1px solid #f59e0b;border-radius:8px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px;flex-shrink:0">⚠️</span>
+        <div>
+            <div style="font-weight:600;color:#f59e0b;margin-bottom:4px">Full Pipeline cron has never run</div>
+            <div style="font-size:13px;color:#d1a827">The <strong>Full Pipeline</strong> cron job has not been set up in cPanel yet. Without it, new leads won't be collected automatically and daily warm-up sending may not fire. Copy the <em>Full Pipeline</em> command from the <strong>cPanel Cron Commands</strong> section further down this page and add it to cPanel Cron Jobs (every 30 minutes).</div>
+        </div>
+    </div>
+    <?php endif; ?>
     <div class="tbl-wrap" style="margin-top:16px;overflow-x:auto">
         <table class="dt" style="width:100%">
             <thead><tr><th>Job</th><th>Schedule</th><th>Status</th><th>Last Run</th><th>Duration</th></tr></thead>

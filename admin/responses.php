@@ -1,6 +1,16 @@
 <?php
 require_once __DIR__ . '/../includes/layout.php';
 
+// Self-heal: ensure required columns exist before any query
+try {
+    Database::query("ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `response_type` VARCHAR(50) NULL DEFAULT NULL");
+    Database::query("ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `is_read` TINYINT(1) NOT NULL DEFAULT 0");
+    Database::query("ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `is_replied` TINYINT(1) NOT NULL DEFAULT 0");
+    Database::query("ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `sentiment` VARCHAR(20) NULL DEFAULT NULL");
+} catch (Exception $e) {
+    // Columns already exist or DB doesn't support IF NOT EXISTS — safe to ignore
+}
+
 $perPage = 20;
 $page    = max(1, (int)($_GET['page'] ?? 1));
 $offset  = ($page - 1) * $perPage;

@@ -188,11 +188,38 @@ try {
                 <td><?php echo $c['failed_count']; ?></td>
                 <td><?php echo pill($c['status']); ?></td>
                 <td style="font-size:12px"><?php echo timeAgo($c['created_at']); ?></td>
-                <td>
+                <td style="display:flex;gap:4px;flex-wrap:wrap">
+                    <?php if (in_array($c['status'], ['draft', 'paused', 'scheduled'])): ?>
+                    <button onclick="resumeCampaign(<?php echo $c['id']; ?>)"
+                            style="background:none;border:1px solid #10b981;color:#10b981;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer"
+                            title="Start/Resume sending">
+                        ▶️ Run
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if ($c['status'] === 'running'): ?>
+                    <button onclick="pauseCampaign(<?php echo $c['id']; ?>)"
+                            style="background:none;border:1px solid #f59e0b;color:#f59e0b;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer"
+                            title="Pause campaign">
+                        ⏸️ Pause
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if (in_array($c['status'], ['running', 'paused', 'draft'])): ?>
+                    <button onclick="cancelCampaign(<?php echo $c['id']; ?>)"
+                            style="background:none;border:1px solid #ef4444;color:#ef4444;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer"
+                            title="Cancel/Stop campaign permanently">
+                        🛑 Stop
+                    </button>
+                    <?php endif; ?>
+
+                    <?php if ($c['status'] !== 'running'): ?>
                     <button onclick="deleteCampaign(<?php echo $c['id']; ?>)"
-                            style="background:none;border:1px solid #ef4444;color:#ef4444;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer">
+                            style="background:none;border:1px solid #ef4444;color:#ef4444;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer"
+                            title="Delete campaign and logs">
                         🗑 Delete
                     </button>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -264,6 +291,63 @@ async function deleteCampaign(id) {
         location.reload();
     } else {
         alert('Error: ' + (json.error || 'Could not delete'));
+    }
+}
+
+async function resumeCampaign(id) {
+    if (!confirm('Start/Resume this campaign? The cron job will begin sending emails.')) return;
+    const res = await fetch('<?php echo APP_URL; ?>/api/update_campaign.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            campaign_id: id,
+            status: 'running',
+            api_key: '<?php echo N8N_API_KEY; ?>'
+        })
+    });
+    const json = await res.json();
+    if (json.success) {
+        location.reload();
+    } else {
+        alert('Error: ' + (json.error || 'Could not resume campaign'));
+    }
+}
+
+async function pauseCampaign(id) {
+    if (!confirm('Pause this campaign? Sending will stop until you resume it.')) return;
+    const res = await fetch('<?php echo APP_URL; ?>/api/update_campaign.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            campaign_id: id,
+            status: 'paused',
+            api_key: '<?php echo N8N_API_KEY; ?>'
+        })
+    });
+    const json = await res.json();
+    if (json.success) {
+        location.reload();
+    } else {
+        alert('Error: ' + (json.error || 'Could not pause campaign'));
+    }
+}
+
+async function cancelCampaign(id) {
+    if (!confirm('⚠️ STOP this campaign permanently? It will be marked as completed and cannot be resumed.')) return;
+    const res = await fetch('<?php echo APP_URL; ?>/api/update_campaign.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            campaign_id: id,
+            status: 'completed',
+            api_key: '<?php echo N8N_API_KEY; ?>'
+        })
+    });
+    const json = await res.json();
+    if (json.success) {
+        location.reload();
+    } else {
+        alert('Error: ' + (json.error || 'Could not stop campaign'));
     }
 }
 

@@ -33,9 +33,28 @@ if (empty($fields)) {
     exit;
 }
 
+// Validate status if provided
+if (isset($fields['status'])) {
+    $validStatuses = ['draft', 'running', 'paused', 'completed', 'scheduled'];
+    if (!in_array($fields['status'], $validStatuses)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid status. Must be one of: draft, running, paused, completed, scheduled']);
+        exit;
+    }
+}
+
 $sets   = implode(',', array_map(fn($k) => "$k=?", array_keys($fields)));
 $values = array_values($fields);
+
+// Auto-set timestamps based on status transition
+$extraSql = '';
+if (($fields['status'] ?? '') === 'running') {
+    $extraSql = ', started_at = COALESCE(started_at, NOW())';
+} elseif (($fields['status'] ?? '') === 'completed') {
+    $extraSql = ', completed_at = NOW()';
+}
+
 $values[] = $campaignId;
 
-Database::query("UPDATE campaigns SET $sets WHERE id=?", $values);
-echo json_encode(['success' => true]);
+Database::query("UPDATE campaigns SET $sets{$extraSql} WHERE id=?", $values);
+echo json_encode(['success' => true, 'campaign_id' => $campaignId, 'status' => $fields['status'] ?? null]);

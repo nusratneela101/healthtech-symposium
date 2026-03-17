@@ -31,7 +31,7 @@ try {
         'converted'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='converted'")['c'] ?? 0,
         'unsubscribed'     => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0,
         'total_campaigns'  => Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0,
-        'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0,
+        'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE (status != '' AND status IS NOT NULL) OR (message_id != '' AND message_id IS NOT NULL)")['c'] ?? 0,
         'unread_responses' => $unreadCount,
         'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0,
         'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
@@ -55,7 +55,7 @@ $daily = [];
 try {
     $daily = Database::fetchAll(
         "SELECT DATE(sent_at) AS d, COUNT(*) AS cnt FROM email_logs
-         WHERE status='sent' AND sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+         WHERE status IN ('sent','delivered','opened','clicked','failed','bounced') AND sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
          GROUP BY DATE(sent_at) ORDER BY d ASC"
     );
 } catch (Exception $e) {}

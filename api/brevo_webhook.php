@@ -40,7 +40,7 @@ foreach ($events as $evt) {
                 // Always also try by email as fallback (handles message_id format mismatch)
                 Database::query(
                     "UPDATE email_logs SET status='delivered'
-                     WHERE recipient_email=? AND (status='sent' OR status='' OR status IS NULL)
+                     WHERE recipient_email=? AND (status NOT IN ('delivered','bounced','unsubscribed') OR status IS NULL OR status = '')
                      ORDER BY sent_at DESC LIMIT 1",
                     [$email]
                 );

@@ -119,10 +119,16 @@ $migrations = [
           `tag_id`  int(11) NOT NULL,
           PRIMARY KEY (`lead_id`, `tag_id`),
           KEY `idx_ltm_lead` (`lead_id`),
-          KEY `idx_ltm_tag`  (`tag_id`),
-          CONSTRAINT `fk_ltm_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE,
-          CONSTRAINT `fk_ltm_tag`  FOREIGN KEY (`tag_id`)  REFERENCES `lead_tags`(`id`) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+          KEY `idx_ltm_tag`  (`tag_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    ],
+    [
+        'name' => 'lead_tag_map.fk_lead',
+        'sql'  => "ALTER TABLE `lead_tag_map` ADD CONSTRAINT `fk_ltm_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads`(`id`) ON DELETE CASCADE",
+    ],
+    [
+        'name' => 'lead_tag_map.fk_tag',
+        'sql'  => "ALTER TABLE `lead_tag_map` ADD CONSTRAINT `fk_ltm_tag` FOREIGN KEY (`tag_id`) REFERENCES `lead_tags`(`id`) ON DELETE CASCADE",
     ],
     [
         'name' => 'rate_limits',
@@ -240,8 +246,17 @@ foreach ($migrations as $m) {
         $results[] = ['name' => $m['name'], 'status' => 'ok'];
         $ok++;
     } catch (Exception $e) {
-        $results[] = ['name' => $m['name'], 'status' => 'fail', 'error' => $e->getMessage()];
-        $fail++;
+        $msg = $e->getMessage();
+        // Treat "duplicate key / constraint already exists" as a no-op success
+        if (strpos($msg, 'Duplicate key name') !== false
+            || strpos($msg, 'already exists') !== false
+        ) {
+            $results[] = ['name' => $m['name'], 'status' => 'ok', 'note' => 'already exists'];
+            $ok++;
+        } else {
+            $results[] = ['name' => $m['name'], 'status' => 'fail', 'error' => $msg];
+            $fail++;
+        }
     }
 }
 

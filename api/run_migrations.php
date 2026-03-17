@@ -249,6 +249,14 @@ $migrations = [
           UNIQUE KEY `job_name` (`job_name`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ],
+    [
+        'name' => 'campaigns.target_mode',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `target_mode` ENUM('all','fixed') DEFAULT 'all'",
+    ],
+    [
+        'name' => 'campaigns.target_count',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `target_count` INT DEFAULT 0",
+    ],
 ];
 
 $ok   = 0;

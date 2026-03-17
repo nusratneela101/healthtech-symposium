@@ -32,6 +32,7 @@ try {
                     <th>Template</th>
                     <th>Segment</th>
                     <th>Province</th>
+                    <th>Target</th>
                     <th>Total</th>
                     <th>Sent</th>
                     <th>Failed</th>
@@ -51,6 +52,17 @@ try {
                 <td style="font-size:12px"><?php echo htmlspecialchars($c['tpl_name'] ?? '—'); ?></td>
                 <td style="font-size:12px"><?php echo htmlspecialchars($c['filter_segment'] ?: 'All'); ?></td>
                 <td style="font-size:12px"><?php echo htmlspecialchars($c['filter_province'] ?: 'All'); ?></td>
+                <td style="font-size:12px">
+                    <?php
+                    $mode = $c['target_mode'] ?? 'all';
+                    $cnt  = (int)($c['target_count'] ?? 0);
+                    if ($mode === 'fixed' && $cnt > 0) {
+                        echo '<span style="color:#f59e0b">🎯 Fixed: ' . $cnt . '</span>';
+                    } else {
+                        echo '<span style="color:#8a9ab5">📧 All</span>';
+                    }
+                    ?>
+                </td>
                 <td><?php echo $c['total_leads']; ?></td>
                 <td style="color:#10b981"><?php echo $c['sent_count']; ?></td>
                 <td style="color:#ef4444"><?php echo $c['failed_count']; ?></td>
@@ -68,7 +80,7 @@ try {
             </tr>
             <?php endforeach; ?>
             <?php if (empty($campaigns)): ?>
-            <tr><td colspan="14" style="text-align:center;color:#8a9ab5;padding:32px">No campaigns yet. <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php" style="color:#0d6efd">Create one →</a></td></tr>
+            <tr><td colspan="15" style="text-align:center;color:#8a9ab5;padding:32px">No campaigns yet. <a href="<?php echo APP_URL; ?>/admin/auto_campaign.php" style="color:#0d6efd">Create one →</a></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

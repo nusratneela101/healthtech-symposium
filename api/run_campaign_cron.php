@@ -97,6 +97,19 @@ foreach ($runningCampaigns as $campaign) {
             break 2; // stop processing all campaigns
         }
 
+        // Check fixed target limit
+        if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_count'] ?? 0) > 0) {
+            if (((int)$campaign['sent_count'] + $sentThisCampaign) >= (int)$campaign['target_count']) {
+                Database::query(
+                    "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                    [$campaignId]
+                );
+                $completedCount++;
+                $campaignComplete = true;
+                break;
+            }
+        }
+
         // Build lead query respecting campaign filters
         $where  = "l.status NOT IN ('unsubscribed','bounced','emailed') AND l.email NOT LIKE '%@noemail.placeholder'";
         $params = [];

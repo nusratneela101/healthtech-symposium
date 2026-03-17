@@ -9,13 +9,15 @@ Auth::check();
 
 // Create campaign — handle BEFORE loading layout (which outputs HTML)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
-    $tplId   = (int)$_POST['template_id'];
-    $name    = trim($_POST['campaign_name'] ?? 'Campaign ' . date('Y-m-d H:i'));
-    $seg     = trim($_POST['filter_segment'] ?? '');
-    $role    = trim($_POST['filter_role']    ?? '');
-    $prov    = trim($_POST['filter_province'] ?? '');
-    $key     = 'camp_' . time() . '_' . rand(1000,9999);
-    $testMode = isset($_POST['test_mode']) ? 1 : 0;
+    $tplId      = (int)$_POST['template_id'];
+    $name       = trim($_POST['campaign_name'] ?? 'Campaign ' . date('Y-m-d H:i'));
+    $seg        = trim($_POST['filter_segment'] ?? '');
+    $role       = trim($_POST['filter_role']    ?? '');
+    $prov       = trim($_POST['filter_province'] ?? '');
+    $key        = 'camp_' . time() . '_' . rand(1000,9999);
+    $testMode   = isset($_POST['test_mode']) ? 1 : 0;
+    $targetMode = in_array($_POST['target_mode'] ?? '', ['all', 'fixed']) ? $_POST['target_mode'] : 'all';
+    $targetCount = ($targetMode === 'fixed') ? max(1, (int)($_POST['target_count'] ?? 0)) : 0;
 
     try {
         $where  = "status NOT IN ('unsubscribed','bounced','emailed')";
@@ -26,9 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
         $total = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE $where", $params)['c'] ?? 0);
 
         Database::query(
-            "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,created_by)
-             VALUES(?,?,?,?,?,?,?,'draft',?,?)",
-            [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, Auth::user()['id']]
+            "INSERT INTO campaigns (campaign_key,name,template_id,filter_segment,filter_role,filter_province,total_leads,status,test_mode,created_by,target_mode,target_count)
+             VALUES(?,?,?,?,?,?,?,'running',?,?,?,?)",
+            [$key, $name, $tplId, $seg, $role, $prov, $total, $testMode, Auth::user()['id'], $targetMode, $targetCount]
         );
         $campId = Database::lastInsertId();
         echo json_encode(['success' => true, 'campaign_id' => $campId, 'campaign_key' => $key, 'total' => $total]);
@@ -108,6 +110,19 @@ try {
                 <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:6px">Filter by Role (keyword)</label>
                 <input class="fi" name="filter_role" placeholder="e.g. CTO, VP, Director" style="width:100%">
             </div>
+            <div style="margin-bottom:14px">
+                <label style="font-size:13px;color:#8a9ab5;display:block;margin-bottom:8px">🎯 Target Mode</label>
+                <div style="display:flex;flex-direction:column;gap:10px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="radio" name="target_mode" value="all" checked onchange="toggleTargetCount(this.value)" style="width:14px;height:14px">
+                        <span style="font-size:13px;color:#e2e8f0">📧 All Leads <span style="color:#8a9ab5">(send to all matching leads)</span></span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                        <input type="radio" name="target_mode" value="fixed" onchange="toggleTargetCount(this.value)" style="width:14px;height:14px">
+                        <span style="font-size:13px;color:#e2e8f0">🎯 Fixed Count: <input type="number" id="targetCountInput" name="target_count" min="1" value="500" aria-label="Fixed target count" style="width:80px;padding:3px 8px;background:#0a1628;border:1px solid #1e3355;border-radius:4px;color:#e2e8f0;font-size:13px;margin:0 4px"> leads</span>
+                    </label>
+                </div>
+            </div>
             <div style="margin-bottom:20px;display:flex;align-items:center;gap:8px">
                 <input type="checkbox" id="test_mode" name="test_mode" style="width:16px;height:16px">
                 <label for="test_mode" style="font-size:13px;color:#8a9ab5">Test Mode (log only, don't send real emails)</label>
@@ -139,15 +154,37 @@ try {
     <div class="gc-title">📋 Recent Campaigns</div>
     <div class="tbl-wrap">
         <table class="dt">
-            <thead><tr><th>ID</th><th>Name</th><th>Template</th><th>Total</th><th>Sent</th><th>Failed</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
+            <thead><tr><th>ID</th><th>Name</th><th>Template</th><th>Target</th><th>Progress</th><th>Failed</th><th>Status</th><th>Created</th><th>Action</th></tr></thead>
             <tbody>
             <?php foreach ($recentCampaigns as $c): ?>
             <tr>
                 <td><?php echo $c['id']; ?></td>
                 <td><?php echo htmlspecialchars($c['name']); ?></td>
                 <td style="font-size:12px"><?php echo htmlspecialchars($c['tpl_name'] ?? '—'); ?></td>
-                <td><?php echo $c['total_leads']; ?></td>
-                <td><?php echo $c['sent_count']; ?></td>
+                <td style="font-size:12px">
+                    <?php
+                    $mode = $c['target_mode'] ?? 'all';
+                    $cnt  = (int)($c['target_count'] ?? 0);
+                    if ($mode === 'fixed' && $cnt > 0) {
+                        echo '<span style="color:#f59e0b">🎯 Fixed: ' . $cnt . '</span>';
+                    } else {
+                        echo '<span style="color:#8a9ab5">📧 All</span>';
+                    }
+                    ?>
+                </td>
+                <td style="font-size:12px">
+                    <?php
+                    $sent  = (int)$c['sent_count'];
+                    $total = (int)$c['total_leads'];
+                    $mode  = $c['target_mode'] ?? 'all';
+                    $cnt   = (int)($c['target_count'] ?? 0);
+                    if ($mode === 'fixed' && $cnt > 0) {
+                        echo "Sent $sent / $cnt (Fixed)";
+                    } else {
+                        echo "Sent $sent / $total (All)";
+                    }
+                    ?>
+                </td>
                 <td><?php echo $c['failed_count']; ?></td>
                 <td><?php echo pill($c['status']); ?></td>
                 <td style="font-size:12px"><?php echo timeAgo($c['created_at']); ?></td>
@@ -171,6 +208,10 @@ let campaignId = null;
 let campaignKey = null;
 let sentCount = 0;
 let totalCount = 0;
+
+function toggleTargetCount(mode) {
+    document.getElementById('targetCountInput').disabled = (mode !== 'fixed');
+}
 
 async function resetEmailedLeads() {
     if (!confirm('This will reset all "emailed" leads back to "new" so they can be targeted again. Continue?')) return;

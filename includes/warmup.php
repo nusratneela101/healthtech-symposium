@@ -130,7 +130,7 @@ class WarmupManager {
     private static function sentToday(): int {
         try {
             $row = Database::fetchOne(
-                "SELECT COUNT(*) AS c FROM email_logs WHERE status='sent' AND DATE(sent_at)=CURDATE()"
+                "SELECT COUNT(*) AS c FROM email_logs WHERE status='sent' AND DATE(COALESCE(sent_at, created_at))=CURDATE()"
             );
             return (int)($row['c'] ?? 0);
         } catch (Exception $e) {

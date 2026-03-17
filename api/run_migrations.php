@@ -221,6 +221,14 @@ $migrations = [
           KEY `response_id` (`response_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
     ],
+    [
+        'name' => 'email_logs.sent_at_default',
+        'sql'  => "ALTER TABLE `email_logs` MODIFY COLUMN `sent_at` DATETIME DEFAULT CURRENT_TIMESTAMP",
+    ],
+    [
+        'name' => 'email_logs.sent_at_backfill',
+        'sql'  => "UPDATE `email_logs` SET `sent_at` = `created_at` WHERE `sent_at` IS NULL",
+    ],
 ];
 
 $ok   = 0;

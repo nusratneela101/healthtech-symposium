@@ -29,7 +29,7 @@ function checkSendingLimits(int $followUpSeq = 1): array {
     if ($dailyLimit > 0) {
         $sentToday = (int)(Database::fetchOne(
             "SELECT COUNT(*) AS c FROM email_logs
-             WHERE status='sent' AND follow_up_sequence $seqCond AND DATE(sent_at) = CURDATE()"
+             WHERE status='sent' AND follow_up_sequence $seqCond AND DATE(COALESCE(sent_at, created_at)) = CURDATE()"
         )['c'] ?? 0);
         if ($sentToday >= $dailyLimit) {
             return ['allowed' => false, 'reason' => "Daily $type limit reached ($sentToday / $dailyLimit)"];

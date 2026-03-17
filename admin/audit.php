@@ -2,8 +2,8 @@
 require_once __DIR__ . '/../includes/layout.php';
 
 // Summary stats
-$totalSent     = Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0;
-$totalFailed   = Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='failed'")['c'] ?? 0;
+$totalSent     = Database::fetchOne("SELECT COALESCE(SUM(sent_count), 0) AS c FROM campaigns")['c'] ?? 0;
+$totalFailed   = Database::fetchOne("SELECT COALESCE(SUM(failed_count), 0) AS c FROM campaigns")['c'] ?? 0;
 $totalResponded= Database::fetchOne("SELECT COUNT(*) AS c FROM responses")['c'] ?? 0;
 $totalCampaigns= Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0;
 $responseRate  = $totalSent > 0 ? round($totalResponded / $totalSent * 100, 1) : 0;
@@ -19,9 +19,9 @@ $campaigns = Database::fetchAll(
 
 // Daily logs (30 days)
 $daily = Database::fetchAll(
-    "SELECT DATE(sent_at) AS d, COUNT(*) AS cnt FROM email_logs
-     WHERE status='sent' AND sent_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-     GROUP BY DATE(sent_at) ORDER BY d ASC"
+    "SELECT DATE(COALESCE(sent_at, created_at)) AS d, COUNT(*) AS cnt FROM email_logs
+     WHERE status='sent' AND COALESCE(sent_at, created_at) >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+     GROUP BY DATE(COALESCE(sent_at, created_at)) ORDER BY d ASC"
 );
 $chartDates  = json_encode(array_column($daily, 'd'));
 $chartCounts = json_encode(array_map('intval', array_column($daily, 'cnt')));

@@ -40,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
 
 require_once __DIR__ . '/../includes/layout.php';
 
+$sendDelayMs = max(500, (int)(getSetting('send_delay', '5')) * 1000);
+
 $templates = [];
 $segments  = [];
 $provinces = [];
@@ -125,7 +127,10 @@ try {
             </div>
             <div id="statusMsg" style="font-size:13px;color:#10b981;margin-bottom:12px"></div>
         </div>
-        <div id="noProgressMsg" style="padding:24px 0;text-align:center;color:#8a9ab5;font-size:13px">No campaign running. Launch a campaign to see live progress.</div>
+        <div id="noProgressMsg" style="padding:24px 0;text-align:center;color:#8a9ab5;font-size:13px">
+            No campaign running. Launch a campaign to see live progress.
+            <br><small style="color:#8a9ab5">Send delay: <?php echo $sendDelayMs / 1000; ?>s per email</small>
+        </div>
         <div id="logTerminal" style="background:#0a0f1a;border:1px solid #1e3355;border-radius:8px;padding:16px;height:280px;overflow-y:auto;font-family:monospace;font-size:12px;color:#4ade80"><span style="color:#8a9ab5">▶ Waiting for campaign launch…</span></div>
     </div>
 </div>
@@ -160,6 +165,7 @@ try {
 </div>
 
 <script>
+const SEND_DELAY_MS = <?php echo $sendDelayMs; ?>;
 let running = false;
 let campaignId = null;
 let campaignKey = null;
@@ -275,10 +281,10 @@ async function sendNext() {
             log(`✉️ Sent to ${json.sent_to}`);
         }
         if (json.error) log(`⚠️ ${json.error}`);
-        setTimeout(sendNext, 800);
+        setTimeout(sendNext, SEND_DELAY_MS);
     } catch(e) {
         log('Network error: ' + e.message);
-        setTimeout(sendNext, 2000);
+        setTimeout(sendNext, Math.max(SEND_DELAY_MS, 2000));
     }
 }
 </script>

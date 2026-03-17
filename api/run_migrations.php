@@ -208,6 +208,19 @@ $migrations = [
         'name' => 'email_logs.clicked',
         'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `clicked` TINYINT(1) NOT NULL DEFAULT 0",
     ],
+    [
+        'name' => 'response_replies',
+        'sql'  => "CREATE TABLE IF NOT EXISTS `response_replies` (
+          `id` int(11) NOT NULL AUTO_INCREMENT,
+          `response_id` int(11) NOT NULL,
+          `replied_by` int(11) DEFAULT NULL,
+          `reply_subject` varchar(500) DEFAULT '',
+          `reply_body` text,
+          `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `response_id` (`response_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    ],
 ];
 
 $ok   = 0;

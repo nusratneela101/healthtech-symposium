@@ -16,6 +16,20 @@ function checkSendingLimits(int $followUpSeq = 1): array {
         return ['allowed' => false, 'reason' => $warmupCheck['reason']];
     }
 
+    // ── Total daily limit check (counts ALL emails regardless of sequence) ────
+    // This prevents the TOCTOU race condition where campaign + follow-up limits
+    // are each checked separately but their combined total exceeds email_daily_limit.
+    $totalDailyLimit = (int)getSetting('email_daily_limit', '0');
+    if ($totalDailyLimit > 0) {
+        $totalSentToday = (int)(Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM email_logs
+             WHERE status='sent' AND DATE(COALESCE(sent_at, created_at)) = CURDATE()"
+        )['c'] ?? 0);
+        if ($totalSentToday >= $totalDailyLimit) {
+            return ['allowed' => false, 'reason' => "Total daily limit reached ($totalSentToday / $totalDailyLimit)"];
+        }
+    }
+
     // Read limits from site_settings / config (0 = unlimited)
     $dailyLimit   = (int)getSetting($isFollowup ? 'followup_daily_limit'   : 'email_daily_limit',   '0');
     $weeklyLimit  = (int)getSetting($isFollowup ? 'followup_weekly_limit'  : 'email_weekly_limit',  '0');

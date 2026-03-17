@@ -40,9 +40,30 @@ if (!$campaign) {
     exit;
 }
 
+// ── Advisory lock: wait up to 5 s for a slot, then check limit and send ─────
+// Prevents TOCTOU race with concurrent cron runs that also hold this lock.
+try {
+    $lockRow      = Database::fetchOne("SELECT GET_LOCK('healthtech_email_sender', 5) AS got_lock");
+    $lockAcquired = isset($lockRow['got_lock']) && (int)$lockRow['got_lock'] === 1;
+} catch (Exception $e) {
+    $lockAcquired = true; // if advisory lock unavailable, proceed anyway
+}
+
+if (!$lockAcquired) {
+    echo json_encode([
+        'done'      => true,
+        'limit_hit' => true,
+        'reason'    => 'Another sender is already running',
+        'sent'      => $campaign['sent_count'],
+        'failed'    => $campaign['failed_count'],
+    ]);
+    exit;
+}
+
 // ── Sending limit check ──────────────────────────────────────────────────
 $limitCheck = checkSendingLimits($followUpSeq);
 if (!$limitCheck['allowed']) {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
     echo json_encode([
         'done'        => true,
         'limit_hit'   => true,
@@ -56,6 +77,7 @@ if (!$limitCheck['allowed']) {
 
 // If campaign is done, return summary
 if ($campaign['status'] === 'completed') {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
     echo json_encode(['done' => true, 'sent' => $campaign['sent_count'], 'failed' => $campaign['failed_count']]);
     exit;
 }
@@ -63,6 +85,7 @@ if ($campaign['status'] === 'completed') {
 // Get template
 $tpl = Database::fetchOne("SELECT * FROM email_templates WHERE id=?", [$campaign['template_id']]);
 if (!$tpl) {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
     echo json_encode(['error' => 'Template not found']);
     exit;
 }
@@ -97,6 +120,7 @@ if (!$lead) {
         [$campaignId]
     );
     $camp = Database::fetchOne("SELECT sent_count, failed_count FROM campaigns WHERE id=?", [$campaignId]);
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
     echo json_encode(['done' => true, 'sent' => $camp['sent_count'], 'failed' => $camp['failed_count']]);
     exit;
 }
@@ -224,6 +248,11 @@ if ($status === 'sent') {
 } else {
     Database::query("UPDATE campaigns SET failed_count=failed_count+1 WHERE id=?", [$campaignId]);
 }
+
+// ── Release the advisory lock ─────────────────────────────────────────────────
+try {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+} catch (Exception $e) { /* ignore */ }
 
 echo json_encode([
     'done'    => false,

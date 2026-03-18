@@ -22,11 +22,9 @@ try {
         "SELECT COUNT(*) AS c FROM email_logs WHERE (status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != '')"
     )['c'] ?? 0);
 
-    // Delivered = explicitly confirmed OR sent with message_id > 5 min ago (likely delivered)
+    // Delivered = all emails with a valid status excluding failures and bounces
     $metrics['delivered']    = (int)(Database::fetchOne(
-        "SELECT COUNT(*) AS c FROM email_logs
-         WHERE (status IN ('delivered','opened','clicked'))
-            OR (status = 'sent' AND message_id IS NOT NULL AND message_id != '' AND sent_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE))"
+        "SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced','') AND status IS NOT NULL"
     )['c'] ?? 0);
 
     // Bounced/failed

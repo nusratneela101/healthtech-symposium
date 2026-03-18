@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
 
 require_once __DIR__ . '/../includes/layout.php';
 
-$sendDelayMs = max(500, (int)(getSetting('cron_send_delay_seconds', '5')) * 1000);
+$sendDelayMs = max(500, (int)(getSetting('send_delay', '5')) * 1000);
 
 $templates = [];
 $segments  = [];

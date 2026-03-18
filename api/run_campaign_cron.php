@@ -27,7 +27,7 @@ if ($apiKey !== N8N_API_KEY) {
 $startTime    = microtime(true);
 $maxRunSeconds = 240; // 4 minutes max — prevents overlap with next 5-min cron run
 $batchSize    = max(1, (int)getSetting('cron_batch_size', '50'));
-$delaySeconds = max(0, (int)getSetting('cron_send_delay_seconds', '5'));
+$delaySeconds = max(0, (int)getSetting('send_delay', '5'));
 
 // ── Acquire a MySQL advisory lock to prevent overlapping cron runs ────────────
 // GET_LOCK with timeout=0 means "fail immediately if already locked".
@@ -82,8 +82,8 @@ foreach ($runningCampaigns as $campaign) {
     $campaignComplete   = false;
 
     for ($i = 0; $i < $batchSize; $i++) {
-        // Re-check campaign status before each send (user may have paused/stopped)
-        $freshStatus = Database::fetchOne("SELECT status FROM campaigns WHERE id=?", [$campaignId]);
+        // Re-check campaign status and sent_count before each send (user may have paused/stopped)
+        $freshStatus = Database::fetchOne("SELECT status, sent_count, total_leads FROM campaigns WHERE id=?", [$campaignId]);
         if (!$freshStatus || $freshStatus['status'] !== 'running') {
             break; // Campaign was paused/stopped/completed — stop sending immediately
         }
@@ -105,7 +105,20 @@ foreach ($runningCampaigns as $campaign) {
 
         // Check fixed target limit
         if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_count'] ?? 0) > 0) {
-            if (((int)$campaign['sent_count'] + $sentThisCampaign) >= (int)$campaign['target_count']) {
+            if ((int)$freshStatus['sent_count'] >= (int)$campaign['target_count']) {
+                Database::query(
+                    "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                    [$campaignId]
+                );
+                $completedCount++;
+                $campaignComplete = true;
+                break;
+            }
+        }
+
+        // Cap total sends at total_leads for target_mode='all' — prevents oversending
+        if (($campaign['target_mode'] ?? 'all') === 'all' && (int)($freshStatus['total_leads'] ?? 0) > 0) {
+            if ((int)$freshStatus['sent_count'] >= (int)$freshStatus['total_leads']) {
                 Database::query(
                     "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
                     [$campaignId]

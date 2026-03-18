@@ -85,7 +85,7 @@ if (!$lockAcquired) {
 
 // Read pipeline settings
 $pipelineBatchSize    = max(1, (int)getSetting('pipeline_batch_size', '100'));
-$delaySeconds         = max(0, (int)getSetting('cron_send_delay_seconds', '5'));
+$delaySeconds         = max(0, (int)getSetting('send_delay', '5'));
 $autoCampaignEnabled  = getSetting('auto_campaign_enabled', '1') === '1';
 $apolloPaginationMode = getSetting('apollo_pagination_mode', 'configured');
 $pipelineTargetMode   = getSetting('pipeline_target_mode', 'all') === 'fixed' ? 'fixed' : 'all';
@@ -586,8 +586,8 @@ if ($campaignId) {
             $followUpSeq = 1;
 
             for ($i = 0; $i < $pipelineBatchSize; $i++) {
-                // Re-check campaign status before each send (user may have paused/stopped)
-                $freshStatus = Database::fetchOne("SELECT status FROM campaigns WHERE id=?", [$campaignId]);
+                // Re-check campaign status and sent_count before each send (user may have paused/stopped)
+                $freshStatus = Database::fetchOne("SELECT status, sent_count, total_leads FROM campaigns WHERE id=?", [$campaignId]);
                 if (!$freshStatus || $freshStatus['status'] !== 'running') {
                     break; // Campaign was paused/stopped/completed — stop sending immediately
                 }
@@ -609,7 +609,18 @@ if ($campaignId) {
 
                 // Check fixed target limit
                 if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_count'] ?? 0) > 0) {
-                    if (((int)$campaign['sent_count'] + $totalSent) >= (int)$campaign['target_count']) {
+                    if ((int)$freshStatus['sent_count'] >= (int)$campaign['target_count']) {
+                        Database::query(
+                            "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                            [$campaignId]
+                        );
+                        break;
+                    }
+                }
+
+                // Cap total sends at total_leads for target_mode='all' — prevents oversending
+                if (($campaign['target_mode'] ?? 'all') === 'all' && (int)($freshStatus['total_leads'] ?? 0) > 0) {
+                    if ((int)$freshStatus['sent_count'] >= (int)$freshStatus['total_leads']) {
                         Database::query(
                             "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
                             [$campaignId]

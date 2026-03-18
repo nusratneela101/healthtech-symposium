@@ -22,11 +22,22 @@ function sendCampaignEmail(array $campaign, array $tpl, array $lead, int $follow
     // Fresh status re-check — another process may have paused/stopped this campaign
     // between when the caller fetched its copy and now.
     $freshCampaign = Database::fetchOne(
-        "SELECT status, sent_count, total_leads FROM campaigns WHERE id=?",
+        "SELECT status, sent_count, total_leads, target_mode FROM campaigns WHERE id=?",
         [$campaignId]
     );
     if (!$freshCampaign || $freshCampaign['status'] !== 'running') {
         return ['status' => 'skipped', 'via' => '', 'error' => 'Campaign no longer running'];
+    }
+
+    // Cap sends at total_leads for target_mode='all' — prevents oversending
+    if (($freshCampaign['target_mode'] ?? 'all') === 'all' && (int)($freshCampaign['total_leads'] ?? 0) > 0) {
+        if ((int)$freshCampaign['sent_count'] >= (int)$freshCampaign['total_leads']) {
+            Database::query(
+                "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+                [$campaignId]
+            );
+            return ['status' => 'skipped', 'via' => '', 'error' => 'Campaign total_leads cap reached'];
+        }
     }
 
     $unsubLink     = PUBLIC_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);

@@ -116,6 +116,20 @@ if (($campaign['target_mode'] ?? 'all') === 'fixed' && (int)($campaign['target_c
         exit;
     }
 }
+
+// ── Total leads cap for target_mode='all' ────────────────────────────────
+// Prevents oversending when browser and cron both send concurrently.
+if (($campaign['target_mode'] ?? 'all') === 'all' && (int)($campaign['total_leads'] ?? 0) > 0) {
+    if ((int)$campaign['sent_count'] >= (int)$campaign['total_leads']) {
+        Database::query(
+            "UPDATE campaigns SET status='completed', completed_at=NOW() WHERE id=?",
+            [$campaignId]
+        );
+        Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+        echo json_encode(['done' => true, 'sent' => $campaign['sent_count'], 'failed' => $campaign['failed_count']]);
+        exit;
+    }
+}
 // ─────────────────────────────────────────────────────────────────────────
 
 // If campaign is done, return summary

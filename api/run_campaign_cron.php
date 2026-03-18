@@ -156,6 +156,8 @@ foreach ($runningCampaigns as $campaign) {
         if ($result['status'] === 'sent') {
             $sentThisCampaign++;
             $totalSent++;
+        } elseif ($result['status'] === 'skipped') {
+            break; // Campaign was paused/stopped mid-send — stop the loop
         } else {
             $failedThisCampaign++;
             $totalFailed++;

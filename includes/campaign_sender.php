@@ -18,6 +18,16 @@
 function sendCampaignEmail(array $campaign, array $tpl, array $lead, int $followUpSeq = 1): array
 {
     $campaignId    = (int)$campaign['id'];
+
+    // Re-check campaign status before sending (user may have paused/stopped since the loop started)
+    $freshCampaign = Database::fetchOne(
+        "SELECT status FROM campaigns WHERE id=?",
+        [$campaignId]
+    );
+    if (!$freshCampaign || $freshCampaign['status'] !== 'running') {
+        return ['status' => 'skipped', 'reason' => 'Campaign no longer running'];
+    }
+
     $unsubLink     = PUBLIC_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
     $signatureHtml = $tpl['signature_html'] ?? '';
 

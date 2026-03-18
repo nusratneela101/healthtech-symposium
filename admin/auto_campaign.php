@@ -520,6 +520,17 @@ async function sendNext() {
             return;
         }
 
+        // Server says campaign is paused or cancelled — stop the browser loop immediately
+        if (json.paused || json.cancelled) {
+            running = false;
+            const reason = json.reason || (json.paused ? 'Campaign is paused' : 'Campaign is cancelled');
+            log(`⏸️ ${reason}`);
+            document.getElementById('statusMsg').textContent = `⏸️ ${reason}`;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('launchBtn').disabled = false;
+            return;
+        }
+
         if (json.sent_to) {
             sentCount++;
             document.getElementById('sentCount').textContent = sentCount;

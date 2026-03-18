@@ -37,10 +37,10 @@ if (!$campaign) {
 }
 
 // Check if campaign is paused or stopped — don't send
-if (in_array($campaign['status'], ['paused', 'completed', 'cancelled'])) {
+if (in_array($campaign['status'], ['paused', 'completed', 'cancelled', 'stopped'])) {
     echo json_encode([
         'done'      => ($campaign['status'] === 'completed'),
-        'paused'    => ($campaign['status'] === 'paused'),
+        'paused'    => in_array($campaign['status'], ['paused', 'stopped']),
         'cancelled' => ($campaign['status'] === 'cancelled'),
         'reason'    => 'Campaign is ' . $campaign['status'],
         'sent'      => $campaign['sent_count'],

@@ -655,6 +655,8 @@ if ($campaignId) {
 
                 if ($result['status'] === 'sent') {
                     $totalSent++;
+                } elseif ($result['status'] === 'skipped') {
+                    break; // Campaign was paused/stopped mid-send — stop the loop
                 } else {
                     $totalFailed++;
                 }

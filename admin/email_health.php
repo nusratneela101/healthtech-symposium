@@ -74,13 +74,31 @@ $dns = DnsChecker::checkAll();
 // ── Warm-up progress ──────────────────────────────────────────────────────
 $warmup = WarmupManager::getProgress();
 
-// ── Spam check — latest template ─────────────────────────────────────────
-$latestTemplate = null;
-$spamResult     = null;
+// ── Spam check — template selector ───────────────────────────────────────
+$allTemplates       = [];
+$latestTemplate     = null;
+$spamResult         = null;
+$selectedTemplateId = (int)($_GET['check_template'] ?? 0);
 try {
-    $latestTemplate = Database::fetchOne(
-        "SELECT subject, html_body FROM email_templates ORDER BY updated_at DESC LIMIT 1"
+    $allTemplates = Database::fetchAll(
+        "SELECT id, name, subject, html_body, is_default FROM email_templates WHERE is_active = 1 ORDER BY is_default DESC, updated_at DESC"
     );
+
+    if ($selectedTemplateId) {
+        $latestTemplate = Database::fetchOne(
+            "SELECT id, name, subject, html_body, is_default FROM email_templates WHERE id = ? AND is_active = 1", [$selectedTemplateId]
+        );
+    } else {
+        $latestTemplate = Database::fetchOne(
+            "SELECT id, name, subject, html_body, is_default FROM email_templates WHERE is_default = 1 AND is_active = 1 LIMIT 1"
+        );
+        if (!$latestTemplate) {
+            $latestTemplate = Database::fetchOne(
+                "SELECT id, name, subject, html_body, is_default FROM email_templates WHERE is_active = 1 ORDER BY updated_at DESC LIMIT 1"
+            );
+        }
+    }
+
     if ($latestTemplate) {
         $spamResult = SpamChecker::analyze($latestTemplate['subject'], $latestTemplate['html_body']);
     }
@@ -207,9 +225,26 @@ function spamRiskColor(string $level): string {
     <div class="gc-title">🔍 Spam Content Checker</div>
     <div class="gc-sub">Analyze any subject / body for spam trigger words and deliverability issues</div>
 
+    <!-- Template selector -->
+    <?php if (!empty($allTemplates)): ?>
+    <div style="margin-top:12px;margin-bottom:16px">
+        <label style="font-size:12px;color:#8a9ab5;display:block;margin-bottom:4px">Select Template to Analyze</label>
+        <div style="display:flex;gap:8px;align-items:center">
+            <select class="fi" id="spam_template_select" onchange="changeSpamTemplate(this.value)" style="flex:1">
+                <?php foreach ($allTemplates as $t): ?>
+                <option value="<?php echo $t['id']; ?>" <?php echo ($latestTemplate && $t['id'] == $latestTemplate['id']) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($t['name']); ?>
+                    <?php if ($t['is_default']): ?> ⭐ (Default)<?php endif; ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if ($spamResult && $latestTemplate): ?>
     <div style="margin-bottom:16px;padding:10px 14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;font-size:12px;color:#8a9ab5">
-        Latest template: <strong style="color:#e2e8f0"><?php echo htmlspecialchars($latestTemplate['subject']); ?></strong>
+        Analyzing: <strong style="color:#e2e8f0"><?php echo htmlspecialchars($latestTemplate['subject']); ?></strong>
         — Risk score:
         <strong style="color:<?php echo spamRiskColor($spamResult['risk_level']); ?>">
             <?php echo $spamResult['score']; ?>/100 (<?php echo ucfirst($spamResult['risk_level']); ?>)
@@ -309,6 +344,12 @@ function spamRiskColor(string $level): string {
 </div>
 
 <script>
+function changeSpamTemplate(templateId) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('check_template', templateId);
+    window.location.href = url.toString();
+}
+
 async function runSpamCheck() {
     const subject = document.getElementById('check_subject').value;
     const body    = document.getElementById('check_body').value;

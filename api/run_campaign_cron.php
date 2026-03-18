@@ -156,7 +156,7 @@ foreach ($runningCampaigns as $campaign) {
         if ($result['status'] === 'sent') {
             $sentThisCampaign++;
             $totalSent++;
-        } else {
+        } elseif ($result['status'] !== 'skipped') {
             $failedThisCampaign++;
             $totalFailed++;
         }

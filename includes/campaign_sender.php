@@ -18,6 +18,17 @@
 function sendCampaignEmail(array $campaign, array $tpl, array $lead, int $followUpSeq = 1): array
 {
     $campaignId    = (int)$campaign['id'];
+
+    // Fresh status re-check — another process may have paused/stopped this campaign
+    // between when the caller fetched its copy and now.
+    $freshCampaign = Database::fetchOne(
+        "SELECT status, sent_count, total_leads FROM campaigns WHERE id=?",
+        [$campaignId]
+    );
+    if (!$freshCampaign || $freshCampaign['status'] !== 'running') {
+        return ['status' => 'skipped', 'via' => '', 'error' => 'Campaign no longer running'];
+    }
+
     $unsubLink     = PUBLIC_URL . '/unsubscribe.php?email=' . urlencode($lead['email']);
     $signatureHtml = $tpl['signature_html'] ?? '';
 

@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_campaign'])) {
 
 require_once __DIR__ . '/../includes/layout.php';
 
-$sendDelayMs = max(500, (int)(getSetting('send_delay', '5')) * 1000);
+$sendDelayMs = max(500, (int)(getSetting('cron_send_delay_seconds', '5')) * 1000);
 
 $templates = [];
 $segments  = [];
@@ -505,6 +505,16 @@ async function sendNext() {
             const reason = json.reason || 'Sending limit reached';
             log(`⚠️ ${reason}. Campaign paused — will resume on next cron run.`);
             document.getElementById('statusMsg').textContent = `⚠️ ${reason}`;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('launchBtn').disabled = false;
+            return;
+        }
+
+        // Campaign was paused or stopped on the server side — stop the loop
+        if (json.paused === true) {
+            running = false;
+            log(`⏸️ Campaign paused. Sent: ${json.sent ?? sentCount}`);
+            document.getElementById('statusMsg').textContent = '⏸️ Campaign paused';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('launchBtn').disabled = false;
             return;

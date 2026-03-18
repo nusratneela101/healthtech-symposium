@@ -37,10 +37,10 @@ if (!$campaign) {
 }
 
 // Check if campaign is paused or stopped — don't send
-if (in_array($campaign['status'], ['paused', 'completed', 'cancelled'])) {
+if (in_array($campaign['status'], ['paused', 'completed', 'cancelled', 'stopped'])) {
     echo json_encode([
         'done'      => ($campaign['status'] === 'completed'),
-        'paused'    => ($campaign['status'] === 'paused'),
+        'paused'    => in_array($campaign['status'], ['paused', 'stopped']),
         'cancelled' => ($campaign['status'] === 'cancelled'),
         'reason'    => 'Campaign is ' . $campaign['status'],
         'sent'      => $campaign['sent_count'],
@@ -69,6 +69,24 @@ if (!$lockAcquired) {
     ]);
     exit;
 }
+
+// Fresh status re-check after acquiring the lock (campaign may have been paused
+// while we were waiting up to 5 s for the lock to become available).
+$freshCampaign = Database::fetchOne("SELECT status, sent_count, failed_count, total_leads FROM campaigns WHERE id=?", [$campaignId]);
+if (!$freshCampaign || in_array($freshCampaign['status'], ['paused', 'completed', 'cancelled', 'stopped'])) {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+    $s = $freshCampaign['status'] ?? 'not found';
+    echo json_encode([
+        'done'   => in_array($s, ['completed', 'cancelled']),
+        'paused' => in_array($s, ['paused', 'stopped']),
+        'reason' => 'Campaign is ' . $s,
+        'sent'   => $freshCampaign['sent_count'] ?? $campaign['sent_count'],
+        'failed' => $freshCampaign['failed_count'] ?? $campaign['failed_count'],
+    ]);
+    exit;
+}
+// Use fresh campaign data for the remainder of the request
+$campaign = array_merge($campaign, $freshCampaign);
 
 // ── Sending limit check ──────────────────────────────────────────────────
 $limitCheck = checkSendingLimits($followUpSeq);

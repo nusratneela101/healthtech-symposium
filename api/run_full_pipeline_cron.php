@@ -655,7 +655,7 @@ if ($campaignId) {
 
                 if ($result['status'] === 'sent') {
                     $totalSent++;
-                } else {
+                } elseif ($result['status'] !== 'skipped') {
                     $totalFailed++;
                 }
 

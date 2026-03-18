@@ -60,6 +60,16 @@ try {
          ORDER BY c.created_at DESC LIMIT 10"
     );
 } catch (Exception $e) {}
+
+// Detect any currently running campaign to auto-show progress on page load
+$runningCampaign = null;
+try {
+    $runningCampaign = Database::fetchOne(
+        "SELECT c.*, t.name AS tpl_name FROM campaigns c 
+         LEFT JOIN email_templates t ON c.template_id=t.id
+         WHERE c.status='running' ORDER BY c.started_at DESC LIMIT 1"
+    );
+} catch (Exception $e) {}
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">🚀 Auto Campaign</h2>
@@ -235,6 +245,77 @@ let campaignId = null;
 let campaignKey = null;
 let sentCount = 0;
 let totalCount = 0;
+
+// Poll campaign status from server every few seconds for cron-driven campaigns
+async function pollCampaignStatus() {
+    if (!running || !campaignId) return;
+    try {
+        const res = await fetch('<?php echo APP_URL; ?>/api/campaign_status.php?campaign_id=' + campaignId + '&api_key=<?php echo N8N_API_KEY; ?>');
+        const json = await res.json();
+        if (json.success) {
+            sentCount = json.sent_count;
+            const failedCount = json.failed_count;
+            document.getElementById('sentCount').textContent = sentCount;
+            const pct = totalCount > 0 ? Math.round(sentCount / totalCount * 100) : 0;
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('statusMsg').textContent = `Sending… ${pct}%`;
+
+            if (json.status === 'completed' || json.status === 'paused') {
+                running = false;
+                document.getElementById('stopBtn').style.display = 'none';
+                document.getElementById('launchBtn').disabled = false;
+                const emoji = json.status === 'completed' ? '✅' : '⏸️';
+                log(`${emoji} Campaign ${json.status}! Sent: ${sentCount}, Failed: ${failedCount}`);
+                document.getElementById('statusMsg').textContent = `${emoji} Campaign ${json.status}!`;
+                return;
+            }
+        }
+    } catch(e) { /* ignore polling errors */ }
+    setTimeout(pollCampaignStatus, 5000);
+}
+
+// ── Auto-detect running campaign on page load ────────────────────
+<?php if ($runningCampaign): ?>
+(function autoResume() {
+    const rc = <?php echo json_encode([
+        'id'           => (int)$runningCampaign['id'],
+        'campaign_key' => $runningCampaign['campaign_key'],
+        'sent_count'   => (int)$runningCampaign['sent_count'],
+        'failed_count' => (int)$runningCampaign['failed_count'],
+        'total_leads'  => (int)$runningCampaign['total_leads'],
+        'target_mode'  => $runningCampaign['target_mode'] ?? 'all',
+        'target_count' => (int)($runningCampaign['target_count'] ?? 0),
+        'name'         => $runningCampaign['name'],
+    ]); ?>;
+
+    campaignId  = rc.id;
+    campaignKey = rc.campaign_key;
+    sentCount   = rc.sent_count;
+    totalCount  = (rc.target_mode === 'fixed' && rc.target_count > 0) ? rc.target_count : rc.total_leads;
+
+    // Show the progress UI
+    document.getElementById('progressArea').style.display = 'block';
+    document.getElementById('noProgressMsg').style.display = 'none';
+    document.getElementById('sentCount').textContent = sentCount;
+    document.getElementById('totalCount').textContent = totalCount;
+    const pct = totalCount > 0 ? Math.round(sentCount / totalCount * 100) : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('statusMsg').textContent = `Sending… ${pct}% (resumed from server)`;
+    document.getElementById('stopBtn').style.display = 'block';
+    document.getElementById('launchBtn').disabled = true;
+
+    // Show log entry (build via DOM to avoid XSS from campaign name)
+    const t = document.getElementById('logTerminal');
+    const logDiv = document.createElement('div');
+    logDiv.style.marginBottom = '2px';
+    logDiv.textContent = `${new Date().toLocaleTimeString()} — 🔄 Campaign #${rc.id} "${rc.name}" is already running. Sent ${rc.sent_count}, Failed ${rc.failed_count}. Auto-resuming live tracking…`;
+    t.innerHTML = '';
+    t.appendChild(logDiv);
+
+    running = true;
+    pollCampaignStatus();
+})();
+<?php endif; ?>
 
 function toggleTargetCount(mode) {
     document.getElementById('targetCountInput').disabled = (mode !== 'fixed');

@@ -164,6 +164,15 @@ foreach ($runningCampaigns as $campaign) {
             break;
         }
 
+        // Duplicate-send guard: skip if an email_log already exists for this lead+campaign+sequence
+        $alreadySent = Database::fetchOne(
+            "SELECT id FROM email_logs WHERE lead_id=? AND campaign_id=? AND follow_up_sequence=?",
+            [$lead['id'], $campaignId, $followUpSeq]
+        );
+        if ($alreadySent) {
+            continue;
+        }
+
         $result = sendCampaignEmail($campaign, $tpl, $lead, $followUpSeq);
 
         if ($result['status'] === 'sent') {

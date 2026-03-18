@@ -182,6 +182,18 @@ if (!$lead) {
     exit;
 }
 
+// Duplicate-send guard: re-check under lock that no log exists for this lead+campaign+sequence
+$alreadySent = Database::fetchOne(
+    "SELECT id FROM email_logs WHERE lead_id=? AND campaign_id=? AND follow_up_sequence=?",
+    [$lead['id'], $campaignId, $followUpSeq]
+);
+if ($alreadySent) {
+    Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+    $camp = Database::fetchOne("SELECT sent_count, failed_count FROM campaigns WHERE id=?", [$campaignId]);
+    echo json_encode(['done' => false, 'skipped' => true, 'reason' => 'Already sent to this lead', 'sent' => $camp['sent_count'], 'failed' => $camp['failed_count']]);
+    exit;
+}
+
 // Mark campaign running
 if ($campaign['status'] === 'draft') {
     Database::query("UPDATE campaigns SET status='running', started_at=NOW() WHERE id=?", [$campaignId]);

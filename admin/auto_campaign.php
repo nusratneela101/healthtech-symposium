@@ -257,7 +257,7 @@ async function pollCampaignStatus() {
             sentCount = json.sent_count;
             const failedCount = json.failed_count;
             document.getElementById('sentCount').textContent = sentCount;
-            const pct = totalCount > 0 ? Math.round(sentCount / totalCount * 100) : 0;
+            const pct = totalCount > 0 ? Math.min(100, Math.round(sentCount / totalCount * 100)) : 0;
             document.getElementById('progressBar').style.width = pct + '%';
             document.getElementById('statusMsg').textContent = `Sending… ${pct}%`;
 
@@ -299,7 +299,7 @@ async function pollCampaignStatus() {
     document.getElementById('noProgressMsg').style.display = 'none';
     document.getElementById('sentCount').textContent = sentCount;
     document.getElementById('totalCount').textContent = totalCount;
-    const pct = totalCount > 0 ? Math.round(sentCount / totalCount * 100) : 0;
+    const pct = totalCount > 0 ? Math.min(100, Math.round(sentCount / totalCount * 100)) : 0;
     document.getElementById('progressBar').style.width = pct + '%';
     document.getElementById('statusMsg').textContent = `Sending… ${pct}% (resumed from server)`;
     document.getElementById('stopBtn').style.display = 'block';

@@ -81,7 +81,7 @@ $spamResult         = null;
 $selectedTemplateId = (int)($_GET['check_template'] ?? 0);
 try {
     $allTemplates = Database::fetchAll(
-        "SELECT id, name, subject, html_body, is_default FROM email_templates WHERE is_active = 1 ORDER BY is_default DESC, updated_at DESC"
+        "SELECT id, name, subject, html_body, is_default, is_active FROM email_templates WHERE is_active = 1 ORDER BY is_default DESC, updated_at DESC"
     );
 
     if ($selectedTemplateId) {
@@ -244,7 +244,8 @@ function spamRiskColor(string $level): string {
 
     <?php if ($spamResult && $latestTemplate): ?>
     <div style="margin-bottom:16px;padding:10px 14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;font-size:12px;color:#8a9ab5">
-        Analyzing: <strong style="color:#e2e8f0"><?php echo htmlspecialchars($latestTemplate['subject']); ?></strong>
+        Analyzing: <strong style="color:#e2e8f0"><?php echo htmlspecialchars($latestTemplate['name'] ?? $latestTemplate['subject']); ?></strong>
+        <?php echo (!empty($latestTemplate['is_default']) ? ' ⭐ Default' : ''); ?>
         — Risk score:
         <strong style="color:<?php echo spamRiskColor($spamResult['risk_level']); ?>">
             <?php echo $spamResult['score']; ?>/100 (<?php echo ucfirst($spamResult['risk_level']); ?>)

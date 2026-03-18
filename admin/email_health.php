@@ -17,21 +17,36 @@ $metrics = [
     'unsubscribed'  => 0,
 ];
 try {
-    $metrics['total_sent']   = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")['c'] ?? 0);
-    $metrics['delivered']    = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='delivered'")['c'] ?? 0);
-    $metrics['bounced']      = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0);
+    // Total send attempts (matches dashboard counting logic)
+    $metrics['total_sent']   = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM email_logs WHERE (status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != '')"
+    )['c'] ?? 0);
+
+    // Delivered = successfully sent and not bounced/failed
+    $metrics['delivered']    = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced','') AND status IS NOT NULL"
+    )['c'] ?? 0);
+
+    // Bounced/failed
+    $metrics['bounced']      = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')"
+    )['c'] ?? 0);
+
     $metrics['opened']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0);
     $metrics['responded']    = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses")['c'] ?? 0);
     $metrics['unsubscribed'] = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0);
 } catch (Exception $e) {}
 
+// Use total_sent as the base for bounce/delivery rates
 $base            = max(1, $metrics['total_sent']);
-$deliveredBase   = max(1, ($metrics['delivered'] ?: $metrics['total_sent']));
-$deliverRate     = $metrics['total_sent'] > 0 ? round((($metrics['total_sent'] - $metrics['bounced']) / $base) * 100, 1) : 0;
-$bounceRate      = round(($metrics['bounced']    / $base)          * 100, 1);
-$openRate        = round(($metrics['opened']     / $deliveredBase) * 100, 1);
-$responseRate    = round(($metrics['responded']  / $deliveredBase) * 100, 1);
-$unsubRate       = round(($metrics['unsubscribed']/ $deliveredBase)* 100, 1);
+// Use delivered count as the base for open/response/unsub rates
+$deliveredBase   = max(1, $metrics['delivered']);
+
+$deliverRate     = round(($metrics['delivered'] / $base)          * 100, 1);
+$bounceRate      = round(($metrics['bounced']   / $base)          * 100, 1);
+$openRate        = round(($metrics['opened']    / $deliveredBase) * 100, 1);
+$responseRate    = round(($metrics['responded'] / $deliveredBase) * 100, 1);
+$unsubRate       = round(($metrics['unsubscribed'] / $deliveredBase) * 100, 1);
 
 // Sender reputation score (0–100)
 $reputationScore = max(0, min(100,

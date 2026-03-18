@@ -36,6 +36,19 @@ if (!$campaign) {
     exit;
 }
 
+// Check if campaign is paused or stopped — don't send
+if (in_array($campaign['status'], ['paused', 'completed', 'cancelled'])) {
+    echo json_encode([
+        'done'      => ($campaign['status'] === 'completed'),
+        'paused'    => ($campaign['status'] === 'paused'),
+        'cancelled' => ($campaign['status'] === 'cancelled'),
+        'reason'    => 'Campaign is ' . $campaign['status'],
+        'sent'      => $campaign['sent_count'],
+        'failed'    => $campaign['failed_count'],
+    ]);
+    exit;
+}
+
 // ── Advisory lock: wait up to 5 s for a slot, then check limit and send ─────
 // Prevents TOCTOU race with concurrent cron runs that also hold this lock.
 try {

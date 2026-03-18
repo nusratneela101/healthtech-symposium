@@ -22,9 +22,11 @@ try {
         "SELECT COUNT(*) AS c FROM email_logs WHERE (status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != '')"
     )['c'] ?? 0);
 
-    // Delivered = successfully sent and not bounced/failed
+    // Delivered = explicitly confirmed OR sent with message_id > 5 min ago (likely delivered)
     $metrics['delivered']    = (int)(Database::fetchOne(
-        "SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced','') AND status IS NOT NULL"
+        "SELECT COUNT(*) AS c FROM email_logs
+         WHERE (status IN ('delivered','opened','clicked'))
+            OR (status = 'sent' AND message_id IS NOT NULL AND message_id != '' AND sent_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE))"
     )['c'] ?? 0);
 
     // Bounced/failed
@@ -134,6 +136,60 @@ function spamRiskColor(string $level): string {
         default    => '#8a9ab5',
     };
 }
+// ── Webhook Health ────────────────────────────────────────────────────────
+$webhookHealth = [
+    'last_received'     => null,
+    'total_events'      => 0,
+    'event_breakdown'   => [],
+    'unconfirmed_count' => 0,
+    'table_exists'      => false,
+];
+try {
+    // Count emails sent but never confirmed via webhook (likely missing delivery events)
+    $webhookHealth['unconfirmed_count'] = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM email_logs
+         WHERE status = 'sent' AND message_id IS NOT NULL AND message_id != ''
+           AND sent_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)"
+    )['c'] ?? 0);
+
+    // Try to read from webhook_logs (may not exist)
+    $webhookHealth['last_received'] = Database::fetchOne(
+        "SELECT received_at FROM webhook_logs ORDER BY received_at DESC LIMIT 1"
+    )['received_at'] ?? null;
+
+    $webhookHealth['total_events'] = (int)(Database::fetchOne(
+        "SELECT COUNT(*) AS c FROM webhook_logs WHERE source='brevo'"
+    )['c'] ?? 0);
+
+    $breakdown = Database::fetchAll(
+        "SELECT event_type, COUNT(*) AS cnt FROM webhook_logs WHERE source='brevo'
+         GROUP BY event_type ORDER BY cnt DESC"
+    );
+    foreach ($breakdown as $row) {
+        $webhookHealth['event_breakdown'][$row['event_type']] = (int)$row['cnt'];
+    }
+    $webhookHealth['table_exists'] = true;
+} catch (Exception $e) {
+    // webhook_logs table may not exist
+}
+
+// Helper: friendly "time ago" for last webhook
+function webhookTimeAgo(?string $datetime): string {
+    if (!$datetime) return 'Never';
+    $diff = time() - strtotime($datetime);
+    if ($diff < 60)   return $diff . 's ago';
+    if ($diff < 3600) return floor($diff/60) . 'm ago';
+    if ($diff < 86400) return floor($diff/3600) . 'h ago';
+    return floor($diff/86400) . 'd ago';
+}
+$webhookLastReceivedAgo = webhookTimeAgo($webhookHealth['last_received']);
+$webhookStatusColor = '#10b981'; // green — healthy
+$webhookStatusLabel = 'Healthy';
+if (!$webhookHealth['last_received']) {
+    $webhookStatusColor = '#ef4444'; $webhookStatusLabel = 'No Events Received';
+} elseif ((time() - strtotime($webhookHealth['last_received'])) > 86400) {
+    $webhookStatusColor = '#f59e0b'; $webhookStatusLabel = 'Stale (>24h)';
+}
 ?>
 
 <h2 style="font-size:20px;margin-bottom:20px">📬 Email Health Dashboard</h2>
@@ -186,6 +242,77 @@ function spamRiskColor(string $level): string {
         </div>
         <div style="font-size:11px;color:#8a9ab5;margin-top:8px">Score is based on bounce rate, unsubscribe rate, open rate, and response rate.</div>
     </div>
+</div>
+
+<!-- ── Webhook Health ─────────────────────────────────────────────────── -->
+<div class="gc" style="margin-bottom:24px">
+    <div class="gc-title">🔗 Webhook Health</div>
+    <div class="gc-sub">Brevo webhook delivery events — real-time status tracking</div>
+
+    <!-- Status bar -->
+    <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px 16px">
+            <span style="width:10px;height:10px;border-radius:50%;background:<?php echo $webhookStatusColor; ?>;display:inline-block"></span>
+            <span style="font-size:13px;font-weight:600;color:<?php echo $webhookStatusColor; ?>"><?php echo $webhookStatusLabel; ?></span>
+            <span style="font-size:12px;color:#8a9ab5">— Last event: <?php echo htmlspecialchars($webhookLastReceivedAgo); ?></span>
+        </div>
+        <button class="btn-sec" onclick="testWebhook()" style="padding:8px 16px;font-size:12px" id="testWebhookBtn">
+            🧪 Test Webhook
+        </button>
+        <span id="webhookTestResult" style="font-size:12px;color:#8a9ab5"></span>
+    </div>
+
+    <!-- Stats grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px">
+        <div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:20px;font-weight:700;color:#3b82f6"><?php echo number_format($webhookHealth['total_events']); ?></div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:4px">Total Webhook Events</div>
+        </div>
+        <div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:20px;font-weight:700;color:<?php echo $webhookHealth['unconfirmed_count'] > 50 ? '#f59e0b' : '#10b981'; ?>">
+                <?php echo number_format($webhookHealth['unconfirmed_count']); ?>
+            </div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:4px">Sent Unconfirmed (&gt;1h)</div>
+        </div>
+        <?php foreach (['delivered' => ['📬','#10b981','Delivered'], 'opened' => ['👁️','#8b5cf6','Opened'], 'hardBounce' => ['↩️','#ef4444','Hard Bounce'], 'softBounce' => ['↩️','#f59e0b','Soft Bounce']] as $evtKey => [$evtIcon, $evtColor, $evtLabel]): ?>
+        <div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:14px;text-align:center">
+            <div style="font-size:20px;font-weight:700;color:<?php echo $evtColor; ?>">
+                <?php echo number_format($webhookHealth['event_breakdown'][$evtKey] ?? 0); ?>
+            </div>
+            <div style="font-size:11px;color:#8a9ab5;margin-top:4px"><?php echo $evtIcon; ?> <?php echo $evtLabel; ?></div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <?php if (!empty($webhookHealth['event_breakdown'])): ?>
+    <!-- Full event breakdown -->
+    <div style="margin-top:14px;background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:14px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px">📋 Event Breakdown</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <?php foreach ($webhookHealth['event_breakdown'] as $evtName => $evtCount): ?>
+            <span style="background:#1e3a5f;border-radius:20px;padding:4px 12px;font-size:12px;color:#e2e8f0">
+                <?php echo htmlspecialchars($evtName); ?>: <strong><?php echo number_format($evtCount); ?></strong>
+            </span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Info note about "likely delivered" logic -->
+    <div style="margin-top:12px;padding:10px 14px;background:#0a1628;border-left:3px solid #3b82f6;border-radius:6px;font-size:12px;color:#8a9ab5">
+        ℹ️ <strong style="color:#e2e8f0">Sync Missing:</strong>
+        Emails with status <code style="color:#3b82f6">sent</code> that have a valid <code style="color:#3b82f6">message_id</code>
+        and were sent more than <strong>5 minutes ago</strong> are counted as <em>likely delivered</em> in all metrics above,
+        since Brevo typically sends delivery webhooks within seconds. The <?php echo number_format($webhookHealth['unconfirmed_count']); ?> email(s)
+        shown as "Sent Unconfirmed" have been waiting over 1 hour with no delivery confirmation.
+    </div>
+
+    <?php if (!$webhookHealth['table_exists']): ?>
+    <div style="margin-top:10px;padding:10px 14px;background:#0a1628;border-left:3px solid #f59e0b;border-radius:6px;font-size:12px;color:#f59e0b">
+        ⚠️ The <code>webhook_logs</code> table does not exist yet. Webhook event history is unavailable.
+        Brevo delivery events are still being processed, but not logged for diagnostics.
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- ── DNS Authentication ─────────────────────────────────────────────── -->
@@ -385,6 +512,33 @@ async function runSpamCheck() {
 
 function recheckDns() {
     location.reload();
+}
+
+async function testWebhook() {
+    const btn = document.getElementById('testWebhookBtn');
+    const res = document.getElementById('webhookTestResult');
+    btn.disabled = true;
+    res.textContent = 'Testing…';
+    res.style.color = '#8a9ab5';
+    try {
+        const r = await fetch('<?php echo APP_URL; ?>/api/webhook_diagnostics.php?action=test', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({test: true})
+        });
+        const d = await r.json();
+        if (d.success) {
+            res.textContent = '✅ Webhook endpoint reachable — ' + (d.message || 'OK');
+            res.style.color = '#10b981';
+        } else {
+            res.textContent = '❌ ' + (d.error || 'Webhook test failed');
+            res.style.color = '#ef4444';
+        }
+    } catch(e) {
+        res.textContent = '❌ ' + e.message;
+        res.style.color = '#ef4444';
+    }
+    btn.disabled = false;
 }
 
 function escapeHtml(str) {

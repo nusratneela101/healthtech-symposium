@@ -11,6 +11,18 @@ $raw    = file_get_contents('php://input');
 $events = json_decode($raw, true);
 
 if (empty($events)) {
+    // Log malformed/empty payload for debugging
+    if ($raw !== '' && $raw !== false) {
+        try {
+            Database::query(
+                "INSERT INTO webhook_logs (source, event_type, email, message_id, payload, received_at)
+                 VALUES ('brevo', 'malformed', '', '', ?, NOW())",
+                [substr($raw, 0, 2000)]
+            );
+        } catch (Exception $e) {
+            // webhook_logs table may not exist — ignore silently
+        }
+    }
     echo json_encode(['success' => true, 'message' => 'No events']);
     exit;
 }

@@ -586,6 +586,12 @@ if ($campaignId) {
             $followUpSeq = 1;
 
             for ($i = 0; $i < $pipelineBatchSize; $i++) {
+                // Re-check campaign status before each send (user may have paused/stopped)
+                $freshStatus = Database::fetchOne("SELECT status FROM campaigns WHERE id=?", [$campaignId]);
+                if (!$freshStatus || $freshStatus['status'] !== 'running') {
+                    break; // Campaign was paused/stopped/completed — stop sending immediately
+                }
+
                 // Cap execution time to prevent overlap with next cron run
                 if ((microtime(true) - $startTime) > $maxRunSeconds) {
                     $limitHit    = true;

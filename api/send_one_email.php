@@ -5,12 +5,8 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/email.php';
 require_once __DIR__ . '/../includes/rate_limiter.php';
 
-$automationMode = getSetting('automation_mode', 'cron');
-if ($automationMode !== 'cron') {
-    header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'error' => 'Cron mode is disabled. automation_mode = ' . $automationMode]);
-    exit;
-}
+// automation_mode check is intentionally skipped here so that both cron jobs
+// and browser-initiated sends (from admin/auto_campaign.php) work correctly.
 require_once __DIR__ . '/check_sending_limits.php';
 
 header('Content-Type: application/json');
@@ -50,9 +46,10 @@ try {
 }
 
 if (!$lockAcquired) {
+    // Another process holds the lock — tell the browser to retry, not to stop.
     echo json_encode([
-        'done'      => true,
-        'limit_hit' => true,
+        'done'      => false,
+        'retry'     => true,
         'reason'    => 'Another sender is already running',
         'sent'      => $campaign['sent_count'],
         'failed'    => $campaign['failed_count'],
@@ -64,9 +61,11 @@ if (!$lockAcquired) {
 $limitCheck = checkSendingLimits($followUpSeq);
 if (!$limitCheck['allowed']) {
     Database::fetchOne("SELECT RELEASE_LOCK('healthtech_email_sender')");
+    // Limit reached — campaign is paused, not done. Cron will resume it later.
     echo json_encode([
-        'done'        => true,
+        'done'        => false,
         'limit_hit'   => true,
+        'paused'      => true,
         'reason'      => $limitCheck['reason'],
         'sent'        => $campaign['sent_count'],
         'failed'      => $campaign['failed_count'],

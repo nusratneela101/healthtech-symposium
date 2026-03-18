@@ -240,6 +240,7 @@ try {
 
 <script>
 const SEND_DELAY_MS = <?php echo $sendDelayMs; ?>;
+const RETRY_DELAY_MS = 5000; // delay before retrying after a transient error
 let running = false;
 let campaignId = null;
 let campaignKey = null;
@@ -469,7 +470,47 @@ async function sendNext() {
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({campaign_id: campaignId, api_key: '<?php echo N8N_API_KEY; ?>'})
         });
-        const json = await res.json();
+
+        // Parse as text first so a PHP fatal error (non-JSON) is handled gracefully
+        const text = await res.text();
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch(e) {
+            log(`⚠️ Server returned unexpected response: ${text.substring(0, 200)}`);
+            setTimeout(sendNext, RETRY_DELAY_MS);
+            return;
+        }
+
+        // Hard error from the API (e.g. automation_mode disabled, unauthorized)
+        if (json.success === false && json.error) {
+            running = false;
+            log(`⛔ Error: ${json.error}`);
+            document.getElementById('statusMsg').textContent = `⛔ ${json.error}`;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('launchBtn').disabled = false;
+            return;
+        }
+
+        // Lock conflict — another sender is running, retry after 10 s
+        if (json.retry) {
+            log(`⏳ ${json.reason || 'Another sender is active'}, retrying in 10s…`);
+            setTimeout(sendNext, 10000);
+            return;
+        }
+
+        // Daily / hourly / warm-up limit reached — pause, do NOT show "All emails sent!"
+        if (json.limit_hit) {
+            running = false;
+            const reason = json.reason || 'Sending limit reached';
+            log(`⚠️ ${reason}. Campaign paused — will resume on next cron run.`);
+            document.getElementById('statusMsg').textContent = `⚠️ ${reason}`;
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('launchBtn').disabled = false;
+            return;
+        }
+
+        // True campaign completion — no more leads
         if (json.done) {
             running = false;
             log(`✅ Campaign complete! Sent: ${json.sent}, Failed: ${json.failed}`);
@@ -478,6 +519,7 @@ async function sendNext() {
             document.getElementById('launchBtn').disabled = false;
             return;
         }
+
         if (json.sent_to) {
             sentCount++;
             document.getElementById('sentCount').textContent = sentCount;
@@ -489,8 +531,8 @@ async function sendNext() {
         if (json.error) log(`⚠️ ${json.error}`);
         setTimeout(sendNext, SEND_DELAY_MS);
     } catch(e) {
-        log('Network error: ' + e.message);
-        setTimeout(sendNext, Math.max(SEND_DELAY_MS, 2000));
+        log(`⚠️ Network error: ${e.message}. Retrying…`);
+        setTimeout(sendNext, RETRY_DELAY_MS);
     }
 }
 </script>

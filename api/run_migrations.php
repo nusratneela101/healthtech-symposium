@@ -251,11 +251,107 @@ $migrations = [
     ],
     [
         'name' => 'campaigns.target_mode',
-        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `target_mode` ENUM('all','fixed') DEFAULT 'all'",
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `target_mode` VARCHAR(10) DEFAULT 'all'",
     ],
     [
         'name' => 'campaigns.target_count',
         'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `target_count` INT DEFAULT 0",
+    ],
+    [
+        'name' => 'campaigns.campaign_key',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `campaign_key` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'campaigns.filter_segment',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `filter_segment` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'campaigns.filter_role',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `filter_role` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'campaigns.filter_province',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `filter_province` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'campaigns.total_leads',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `total_leads` INT DEFAULT 0",
+    ],
+    [
+        'name' => 'campaigns.sent_count',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `sent_count` INT DEFAULT 0",
+    ],
+    [
+        'name' => 'campaigns.failed_count',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `failed_count` INT DEFAULT 0",
+    ],
+    [
+        'name' => 'campaigns.test_mode',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `test_mode` TINYINT DEFAULT 0",
+    ],
+    [
+        'name' => 'campaigns.completed_at',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `completed_at` DATETIME DEFAULT NULL",
+    ],
+    [
+        'name' => 'campaigns.created_by',
+        'sql'  => "ALTER TABLE `campaigns` ADD COLUMN IF NOT EXISTS `created_by` INT DEFAULT 0",
+    ],
+    [
+        'name' => 'email_logs.recipient_email',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `recipient_email` VARCHAR(255) DEFAULT NULL",
+    ],
+    [
+        'name' => 'email_logs.recipient_name',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `recipient_name` VARCHAR(255) DEFAULT NULL",
+    ],
+    [
+        'name' => 'responses',
+        'sql'  => "CREATE TABLE IF NOT EXISTS `responses` (
+          `id`          INT AUTO_INCREMENT PRIMARY KEY,
+          `lead_id`     INT DEFAULT NULL,
+          `campaign_id` INT DEFAULT NULL,
+          `email`       VARCHAR(255) NOT NULL,
+          `subject`     VARCHAR(500) DEFAULT NULL,
+          `body`        TEXT,
+          `sentiment`   VARCHAR(20) DEFAULT 'neutral',
+          `is_read`     TINYINT DEFAULT 0,
+          `received_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+          `created_at`  DATETIME DEFAULT CURRENT_TIMESTAMP,
+          KEY `idx_responses_lead`     (`lead_id`),
+          KEY `idx_responses_campaign` (`campaign_id`),
+          KEY `idx_responses_email`    (`email`),
+          KEY `idx_responses_is_read`  (`is_read`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+    ],
+    [
+        'name' => 'responses.hot_alert_sent',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `hot_alert_sent` TINYINT NOT NULL DEFAULT 0",
+    ],
+    [
+        'name' => 'responses.is_replied',
+        'sql'  => "ALTER TABLE `responses` ADD COLUMN IF NOT EXISTS `is_replied` TINYINT NOT NULL DEFAULT 0",
+    ],
+    [
+        'name' => 'email_logs.fix_blank_status_by_message_id',
+        'sql'  => "UPDATE `email_logs` SET `status` = 'sent'
+                   WHERE (status = '' OR status IS NULL)
+                     AND message_id IS NOT NULL AND message_id != ''",
+    ],
+    [
+        'name' => 'email_logs.fix_blank_status_by_sent_at',
+        'sql'  => "UPDATE `email_logs` SET `status` = 'sent'
+                   WHERE (status = '' OR status IS NULL)
+                     AND sent_at IS NOT NULL",
+    ],
+    [
+        'name' => 'site_settings.defaults',
+        'sql'  => "INSERT IGNORE INTO `site_settings` (`setting_key`, `setting_value`) VALUES
+          ('send_delay',            '5'),
+          ('automation_mode',       'browser'),
+          ('email_daily_limit',     '500'),
+          ('auto_campaign_enabled', '1'),
+          ('pipeline_batch_size',   '100')",
     ],
 ];
 

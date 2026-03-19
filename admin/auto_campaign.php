@@ -444,7 +444,7 @@ async function launchCampaign() {
 
     const res = await fetch(window.location.href, {method:'POST', body: data});
     const json = await res.json();
-    if (!json.success) { log('Error creating campaign'); document.getElementById('launchBtn').disabled = false; return; }
+    if (!json.success) { log('Error creating campaign: ' + (json.error || 'Unknown error')); document.getElementById('launchBtn').disabled = false; return; }
 
     campaignId  = json.campaign_id;
     campaignKey = json.campaign_key;

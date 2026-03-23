@@ -22,9 +22,9 @@ try {
         "SELECT COUNT(*) AS c FROM email_logs WHERE (status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != '')"
     )['c'] ?? 0);
 
-    // Delivered = all emails with a valid status excluding failures and bounces
+    // Delivered = all emails excluding failures and bounces (including sent/null with a message_id)
     $metrics['delivered']    = (int)(Database::fetchOne(
-        "SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced','') AND status IS NOT NULL"
+        "SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced') AND ((status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != ''))"
     )['c'] ?? 0);
 
     // Bounced/failed

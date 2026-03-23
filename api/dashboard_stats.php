@@ -31,7 +31,7 @@ try {
         'total_campaigns'  => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0),
         'emails_sent'      => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE (status != '' AND status IS NOT NULL) OR (message_id != '' AND message_id IS NOT NULL)")['c'] ?? 0),
         'unread_responses' => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE is_read=0")['c'] ?? 0),
-        'delivered'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced','') AND status IS NOT NULL")['c'] ?? 0),
+        'delivered'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced') AND ((status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != ''))")['c'] ?? 0),
         'bounced'          => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0),
         // Fix: response_type column does not exist; using sentiment='positive' instead
         'hot_leads'        => (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE sentiment='positive'")['c'] ?? 0),

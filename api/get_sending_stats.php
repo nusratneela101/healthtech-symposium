@@ -8,7 +8,7 @@ Auth::check();
 
 function limitRow(string $label, string $limitKey, string $seqCond, string $sqlWhere): array {
     $limit = (int)getSetting($limitKey, '0');
-    $sent  = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent' AND follow_up_sequence $seqCond AND $sqlWhere")['c'] ?? 0);
+    $sent  = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('sent','delivered','opened','clicked') AND follow_up_sequence $seqCond AND $sqlWhere")['c'] ?? 0);
     return [
         'label'   => $label,
         'key'     => $limitKey,

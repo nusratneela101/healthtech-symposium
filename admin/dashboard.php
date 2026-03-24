@@ -78,8 +78,9 @@ $segCounts = json_encode(array_map('intval', array_column($segments, 'cnt')));
 $provinces = [];
 try {
     $provinces = Database::fetchAll(
-        "SELECT province, COUNT(*) AS cnt FROM leads WHERE province != ''
-         GROUP BY province ORDER BY cnt DESC LIMIT 8"
+        "SELECT COALESCE(province, state, '') AS province, COUNT(*) AS cnt FROM leads
+         WHERE COALESCE(province, state, '') != ''
+         GROUP BY COALESCE(province, state, '') ORDER BY cnt DESC LIMIT 8"
     );
 } catch (Exception $e) { error_log('Dashboard: provinces query failed: ' . $e->getMessage()); }
 $maxProv = $provinces ? max(array_column($provinces, 'cnt')) : 1;
@@ -88,7 +89,9 @@ $maxProv = $provinces ? max(array_column($provinces, 'cnt')) : 1;
 $campPerf = [];
 try {
     $campPerf = Database::fetchAll(
-        "SELECT c.name, c.sent_count, c.failed_count,
+        "SELECT c.name,
+                COALESCE(c.sent_count, c.total_sent, 0) AS sent_count,
+                COALESCE(c.failed_count, c.total_failed, 0) AS failed_count,
                 COUNT(DISTINCT r.id) AS reply_count
          FROM campaigns c
          LEFT JOIN responses r ON r.campaign_id = c.id
@@ -105,7 +108,7 @@ $hotLeads = [];
 try {
     $hotLeads = Database::fetchAll(
         "SELECT r.id, r.email as from_email, r.subject, r.body, r.received_at,
-                l.company, l.full_name as from_name
+                l.company, COALESCE(l.full_name, l.name, '') as from_name
          FROM responses r
          LEFT JOIN leads l ON r.lead_id = l.id
          WHERE r.sentiment='positive'
@@ -117,7 +120,8 @@ try {
 $activity = [];
 try {
     $activity = Database::fetchAll(
-        "SELECT 'email' AS type, recipient_email AS info, sent_at AS ts FROM email_logs WHERE status='sent'
+        "SELECT 'email' AS type, COALESCE(recipient_email, email) AS info, sent_at AS ts
+         FROM email_logs WHERE status IN ('sent','delivered','opened','clicked')
          UNION ALL
          SELECT 'response', email, received_at FROM responses
          ORDER BY ts DESC LIMIT 10"
@@ -128,7 +132,7 @@ try {
 $recentLeads = [];
 try {
     $recentLeads = Database::fetchAll(
-        "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
+        "SELECT id, COALESCE(full_name, name, '') as full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
     );
 } catch (Exception $e) { error_log('Dashboard: recent leads query failed: ' . $e->getMessage()); }
 $baseUrl = htmlspecialchars(APP_URL, ENT_QUOTES, 'UTF-8');

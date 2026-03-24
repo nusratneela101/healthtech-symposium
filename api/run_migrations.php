@@ -302,6 +302,39 @@ $migrations = [
         'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `recipient_email` VARCHAR(255) DEFAULT NULL",
     ],
     [
+        'name' => 'email_logs.recipient_email.backfill',
+        'sql'  => "UPDATE `email_logs` SET `recipient_email` = `email`
+                   WHERE `recipient_email` IS NULL AND `email` IS NOT NULL AND `email` != ''",
+    ],
+    [
+        'name' => 'leads.full_name',
+        'sql'  => "ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `full_name` VARCHAR(200) DEFAULT NULL",
+    ],
+    [
+        'name' => 'leads.full_name.backfill',
+        'sql'  => "UPDATE `leads` SET `full_name` = `name` WHERE `full_name` IS NULL AND `name` IS NOT NULL AND `name` != ''",
+    ],
+    [
+        'name' => 'leads.province',
+        'sql'  => "ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `province` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'leads.province.backfill',
+        'sql'  => "UPDATE `leads` SET `province` = `state` WHERE `province` IS NULL AND `state` IS NOT NULL AND `state` != ''",
+    ],
+    [
+        'name' => 'leads.role',
+        'sql'  => "ALTER TABLE `leads` ADD COLUMN IF NOT EXISTS `role` VARCHAR(100) DEFAULT NULL",
+    ],
+    [
+        'name' => 'email_logs.status_delivered',
+        'sql'  => "ALTER TABLE `email_logs` MODIFY COLUMN `status` ENUM('queued','sent','delivered','failed','bounced','opened','clicked','unsubscribed') NOT NULL DEFAULT 'queued'",
+    ],
+    [
+        'name' => 'email_logs.opened',
+        'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `opened` TINYINT(1) NOT NULL DEFAULT 0",
+    ],
+    [
         'name' => 'email_logs.recipient_name',
         'sql'  => "ALTER TABLE `email_logs` ADD COLUMN IF NOT EXISTS `recipient_name` VARCHAR(255) DEFAULT NULL",
     ],

@@ -1,9 +1,16 @@
 <?php
 require_once __DIR__ . '/../includes/session_bootstrap.php';
-$unreadCount = 0;
 require_once __DIR__ . '/../includes/layout.php';
 
-// KPI stats — default values in case any table is missing
+// Calculate unread count from DB now that the database is loaded
+$unreadCount = 0;
+try {
+    $unreadCount = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE is_read=0")['c'] ?? 0);
+} catch (Exception $e) {
+    error_log('Dashboard: unread_responses query failed: ' . $e->getMessage());
+}
+
+// KPI stats — each stat wrapped individually so one failure doesn't zero out all cards
 $stats = [
     'total_leads'      => 0,
     'new_leads'        => 0,
@@ -22,27 +29,22 @@ $stats = [
     'month_sends'      => 0,
     'opened'           => 0,
 ];
-try {
-    $stats = [
-        'total_leads'      => Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0,
-        'new_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='new'")['c'] ?? 0,
-        'emailed'          => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='emailed'")['c'] ?? 0,
-        'responded'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='responded'")['c'] ?? 0,
-        'converted'        => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='converted'")['c'] ?? 0,
-        'unsubscribed'     => Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0,
-        'total_campaigns'  => Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0,
-        'emails_sent'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE (status != '' AND status IS NOT NULL) OR (message_id != '' AND message_id IS NOT NULL)")['c'] ?? 0,
-        'unread_responses' => $unreadCount,
-        'delivered'        => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced') AND ((status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != ''))")['c'] ?? 0,
-        'bounced'          => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0,
-        // Fix: response_type column does not exist; using sentiment='positive' instead
-        'hot_leads'        => Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE sentiment='positive'")['c'] ?? 0,
-        'followups_sent'   => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0,
-        'week_sends'       => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0,
-        'month_sends'      => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0,
-        'opened'           => Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0,
-    ];
-} catch (Exception $e) {}
+try { $stats['total_leads']     = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: total_leads query failed: ' . $e->getMessage()); }
+try { $stats['new_leads']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='new'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: new_leads query failed: ' . $e->getMessage()); }
+try { $stats['emailed']         = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='emailed'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: emailed query failed: ' . $e->getMessage()); }
+try { $stats['responded']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='responded'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: responded query failed: ' . $e->getMessage()); }
+try { $stats['converted']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='converted'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: converted query failed: ' . $e->getMessage()); }
+try { $stats['unsubscribed']    = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM leads WHERE status='unsubscribed'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: unsubscribed query failed: ' . $e->getMessage()); }
+try { $stats['total_campaigns'] = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM campaigns")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: total_campaigns query failed: ' . $e->getMessage()); }
+try { $stats['emails_sent']     = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE (status != '' AND status IS NOT NULL) OR (message_id != '' AND message_id IS NOT NULL)")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: emails_sent query failed: ' . $e->getMessage()); }
+try { $stats['delivered']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status NOT IN ('failed','bounced') AND ((status IS NOT NULL AND status != '') OR (message_id IS NOT NULL AND message_id != ''))")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: delivered query failed: ' . $e->getMessage()); }
+try { $stats['bounced']         = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE status IN ('bounced','failed')")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: bounced query failed: ' . $e->getMessage()); }
+// Fix: response_type column does not exist; using sentiment='positive' instead
+try { $stats['hot_leads']       = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM responses WHERE sentiment='positive'")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: hot_leads query failed: ' . $e->getMessage()); }
+try { $stats['followups_sent']  = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE follow_up_sequence=2")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: followups_sent query failed: ' . $e->getMessage()); }
+try { $stats['week_sends']      = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE(NOW() - INTERVAL WEEKDAY(NOW()) DAY)")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: week_sends query failed: ' . $e->getMessage()); }
+try { $stats['month_sends']     = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE sent_at >= DATE_FORMAT(NOW(),'%Y-%m-01')")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: month_sends query failed: ' . $e->getMessage()); }
+try { $stats['opened']          = (int)(Database::fetchOne("SELECT COUNT(*) AS c FROM email_logs WHERE opened_at IS NOT NULL")['c'] ?? 0); } catch (Exception $e) { error_log('Dashboard: opened query failed: ' . $e->getMessage()); }
 
 // Open rate calculation
 $openRateStr = 'N/A';
@@ -58,7 +60,7 @@ try {
          WHERE status IN ('sent','delivered','opened','clicked','failed','bounced') AND sent_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
          GROUP BY DATE(sent_at) ORDER BY d ASC"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: daily email chart query failed: ' . $e->getMessage()); }
 $chartDates  = json_encode(array_column($daily, 'd'));
 $chartCounts = json_encode(array_map('intval', array_column($daily, 'cnt')));
 
@@ -68,7 +70,7 @@ try {
     $segments = Database::fetchAll(
         "SELECT segment, COUNT(*) AS cnt FROM leads GROUP BY segment ORDER BY cnt DESC"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: segments query failed: ' . $e->getMessage()); }
 $segLabels = json_encode(array_column($segments, 'segment'));
 $segCounts = json_encode(array_map('intval', array_column($segments, 'cnt')));
 
@@ -79,7 +81,7 @@ try {
         "SELECT province, COUNT(*) AS cnt FROM leads WHERE province != ''
          GROUP BY province ORDER BY cnt DESC LIMIT 8"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: provinces query failed: ' . $e->getMessage()); }
 $maxProv = $provinces ? max(array_column($provinces, 'cnt')) : 1;
 
 // Campaign performance (last 5)
@@ -92,7 +94,7 @@ try {
          LEFT JOIN responses r ON r.campaign_id = c.id
          GROUP BY c.id ORDER BY c.created_at DESC LIMIT 5"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: campaign performance query failed: ' . $e->getMessage()); }
 $campNames    = json_encode(array_column($campPerf, 'name'));
 $campSent     = json_encode(array_map('intval', array_column($campPerf, 'sent_count')));
 $campFailed   = json_encode(array_map('intval', array_column($campPerf, 'failed_count')));
@@ -109,7 +111,7 @@ try {
          WHERE r.sentiment='positive'
          ORDER BY r.received_at DESC LIMIT 10"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: hot leads query failed: ' . $e->getMessage()); }
 
 // Activity feed
 $activity = [];
@@ -120,7 +122,7 @@ try {
          SELECT 'response', email, received_at FROM responses
          ORDER BY ts DESC LIMIT 10"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: activity feed query failed: ' . $e->getMessage()); }
 
 // Recent leads
 $recentLeads = [];
@@ -128,7 +130,7 @@ try {
     $recentLeads = Database::fetchAll(
         "SELECT id, full_name, email, company, job_title, status, score, created_at FROM leads ORDER BY created_at DESC LIMIT 10"
     );
-} catch (Exception $e) {}
+} catch (Exception $e) { error_log('Dashboard: recent leads query failed: ' . $e->getMessage()); }
 $baseUrl = htmlspecialchars(APP_URL, ENT_QUOTES, 'UTF-8');
 ?>
 
